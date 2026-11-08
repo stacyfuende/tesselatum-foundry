@@ -13,7 +13,10 @@ from tessellatum_foundry.execution.docker_worker import (
 )
 from tessellatum_foundry.execution.protocol import VectorBufferWorker, WorkerResult
 from tessellatum_foundry.execution.runs import RunRepository, RunStateError
-from tessellatum_foundry.execution.service import VectorBufferRunService
+from tessellatum_foundry.execution.service import (
+    ExecutionPreconditionError,
+    VectorBufferRunService,
+)
 from tessellatum_foundry.storage.artifacts import (
     FileSystemArtifactStore,
     ImmutableArtifactError,
@@ -241,3 +244,23 @@ def test_output_critic_fails_run_without_registering_invalid_output(tmp_path):
     assert result.validation_report["overall_status"] == "failed"
     assert result.validation_report["report_id"] in result.run["validation_report_ids"]
     assert result.run["error"]["code"] == "output.validation_failed"
+
+
+
+def test_run_service_rejects_worker_for_a_different_capability_version(tmp_path):
+    class IncompatibleWorker(WrongCrsWorker):
+        capability_version = "2.0.0"
+
+    store, runs, service = make_service(tmp_path, IncompatibleWorker())
+    input_artifact = make_input(store)
+    cell = bind_cell_to_input(input_artifact)
+    capability = load_fixture("capability.valid.json")
+
+    with pytest.raises(ExecutionPreconditionError, match="exact supplied Capability"):
+        service.execute(
+            cell=cell,
+            capability=capability,
+            actor_id="test-operator",
+        )
+
+    assert not (runs.root / "runs").exists()
