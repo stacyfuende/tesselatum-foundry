@@ -171,7 +171,7 @@ class VersionedDefinitionStore:
 
     def _record_path(self, kind: DefinitionKind, definition_id: str, version: str) -> Path:
         key = hashlib.sha256(
-            f"{kind}\0{definition_id}\0{version}".encode("utf-8")
+            f"{kind}\0{definition_id}\0{version}".encode()
         ).hexdigest()
         return self.root / "definitions" / kind / key[:2] / f"{key}.json"
 
