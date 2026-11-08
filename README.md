@@ -51,7 +51,7 @@ result = foundry.execute_recipe(
 print(result.status, result.execution_id)
 ```
 
-The facade also exposes `store_artifact`, `get_run`, `list_recipe_runs`, `get_artifact`, and `read_artifact`. The latter verifies the Artifact checksum. This is a local SDK, not an authenticated network API or multi-tenant service. See [ADR-025](docs/decisions/025-local-python-sdk.md).
+The facade also exposes `store_artifact`, `get_run`, `list_recipe_runs`, `get_artifact`, `get_validation_report`, and `read_artifact`. The latter verifies the Artifact checksum. This is a local SDK, not an authenticated network API or multi-tenant service. See [ADR-025](docs/decisions/025-local-python-sdk.md).
 
 ## Start here
 
