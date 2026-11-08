@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import re
 import uuid
@@ -30,13 +31,16 @@ from tessellatum_foundry.execution.implementations import (
     ImplementationRegistryError,
 )
 from tessellatum_foundry.execution.protocol import VectorBufferWorker
-from tessellatum_foundry.execution.runs import RunRepository
+from tessellatum_foundry.execution.runs import RunRepository, RunStateError
 from tessellatum_foundry.storage.artifacts import (
     ArtifactIntegrityError,
     FileSystemArtifactStore,
     utc_timestamp,
 )
-from tessellatum_foundry.validation.contracts import ContractRegistry
+from tessellatum_foundry.validation.contracts import (
+    ContractRegistry,
+    ContractValidationError,
+)
 from tessellatum_foundry.validation.output import inspect_vector_buffer_output
 from tessellatum_foundry.validation.spatial import validate_recipe_spatial
 
