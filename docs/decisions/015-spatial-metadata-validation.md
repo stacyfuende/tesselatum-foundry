@@ -11,7 +11,7 @@ A bounding-box array also needs a stable coordinate ordering. Leaving the orderi
 
 ## Decision
 
-1. Spatial Artifact metadata for vector, raster, point-cloud and mesh data requires a resolvable CRS. Raster artifacts also require grid dimensions.
+1. Spatial Artifact metadata for vector, raster, point-cloud and mesh data requires a resolvable CRS. Vector Artifacts also declare at least one observed geometry type; the execution preflight checks that this metadata matches the actual FeatureCollection. Raster artifacts also require grid dimensions.
 2. A 2D extent is [min_x, min_y, max_x, max_y]. A 3D extent is [min_x, min_y, min_z, max_x, max_y, max_z]. Coordinates use GIS x/y order independent of authority axis order.
 3. Extents must contain finite values and each minimum must not exceed its corresponding maximum. Geographic x/y values are checked against the longitude/latitude domain using the CRS angular units. Antimeridian-crossing extents are not encoded by reversing minima and maxima.
 4. Capability input and output ports may declare CRS-required, CRS-kind, geometry-type, same-CRS-as, and measurement-CRS handling constraints. A must_match policy requires an input CRS to equal the Geo-Cell measurement CRS. A reproject_to_measurement_crs policy explicitly permits a capability implementation to transform that input internally; this behavior must be covered by implementation conformance tests.
