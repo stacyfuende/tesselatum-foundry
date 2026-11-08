@@ -1,0 +1,198 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Foundry Artifact Version",
+  "description": "Immutable metadata record for one version of a logical data artifact.",
+  "type": "object",
+  "required": [
+    "artifact_id",
+    "version",
+    "created_at",
+    "created_by",
+    "media_type",
+    "checksum",
+    "storage"
+  ],
+  "properties": {
+    "artifact_id": {
+      "$ref": "./_common.schema.json#/$defs/identifier"
+    },
+    "version": {
+      "$ref": "./_common.schema.json#/$defs/version"
+    },
+    "created_at": {
+      "$ref": "./_common.schema.json#/$defs/timestamp"
+    },
+    "created_by": {
+      "$ref": "./_common.schema.json#/$defs/identifier"
+    },
+    "media_type": {
+      "type": "string",
+      "minLength": 3
+    },
+    "format": {
+      "type": "string",
+      "minLength": 1
+    },
+    "size_bytes": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "checksum": {
+      "type": "object",
+      "required": [
+        "algorithm",
+        "value"
+      ],
+      "properties": {
+        "algorithm": {
+          "const": "sha256"
+        },
+        "value": {
+          "$ref": "./_common.schema.json#/$defs/sha256"
+        }
+      },
+      "additionalProperties": false
+    },
+    "storage": {
+      "type": "object",
+      "required": [
+        "uri"
+      ],
+      "properties": {
+        "uri": {
+          "type": "string",
+          "format": "uri"
+        },
+        "provider": {
+          "type": "string"
+        },
+        "object_key": {
+          "type": "string"
+        },
+        "region": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "spatial": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "vector",
+            "raster",
+            "point_cloud",
+            "mesh",
+            "table",
+            "other"
+          ]
+        },
+        "crs": {
+          "$ref": "./_common.schema.json#/$defs/crs"
+        },
+        "bbox": {
+          "$ref": "./_common.schema.json#/$defs/bbox"
+        },
+        "geometry_types": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        },
+        "raster": {
+          "type": "object",
+          "properties": {
+            "width": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "height": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "band_count": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "resolution": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              },
+              "minItems": 2,
+              "maxItems": 2
+            },
+            "nodata": {
+              "type": [
+                "number",
+                "integer",
+                "null"
+              ]
+            }
+          },
+          "required": [
+            "width",
+            "height"
+          ],
+          "additionalProperties": false
+        },
+        "time_extent": {
+          "type": "object",
+          "properties": {
+            "start": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "end": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          "required": [
+            "start",
+            "end"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "rights": {
+      "type": "object",
+      "properties": {
+        "license_id": {
+          "type": "string"
+        },
+        "attribution": {
+          "type": "string"
+        },
+        "permitted_uses": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        },
+        "restrictions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "source_uri": {
+          "type": "string",
+          "format": "uri"
+        }
+      },
+      "additionalProperties": false
+    },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": false
+}
