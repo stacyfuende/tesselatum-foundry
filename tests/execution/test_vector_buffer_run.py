@@ -149,12 +149,17 @@ def test_vector_buffer_runs_in_isolated_docker_and_registers_artifact(tmp_path):
         },
         "declaration_status": "unknown",
     }
-    assert len(result.run["validation_report_ids"]) == 2
+    assert len(result.run["validation_report_ids"]) == 3
     rights_report = runs.get_validation_report(
         f"report:{result.run['run_id']}:rights"
     )
     assert rights_report["stage"] == "rights_security"
     assert rights_report["overall_status"] == "requires_review"
+    methodology_report = runs.get_validation_report(
+        f"report:{result.run['run_id']}:methodology"
+    )
+    assert methodology_report["stage"] == "methodological"
+    assert methodology_report["overall_status"] == "requires_review"
     assert any(
         finding["code"] == "rights.permission_not_evaluated"
         and finding["status"] == "not_assessed"
@@ -470,7 +475,7 @@ def test_deterministic_cache_reuses_only_validated_immutable_outputs(tmp_path):
         "id": second.run["run_id"],
     }
     assert second.validation_report["validator"]["name"] == "foundry-cache-reuse"
-    assert len(second.run["validation_report_ids"]) == 2
+    assert len(second.run["validation_report_ids"]) == 3
     rights_report = runs.get_validation_report(f"report:{second.run['run_id']}:rights")
     assert rights_report["overall_status"] == "requires_review"
     assert worker.calls == 1
