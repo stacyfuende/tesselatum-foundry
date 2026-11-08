@@ -14,6 +14,7 @@ class WorkerResult:
     crs: dict[str, Any]
     duration_ms: int
     runtime_image_digest: str
+    coordinate_operation: dict[str, Any] | None = None
 
 
 class SpatialWorkerIdentity(Protocol):
