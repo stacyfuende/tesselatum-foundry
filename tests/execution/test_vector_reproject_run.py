@@ -118,6 +118,7 @@ class FakeReprojectWorker:
             ),
             duration_ms=4,
             runtime_image_digest=runtime_image_digest or self.image_digest(),
+            coordinate_operation=result.coordinate_operation,
         )
 
 
@@ -160,6 +161,7 @@ def test_reproject_run_persists_output_artifact_and_validation_evidence(tmp_path
     assert result.output_artifact is not None
     assert result.output_artifact["spatial"]["crs"] == TARGET_CRS
     assert result.output_artifact["spatial"]["geometry_types"] == ["Point"]
+    assert result.output_artifact["metadata"]["coordinate_operation"]["description"]
     assert result.validation_report["overall_status"] == "passed"
     assert result.validation_report["validator"] == {
         "name": "foundry-spatial-output-critic",
