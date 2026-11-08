@@ -4,6 +4,7 @@ import json
 import threading
 from urllib.request import Request, urlopen
 
+from tessellatum_foundry.execution.remote_worker import RemoteVectorBufferWorker
 from tessellatum_foundry.worker.http_server import WorkerHandler
 from http.server import ThreadingHTTPServer
 
@@ -34,6 +35,31 @@ def test_remote_worker_http_service_authenticates_and_executes(monkeypatch):
             identity = json.loads(response.read())
         assert identity["runtime_image_digest"] == digest
         assert identity["capability_id"] == "vector.buffer"
+
+        remote_worker = RemoteVectorBufferWorker(
+            base_url, bearer_token="test-secret", allow_insecure_localhost=True
+        )
+        assert remote_worker.image_digest() == digest
+        remote_result = remote_worker.execute(
+            input_bytes=json.dumps({
+                "type": "FeatureCollection",
+                "features": [{
+                    "type": "Feature",
+                    "id": "remote-point",
+                    "properties": {},
+                    "geometry": {"type": "Point", "coordinates": [500000, 1000000]},
+                }],
+            }).encode(),
+            capability_version="1.0.0",
+            input_crs={"authority": "EPSG", "code": 32636},
+            measurement_crs={"authority": "EPSG", "code": 32636},
+            parameters={"distance": 10, "unit": "m"},
+            runtime_image_digest=digest,
+        )
+        assert remote_result.runtime_image_digest == digest
+        assert remote_result.feature_collection["features"][0]["geometry"]["type"] in {
+            "Polygon", "MultiPolygon"
+        }
 
         payload = {
             "request_version": "0.1.0",
