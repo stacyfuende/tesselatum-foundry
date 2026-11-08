@@ -90,6 +90,10 @@ class VectorBufferRunService:
         resolved_inputs: dict[str, dict[str, Any]] | None = None,
         pinned_runtime_image_digest: str | None = None,
     ) -> ExecutionResult:
+        cell = deepcopy(cell)
+        capability = deepcopy(capability)
+        recipe_ref = deepcopy(recipe_ref)
+        resolved_inputs = deepcopy(resolved_inputs or {})
         self.contracts.validate("cell.schema.json", cell)
         self.contracts.validate("capability.schema.json", capability)
         try:
@@ -110,7 +114,6 @@ class VectorBufferRunService:
             raise ExecutionPreconditionError(
                 "Recipe reference and recipe_execution_id must be supplied together."
             )
-        resolved_inputs = resolved_inputs or {}
         if pinned_runtime_image_digest is not None and (
             not isinstance(pinned_runtime_image_digest, str)
             or not re.fullmatch(
