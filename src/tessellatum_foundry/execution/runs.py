@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import tempfile
@@ -134,10 +135,12 @@ class RunRepository:
         return report
 
     def _run_path(self, run_id: str) -> Path:
-        return self.root / "runs" / f"{run_id}.json"
+        key = hashlib.sha256(run_id.encode("utf-8")).hexdigest()
+        return self.root / "runs" / f"{key}.json"
 
     def _report_path(self, report_id: str) -> Path:
-        return self.root / "reports" / f"{report_id}.json"
+        key = hashlib.sha256(report_id.encode("utf-8")).hexdigest()
+        return self.root / "reports" / f"{key}.json"
 
     @staticmethod
     def _write_atomic(path: Path, record: dict[str, Any], *, replace: bool) -> None:
