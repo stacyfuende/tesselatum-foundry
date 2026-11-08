@@ -66,7 +66,7 @@ At execution time, each upstream cell output is resolved to the immutable Artifa
 
 A Run is one attempt to execute one exact Geo-Cell version, optionally as part of a Recipe execution. It records resolved inputs, normalized parameters, selected implementation ID/version and manifest checksum, worker, runtime image digest, resource use, timestamps, events, validation results, and produced artifact versions.
 
-Runs are append-only historical records. State transitions are controlled and observable. A retry creates a new run linked to the prior attempt; it does not erase or mutate the prior run's terminal result.
+Runs are append-only historical records. Their identity, exact Cell/Capability references, input snapshots, normalized parameters, Recipe context, worker, implementation manifest checksum, and runtime image digest cannot be rewritten during state transitions. State transitions are controlled and observable. A retry creates a new run linked to the prior attempt; it does not erase or mutate the prior run's terminal result.
 
 ### 3.5 Recipe
 
