@@ -41,3 +41,8 @@ For every acceptance test, retain:
 - logs or structured failure evidence where applicable.
 
 A passing unit test is not a substitute for an end-to-end acceptance test. The v0.1 milestone is complete only when all applicable criteria pass in CI and the evidence is reviewable.
+
+
+## F. Inspection interface
+
+12. **Read-only Recipe projection.** The static viewer loads a canonical Recipe JSON document, displays exact node/Cell version references, directed port dependencies, and declared outputs, and rejects cyclic or structurally unusable graphs. It must not mutate the Recipe or become a second workflow representation. Full semantic validation remains the control plane's responsibility.
