@@ -55,9 +55,7 @@ class VersionedDefinitionStore:
         schema_name = self._schema_name(kind)
         self.contracts.validate(schema_name, definition)
         _, definition_id = self._identity(kind, definition)
-        canonical = self._canonical_json(definition)
-        checksum = hashlib.sha256(canonical).hexdigest()
-        record = {
+        payload = {
             "kind": kind,
             "definition_ref": {
                 "definition_id": definition_id,
@@ -65,8 +63,12 @@ class VersionedDefinitionStore:
             },
             "created_at": utc_timestamp(),
             "created_by": created_by,
-            "checksum": {"algorithm": "sha256", "value": checksum},
             "definition": definition,
+        }
+        checksum = hashlib.sha256(self._canonical_json(payload)).hexdigest()
+        record = {
+            **payload,
+            "checksum": {"algorithm": "sha256", "value": checksum},
         }
         self.contracts.validate("definition-record.schema.json", record)
         path = self._record_path(kind, definition_id, definition["version"])
@@ -115,8 +117,12 @@ class VersionedDefinitionStore:
             raise DefinitionIntegrityError(
                 "Stored definition identity does not match its registry path."
             )
+        integrity_payload = {
+            key: record[key]
+            for key in ("kind", "definition_ref", "created_at", "created_by", "definition")
+        }
         actual_checksum = hashlib.sha256(
-            self._canonical_json(record["definition"])
+            self._canonical_json(integrity_payload)
         ).hexdigest()
         if actual_checksum != record["checksum"]["value"]:
             raise DefinitionIntegrityError(
