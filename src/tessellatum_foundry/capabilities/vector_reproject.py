@@ -109,7 +109,9 @@ def reproject_feature_collection(
             only_best=True,
         )
     except ProjError as error:
-        raise ReprojectContractError(f"No permitted coordinate operation is available: {error}") from error
+        raise ReprojectContractError(
+            f"No permitted coordinate operation is available: {error}"
+        ) from error
 
     output_features: list[dict[str, Any]] = []
     for index, feature in enumerate(features):
