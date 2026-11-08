@@ -163,7 +163,7 @@ def _validate_bbox(
                 x_limit = math.pi / float(x_factor)
                 y_limit = (math.pi / 2) / float(y_factor)
                 min_x, min_y = bbox[0], bbox[1]
-                max_x, max_y = bbox[2], bbox[3] if len(bbox) == 4 else bbox[4]
+                max_x, max_y = (bbox[2], bbox[3]) if len(bbox) == 4 else (bbox[3], bbox[4])
                 if min_x < -x_limit or max_x > x_limit:
                     findings.append(
                         ValidationFinding(
@@ -397,14 +397,12 @@ def validate_recipe_spatial(
     for artifact in artifacts.values():
         findings.extend(validate_artifact_spatial_metadata(artifact))
 
-    node_cells: dict[str, DomainObject] = {}
     for node in recipe.get("nodes", []):
         cell_ref = node["cell"]
         cell_key = _object_key(cell_ref["cell_id"], cell_ref["version"])
         cell = cells.get(cell_key)
         if cell is None:
             continue
-        node_cells[node["node_id"]] = cell
         pointer = f"/cells/{cell['cell_id']}"
         findings.extend(_validate_measurement_constraints(cell, pointer=pointer))
 
