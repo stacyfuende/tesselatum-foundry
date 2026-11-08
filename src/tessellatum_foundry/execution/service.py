@@ -10,6 +10,11 @@ from typing import Any
 
 from jsonschema import Draft202012Validator, FormatChecker
 
+from tessellatum_foundry.capabilities.buffer_contract import (
+    BufferContractError,
+    prepare_buffer_request,
+)
+
 from tessellatum_foundry.execution.docker_worker import (
     WorkerExecutionError,
     WorkerTimeoutError,
@@ -125,6 +130,31 @@ class VectorBufferRunService:
             ) from error
         if not isinstance(input_feature_collection, dict):
             raise ExecutionPreconditionError("Input Artifact JSON must be an object.")
+
+        self._validate_spatial_declarations(
+            cell=cell,
+            capability=capability,
+            input_artifact=input_artifact,
+        )
+        try:
+            prepared_input = prepare_buffer_request(
+                input_feature_collection,
+                input_crs=input_artifact["spatial"]["crs"],
+                measurement_crs=cell["constraints"]["measurement_crs"],
+                **parameters,
+            )
+        except BufferContractError as error:
+            raise ExecutionPreconditionError(
+                f"Input data does not satisfy vector.buffer preconditions: {error}"
+            ) from error
+        declared_geometry_types = set(
+            input_artifact["spatial"].get("geometry_types", [])
+        )
+        actual_geometry_types = {feature.geometry_type for feature in prepared_input.features}
+        if actual_geometry_types != declared_geometry_types:
+            raise ExecutionPreconditionError(
+                "Input Artifact geometry_types metadata does not match its feature data."
+            )
 
         self._validate_spatial_declarations(
             cell=cell,
