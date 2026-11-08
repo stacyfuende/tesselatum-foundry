@@ -20,6 +20,8 @@ from tessellatum_foundry.execution.docker_worker import (
     WorkerTimeoutError,
     WorkerUnavailableError,
 )
+from tessellatum_foundry.execution.capabilities import CapabilityRegistryError
+from tessellatum_foundry.execution.implementations import ImplementationRegistryError
 from tessellatum_foundry.execution.protocol import VectorReprojectWorker
 from tessellatum_foundry.execution.runs import RunRepository
 from tessellatum_foundry.execution.service import (
@@ -80,7 +82,7 @@ class VectorReprojectRunService(VectorBufferRunService):
         self.contracts.validate("capability.schema.json", capability)
         try:
             capability = self.capabilities.require_exact(capability)
-        except Exception as error:
+        except CapabilityRegistryError as error:
             raise ExecutionPreconditionError(str(error)) from error
         if capability.get("capability_id") != "vector.reproject":
             raise ExecutionPreconditionError(
@@ -135,7 +137,7 @@ class VectorReprojectRunService(VectorBufferRunService):
                 capability_id=capability["capability_id"],
                 capability_version=capability["version"],
             )
-        except Exception as error:
+        except ImplementationRegistryError as error:
             raise ExecutionPreconditionError(str(error)) from error
         if cell["capability"] != {
             "capability_id": capability["capability_id"],
