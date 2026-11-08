@@ -275,3 +275,23 @@ class DockerVectorReprojectWorker(DockerWorker):
             ),
         )
         super().__init__(image=configured_image, **kwargs)
+
+    def execute(
+        self,
+        *,
+        input_bytes: bytes,
+        capability_version: str,
+        input_crs: dict[str, Any],
+        target_crs: dict[str, Any],
+        parameters: dict[str, Any],
+        runtime_image_digest: str | None = None,
+    ) -> WorkerResult:
+        return super().execute(
+            input_bytes=input_bytes,
+            capability_version=capability_version,
+            input_crs=input_crs,
+            measurement_crs=input_crs,
+            parameters=parameters,
+            runtime_image_digest=runtime_image_digest,
+            target_crs=target_crs,
+        )
