@@ -437,6 +437,40 @@ def test_reproject_cache_reuses_only_output_critic_validated_artifacts(tmp_path)
     assert runs.get_run(second.run["run_id"])["cache"]["status"] == "hit"
 
 
+def test_reproject_cache_rejects_artifacts_without_operation_evidence(
+    tmp_path, monkeypatch
+):
+    worker = FakeReprojectWorker()
+    store, _, service = make_service(tmp_path, worker)
+    artifact = make_input(store)
+    cell = make_cell(artifact)
+    capability = service.capabilities.get("vector.reproject", "1.0.0")
+    first = service.execute(
+        cell=cell,
+        capability=capability,
+        actor_id="test-operator",
+    )
+    assert first.run["status"] == "succeeded"
+
+    original_get_artifact = store.get_artifact
+
+    def remove_operation_evidence(artifact_id, version):
+        output = deepcopy(original_get_artifact(artifact_id, version))
+        output["metadata"].pop("coordinate_operation", None)
+        return output
+
+    monkeypatch.setattr(store, "get_artifact", remove_operation_evidence)
+    second = service.execute(
+        cell=cell,
+        capability=capability,
+        actor_id="test-operator",
+    )
+
+    assert second.run["status"] == "succeeded"
+    assert second.run["cache"]["status"] == "miss"
+    assert worker.calls == 2
+
+
 def test_reproject_cache_rejects_failed_target_crs_validation_evidence(
     tmp_path, monkeypatch
 ):
