@@ -23,6 +23,7 @@ The repository follows a contracts-first implementation sequence. The first mile
 - [ ] Remote worker path implemented and conformance-tested.
 - [ ] Initial raster capabilities implemented.
 - [x] Dependency-free read-only Recipe DAG viewer implemented.
+- [x] Deterministic execution cache with immutable output reuse and parameter-based invalidation implemented; cache reuse requires current complete output-validation evidence.
 - [~] Local Python SDK is available; authenticated network API and generated client SDK remain outstanding.
 
 Items are marked complete when implementation and corresponding tests are present. Runtime and CI verification are reported separately.

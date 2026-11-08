@@ -45,6 +45,29 @@ from tessellatum_foundry.validation.output import inspect_vector_buffer_output
 from tessellatum_foundry.validation.spatial import validate_recipe_spatial
 
 
+_OUTPUT_VALIDATOR_NAME = "foundry-vector-output-critic"
+_OUTPUT_VALIDATOR_VERSION = "0.1.0"
+_REQUIRED_OUTPUT_FINDINGS = {
+    "output.crs_matches_input",
+    "output.feature_collection",
+    "output.feature_count_preserved",
+    "output.geometry_validity",
+    "output.geometry_types",
+    "output.coordinate_finiteness",
+    "output.dimensionality",
+    "output.feature_metadata",
+}
+_REQUIRED_OUTPUT_DIMENSIONS = {
+    "feature_count",
+    "feature_metadata",
+    "crs",
+    "geometry_type",
+    "geometry_validity",
+    "coordinate_finiteness",
+    "dimensionality",
+}
+
+
 class ExecutionPreconditionError(ValueError):
     """Raised before a Run starts when its declarations are not executable."""
 
@@ -649,8 +672,8 @@ class VectorBufferRunService:
             "output_contracts": cell.get("output_contracts", {}),
             "runtime_image_digest": runtime_image_digest,
             "output_validator": {
-                "name": "foundry-vector-output-critic",
-                "version": "0.1.0",
+                "name": _OUTPUT_VALIDATOR_NAME,
+                "version": _OUTPUT_VALIDATOR_VERSION,
             },
         }
         canonical = json.dumps(
@@ -753,6 +776,40 @@ class VectorBufferRunService:
                 source_report = report
                 break
         if source_report is None:
+            return None
+
+        # A successful report from an older or incomplete validator is not
+        # sufficient evidence for reuse under the current output contract.
+        validator = source_report.get("validator")
+        if not isinstance(validator, dict) or (
+            validator.get("name") != _OUTPUT_VALIDATOR_NAME
+            or validator.get("version") != _OUTPUT_VALIDATOR_VERSION
+        ):
+            return None
+        findings = source_report.get("findings")
+        if not isinstance(findings, list):
+            return None
+        finding_statuses: dict[str, str] = {}
+        for finding in findings:
+            if not isinstance(finding, dict):
+                continue
+            code = finding.get("code")
+            if isinstance(code, str) and code in _REQUIRED_OUTPUT_FINDINGS:
+                if code in finding_statuses:
+                    return None
+                finding_statuses[code] = finding.get("status")
+        if any(
+            finding_statuses.get(code) != "passed"
+            for code in _REQUIRED_OUTPUT_FINDINGS
+        ):
+            return None
+        assessed = source_report.get("assessed_dimensions")
+        if not isinstance(assessed, list) or any(
+            not isinstance(dimension, str) for dimension in assessed
+        ):
+            return None
+        assessed_dimensions = set(assessed)
+        if not _REQUIRED_OUTPUT_DIMENSIONS.issubset(assessed_dimensions):
             return None
 
         self.artifact_store.read_bytes(artifact)
@@ -976,8 +1033,8 @@ class VectorBufferRunService:
             "overall_status": "passed" if passed else "failed",
             "created_at": utc_timestamp(),
             "validator": {
-                "name": "foundry-vector-output-critic",
-                "version": "0.1.0",
+                "name": _OUTPUT_VALIDATOR_NAME,
+                "version": _OUTPUT_VALIDATOR_VERSION,
             },
             "findings": findings,
             "summary": (
