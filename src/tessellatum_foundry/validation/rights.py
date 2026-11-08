@@ -56,7 +56,9 @@ def build_rights_provenance_report(
                 "evidence": [{
                     "kind": "artifact",
                     "reference": reference,
-                    "summary": "Licence identifier is present; its terms were not interpreted.",
+                    "summary": (
+                        "Licence identifier is present; its terms were not interpreted."
+                    ),
                 }],
             })
             overall_status = "not_assessed"
@@ -82,6 +84,11 @@ def build_rights_provenance_report(
             overall_status = "requires_review"
 
     output_metadata = output_artifact.get("metadata", {})
+    rights_provenance = (
+        output_metadata.get("rights_provenance")
+        if isinstance(output_metadata, dict)
+        else None
+    )
     expected_source = {
         "artifact_id": input_artifact["artifact_id"],
         "version": input_artifact["version"],
@@ -92,10 +99,9 @@ def build_rights_provenance_report(
     inherited = (
         output_artifact.get("rights") == rights
         and isinstance(output_metadata, dict)
-        and output_metadata.get("rights_provenance", {}).get("source_artifact")
-        == expected_source
-        and output_metadata.get("rights_provenance", {}).get("declaration_status")
-        == expected_declaration_status
+        and isinstance(rights_provenance, dict)
+        and rights_provenance.get("source_artifact") == expected_source
+        and rights_provenance.get("declaration_status") == expected_declaration_status
     )
     if inherited:
         findings.append({
