@@ -59,10 +59,21 @@ class RecipeExecutionService:
         actor_id: str,
     ) -> RecipeExecutionResult:
         self.contracts.validate("recipe.schema.json", recipe)
-        for cell in cells.values():
-            self.contracts.validate("cell.schema.json", cell)
-        for capability in capabilities.values():
-            self.contracts.validate("capability.schema.json", capability)
+        referenced_cells = []
+        referenced_capabilities = []
+        for node in recipe["nodes"]:
+            cell_ref = node["cell"]
+            cell = cells.get((cell_ref["cell_id"], cell_ref["version"]))
+            if cell is not None:
+                self.contracts.validate("cell.schema.json", cell)
+                referenced_cells.append(cell)
+                capability_ref = cell["capability"]
+                capability = capabilities.get(
+                    (capability_ref["capability_id"], capability_ref["version"])
+                )
+                if capability is not None:
+                    self.contracts.validate("capability.schema.json", capability)
+                    referenced_capabilities.append(capability)
 
         graph_findings = validate_recipe_graph(
             recipe,
@@ -77,10 +88,7 @@ class RecipeExecutionService:
                 f"Recipe graph preconditions failed: {detail}"
             )
 
-        recipe_cells = [
-            cells[(node["cell"]["cell_id"], node["cell"]["version"])]
-            for node in recipe["nodes"]
-        ]
+        recipe_cells = referenced_cells
         artifacts: dict[tuple[str, str], dict[str, Any]] = {}
         artifact_keys: set[tuple[str, str]] = set()
         for cell in recipe_cells:
