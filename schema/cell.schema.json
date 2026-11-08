@@ -13,13 +13,13 @@
   ],
   "properties": {
     "cell_id": {
-      "$ref": "./_common.schema.json#/$defs/identifier"
+      "$ref": "urn:tessellatum-foundry:schema:common:1.0.0#/$defs/identifier"
     },
     "version": {
-      "$ref": "./_common.schema.json#/$defs/version"
+      "$ref": "urn:tessellatum-foundry:schema:common:1.0.0#/$defs/version"
     },
     "capability": {
-      "$ref": "./_common.schema.json#/$defs/capabilityRef"
+      "$ref": "urn:tessellatum-foundry:schema:common:1.0.0#/$defs/capabilityRef"
     },
     "inputs": {
       "type": "object",
@@ -37,7 +37,7 @@
                 "const": "artifact"
               },
               "artifact": {
-                "$ref": "./_common.schema.json#/$defs/artifactRef"
+                "$ref": "urn:tessellatum-foundry:schema:common:1.0.0#/$defs/artifactRef"
               }
             },
             "additionalProperties": false
@@ -55,13 +55,13 @@
                 "const": "cell_output"
               },
               "cell_id": {
-                "$ref": "./_common.schema.json#/$defs/identifier"
+                "$ref": "urn:tessellatum-foundry:schema:common:1.0.0#/$defs/identifier"
               },
               "cell_version": {
-                "$ref": "./_common.schema.json#/$defs/version"
+                "$ref": "urn:tessellatum-foundry:schema:common:1.0.0#/$defs/version"
               },
               "output_port": {
-                "$ref": "./_common.schema.json#/$defs/identifier"
+                "$ref": "urn:tessellatum-foundry:schema:common:1.0.0#/$defs/identifier"
               }
             },
             "additionalProperties": false
@@ -104,7 +104,7 @@
           "crs": {
             "oneOf": [
               {
-                "$ref": "./_common.schema.json#/$defs/crs"
+                "$ref": "urn:tessellatum-foundry:schema:common:1.0.0#/$defs/crs"
               },
               {
                 "type": "null"
@@ -132,7 +132,7 @@
       "type": "object",
       "properties": {
         "measurement_crs": {
-          "$ref": "./_common.schema.json#/$defs/crs"
+          "$ref": "urn:tessellatum-foundry:schema:common:1.0.0#/$defs/crs"
         },
         "linear_unit": {
           "type": "string"
@@ -159,5 +159,6 @@
       }
     }
   },
-  "additionalProperties": false
+  "additionalProperties": false,
+  "$id": "urn:tessellatum-foundry:schema:cell:1.0.0"
 }
