@@ -346,3 +346,45 @@ def test_recipe_dispatches_reproject_then_buffer_across_two_capability_runners(t
     buffered = result.outputs["buffered_sites"]
     assert buffered["spatial"]["crs"] == TARGET_CRS
     assert buffered["spatial"]["geometry_types"] == ["Polygon"]
+
+
+def test_reproject_run_executes_through_authenticated_remote_worker(tmp_path, monkeypatch):
+    import threading
+    from http.server import ThreadingHTTPServer
+
+    from tessellatum_foundry.execution.remote_worker import RemoteVectorReprojectWorker
+    from tessellatum_foundry.worker.http_server import WorkerHandler
+
+    digest = "sha256:" + "e" * 64
+    monkeypatch.setenv("FOUNDRY_REMOTE_WORKER_TOKEN", "test-secret")
+    monkeypatch.setenv("FOUNDRY_WORKER_IMAGE_DIGEST", digest)
+    monkeypatch.setenv("FOUNDRY_WORKER_CAPABILITY_ID", "vector.reproject")
+    monkeypatch.setenv("FOUNDRY_WORKER_CAPABILITY_VERSION", "1.0.0")
+    monkeypatch.setenv(
+        "FOUNDRY_IMPLEMENTATION_ID", "vector-reproject-pyproj-shapely"
+    )
+    server = ThreadingHTTPServer(("127.0.0.1", 0), WorkerHandler)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    try:
+        worker = RemoteVectorReprojectWorker(
+            f"http://127.0.0.1:{server.server_port}",
+            bearer_token="test-secret",
+            allow_insecure_localhost=True,
+        )
+        store, _, service = make_service(tmp_path, worker)
+        artifact = make_input(store)
+        result = service.execute(
+            cell=make_cell(artifact),
+            capability=service.capabilities.get("vector.reproject", "1.0.0"),
+            actor_id="test-operator",
+        )
+        assert result.run["status"] == "succeeded", result.run.get("error")
+        assert result.run["worker"]["worker_type"] == "remote"
+        assert result.run["runtime_image_digest"] == digest
+        assert result.validation_report["overall_status"] == "passed"
+        assert result.output_artifact["spatial"]["crs"] == TARGET_CRS
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=2)
