@@ -55,6 +55,13 @@ A Geo-Cell contains no implementation selection, execution state, logs, output b
 
 A cell can be inspected and validated without being executed. Its version changes when its declarative meaning changes.
 
+### Input bindings and graph edges
+
+A Geo-Cell input port may bind either to an immutable Artifact version or to a named output port of another exact Geo-Cell version. The Recipe stores an explicit edge for each cell-to-cell dependency so that graph topology is directly inspectable and renderable. These are two representations of the same dependency: semantic graph validation MUST verify that every cell-output binding has exactly one matching Recipe edge and every Recipe edge matches the target cell's declared input binding. A mismatch invalidates the Recipe.
+
+At execution time, each upstream cell output is resolved to the immutable Artifact version produced by that upstream Run. The downstream Run records the resolved artifact ID, version, and checksum in its input snapshots. This preserves reproducibility across the graph without requiring a not-yet-executed cell to invent an output artifact version.
+
+
 ### 3.4 Run
 
 A Run is one attempt to execute one exact Geo-Cell version, optionally as part of a Recipe execution. It records resolved inputs, normalized parameters, selected implementation, worker, runtime image digest, resource use, timestamps, events, validation results, and produced artifact versions.
