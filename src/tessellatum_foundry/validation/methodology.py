@@ -460,7 +460,7 @@ def build_methodology_report(
                     "method.coordinate_operation_identity_recorded",
                     "passed" if operation_valid else "failed",
                     (
-                        f"PROJ selected operation: {operation_description}."
+                        f"Worker reports PROJ selected operation: {operation_description}."
                         if operation_valid
                         else (
                             "The worker omitted or malformed selected "
@@ -493,7 +493,7 @@ def build_methodology_report(
                         else "not_assessed"
                     ),
                     (
-                        f"PROJ reports coordinate-operation accuracy of "
+                        f"Worker reports PROJ coordinate-operation accuracy of "
                         f"{operation_accuracy} m."
                         if operation_accuracy is not None
                         else (
@@ -512,7 +512,7 @@ def build_methodology_report(
                         else "not_assessed"
                     ),
                     (
-                        f"PROJ area of use: {operation_area}."
+                        f"Worker reports PROJ area of use: {operation_area}."
                         if operation_area is not None
                         else "The selected operation has no reported area-of-use metadata."
                     ),
