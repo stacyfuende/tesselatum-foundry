@@ -49,6 +49,8 @@ class RunRepository:
         normalized_parameters: dict[str, Any],
         attempt: int = 1,
         retry_of_run_id: str | None = None,
+        recipe: dict[str, str] | None = None,
+        recipe_execution_id: str | None = None,
     ) -> dict[str, Any]:
         record: dict[str, Any] = {
             "run_id": run_id,
@@ -63,6 +65,10 @@ class RunRepository:
         }
         if retry_of_run_id is not None:
             record["retry_of_run_id"] = retry_of_run_id
+        if recipe is not None:
+            record["recipe"] = recipe
+        if recipe_execution_id is not None:
+            record["recipe_execution_id"] = recipe_execution_id
         self.contracts.validate("run.schema.json", record)
         path = self._run_path(run_id)
         with self._lock:
@@ -127,6 +133,21 @@ class RunRepository:
                 return existing
             self._write_atomic(path, report, replace=False)
         return report
+
+    def list_runs_for_recipe_execution(
+        self, recipe_execution_id: str
+    ) -> list[dict[str, Any]]:
+        """List immutable cell Runs correlated to one Recipe execution."""
+        runs_dir = self.root / "runs"
+        if not runs_dir.is_dir():
+            return []
+        records = []
+        for path in runs_dir.glob("*.json"):
+            record = json.loads(path.read_text(encoding="utf-8"))
+            if record.get("recipe_execution_id") == recipe_execution_id:
+                self.contracts.validate("run.schema.json", record)
+                records.append(record)
+        return sorted(records, key=lambda item: (item["created_at"], item["run_id"]))
 
     def get_validation_report(self, report_id: str) -> dict[str, Any]:
         path = self._report_path(report_id)
