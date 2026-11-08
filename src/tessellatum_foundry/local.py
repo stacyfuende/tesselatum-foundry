@@ -6,13 +6,20 @@ from pathlib import Path
 from typing import Any
 
 from tessellatum_foundry.execution.capabilities import CapabilityRegistry
-from tessellatum_foundry.execution.docker_worker import DockerWorker
+from tessellatum_foundry.execution.docker_worker import (
+    DockerVectorReprojectWorker,
+    DockerWorker,
+)
 from tessellatum_foundry.execution.implementations import ImplementationRegistry
-from tessellatum_foundry.execution.protocol import VectorBufferWorker
+from tessellatum_foundry.execution.protocol import (
+    VectorBufferWorker,
+    VectorReprojectWorker,
+)
 from tessellatum_foundry.execution.recipes import (
     RecipeExecutionResult,
     RecipeExecutionService,
 )
+from tessellatum_foundry.execution.reproject_service import VectorReprojectRunService
 from tessellatum_foundry.execution.runs import RunRepository
 from tessellatum_foundry.execution.service import VectorBufferRunService
 from tessellatum_foundry.storage.artifacts import FileSystemArtifactStore
@@ -21,7 +28,7 @@ from tessellatum_foundry.validation.contracts import ContractRegistry
 
 
 class LocalFoundry:
-    """Compose the local control plane and expose a compact Python entrypoint.
+    """Compose local control-plane services for the registered vector capabilities.
 
     This is a local SDK adapter, not a network API or multi-tenant service.
     Persistent data is written beneath the caller-supplied root directory.
@@ -32,6 +39,7 @@ class LocalFoundry:
         root: Path,
         *,
         worker: VectorBufferWorker | None = None,
+        reproject_worker: VectorReprojectWorker | None = None,
         contracts: ContractRegistry | None = None,
     ) -> None:
         self.root = Path(root).resolve()
@@ -46,7 +54,15 @@ class LocalFoundry:
         )
         self.capabilities = CapabilityRegistry(contracts=self.contracts)
         self.implementations = ImplementationRegistry(contracts=self.contracts)
+
+        # Preserve the original worker argument and cell_runner alias for callers
+        # that configured the v0.1 vector.buffer-only SDK.
         self.worker = worker if worker is not None else DockerWorker()
+        self.reproject_worker = (
+            reproject_worker
+            if reproject_worker is not None
+            else DockerVectorReprojectWorker()
+        )
         self.cell_runner = VectorBufferRunService(
             artifact_store=self.artifacts,
             run_repository=self.runs,
@@ -55,8 +71,20 @@ class LocalFoundry:
             capabilities=self.capabilities,
             implementations=self.implementations,
         )
+        self.reproject_runner = VectorReprojectRunService(
+            artifact_store=self.artifacts,
+            run_repository=self.runs,
+            worker=self.reproject_worker,
+            contracts=self.contracts,
+            capabilities=self.capabilities,
+            implementations=self.implementations,
+        )
+        self.cell_runners = {
+            ("vector.buffer", "1.0.0"): self.cell_runner,
+            ("vector.reproject", "1.0.0"): self.reproject_runner,
+        }
         self.recipes = RecipeExecutionService(
-            cell_runner=self.cell_runner,
+            cell_runners=self.cell_runners,
             artifact_store=self.artifacts,
             contracts=self.contracts,
             definitions=self.definitions,
