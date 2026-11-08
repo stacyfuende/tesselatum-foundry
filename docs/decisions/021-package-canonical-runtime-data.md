@@ -9,15 +9,15 @@ The Run service and implementation registry depend on canonical JSON Schemas and
 
 ## Decision
 
-1. Keep the repository `schema/` and `implementations/` directories as the canonical authoring locations.
-2. Package all canonical schema JSON files and the registered vector.buffer implementation manifests as distribution data under `share/tessellatum-foundry/`.
+1. Keep the repository `schema/`, `capabilities/`, and `implementations/` directories as the canonical authoring locations.
+2. Package all canonical schema JSON files, Capability contracts, and registered implementation manifests as distribution data under `share/tessellatum-foundry/`.
 3. Resolve these data directories from the source checkout when present; otherwise resolve them from the Python installation's data prefix.
 4. Add a CI smoke test that installs a non-editable distribution into an isolated virtual environment and resolves all schemas and both conformant implementation manifests without relying on the source checkout.
 5. Do not duplicate schema or manifest contents inside Python modules. The repository files remain the single source of truth.
 
 ## Consequences
 
-The package can locate its canonical validation contracts and implementation registry when installed outside the repository. The initial distribution contains the schemas and the two vector.buffer manifests. Future capability manifests must be added to the package-data configuration and the installed-distribution smoke test.
+The package can locate its canonical validation contracts and implementation registry when installed outside the repository. The initial distribution contains the schemas, vector.buffer@1.0.0 Capability contract, and two vector.buffer implementation manifests. Future capability manifests must be added to the package-data configuration and the installed-distribution smoke test.
 
 ## Alternatives considered
 
