@@ -90,7 +90,10 @@ def buffer_feature_collection_postgis(
             raise BufferContractError(
                 f"PostGIS produced an empty or invalid buffer result at feature {index}."
             )
-        if output_srid != request.epsg_code:\n            raise BufferContractError(\n                f"PostGIS output SRID {output_srid!r} does not match input SRID {request.epsg_code}."\n            )\n        if geometry_type not in {"POLYGON", "MULTIPOLYGON"}:
+        if output_srid != request.epsg_code:
+            raise BufferContractError(
+                f"PostGIS output SRID {output_srid!r} does not match input SRID {request.epsg_code}."
+            )
             raise BufferContractError(
                 f"PostGIS produced unsupported output type {geometry_type!r} "
                 f"at feature {index}."
