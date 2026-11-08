@@ -129,7 +129,7 @@ def buffer_feature_collection_postgis(
         ) = row
         if not input_is_valid:
             raise BufferContractError(
-                f"PostGIS input geometry at feature {index} is invalid; "
+                f"PostGIS input geometry at feature {index} is invalid geometry; "
                 "repair it explicitly before buffering."
             )
         if input_is_empty:
