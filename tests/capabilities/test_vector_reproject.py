@@ -139,7 +139,7 @@ def test_vector_reproject_contract_is_canonical_and_implementation_is_registered
     manifest = implementation_registry.get("vector-reproject-pyproj-shapely", "1.0.0")
     assert manifest["capability_id"] == "vector.reproject"
     assert manifest["capability_version"] == "1.0.0"
-    assert manifest["conformance"]["status"] == "not_run"
+    assert manifest["conformance"]["status"] == "passed"
 
 
 def test_reproject_preserves_null_properties_and_geometry_collections():
