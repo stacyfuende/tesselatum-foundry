@@ -22,7 +22,7 @@ The v0.1 objective is narrower: establish a dependable spatial computation engin
 6. The API and serialized contracts are canonical. User interfaces are clients or projections of those contracts.
 7. Schema validation and semantic validation are separate stages.
 8. The execution core accepts fully resolved, validated computation declarations. A language model is never required to execute them.
-9. Workers implement a shared execution protocol while advertising their actual capabilities and constraints.
+9. Workers implement a shared execution protocol while advertising their actual capabilities and constraints. The control plane resolves the worker implementation against an immutable, versioned implementation manifest and requires passed conformance for the exact Capability version before dispatch.
 10. A successful process exit or a created output file is not sufficient evidence of spatial correctness.
 11. Provenance, licensing, security, and resource accounting MUST be represented rather than assumed.
 
