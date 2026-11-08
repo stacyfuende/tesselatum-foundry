@@ -499,6 +499,10 @@ class VectorReprojectRunService(VectorBufferRunService):
                 permitted_geometry_types=permitted_geometry_types,
             )
             report = self._output_report(run_id, inspection)
+            report["validator"] = {
+                "name": "foundry-vector-reproject-output-critic",
+                "version": "0.1.0",
+            }
             self.run_repository.save_validation_report(report)
             if not inspection.passed:
                 failed = self.run_repository.transition(
