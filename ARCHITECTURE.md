@@ -211,7 +211,7 @@ Arbitrary user-supplied code is out of scope for v0.1. Security is not postponed
 
 ## 12. Interfaces and agent boundary
 
-The API and SDK are canonical interfaces to the domain model. A minimal read-only Recipe viewer is a projection of the same serialized Recipe and must not become a second source of truth.
+The API and SDK are canonical interfaces to the domain model. The dependency-free viewer in `viewer/` is a read-only projection of the same serialized Recipe and must not become a second source of truth. It lays out nodes by topological depth for inspection; schema, reference, and semantic graph validation remain control-plane responsibilities.
 
 A planner may translate natural language or templates into a proposed Recipe. It is optional, replaceable, and outside the deterministic execution core. Every proposed Recipe must pass the same validation and authorization gates as one created through the API or viewer. A planner cannot bypass validation or directly execute arbitrary tools.
 
