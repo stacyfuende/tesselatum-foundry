@@ -1,0 +1,190 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Foundry Capability Contract",
+  "description": "Versioned, engine-independent semantic contract for a spatial operation.",
+  "type": "object",
+  "required": [
+    "capability_id",
+    "version",
+    "name",
+    "description",
+    "category",
+    "input_ports",
+    "parameter_schema",
+    "output_ports",
+    "determinism"
+  ],
+  "properties": {
+    "capability_id": {
+      "$ref": "./_common.schema.json#/$defs/identifier"
+    },
+    "version": {
+      "$ref": "./_common.schema.json#/$defs/semver"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "description": {
+      "type": "string",
+      "minLength": 1
+    },
+    "category": {
+      "type": "string",
+      "minLength": 1
+    },
+    "input_ports": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "port_id",
+          "data_kind",
+          "required"
+        ],
+        "properties": {
+          "port_id": {
+            "$ref": "./_common.schema.json#/$defs/identifier"
+          },
+          "description": {
+            "type": "string"
+          },
+          "data_kind": {
+            "type": "string",
+            "enum": [
+              "vector",
+              "raster",
+              "table",
+              "point_cloud",
+              "mesh",
+              "file",
+              "any"
+            ]
+          },
+          "required": {
+            "type": "boolean"
+          },
+          "accepted_media_types": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "uniqueItems": true
+          },
+          "cardinality": {
+            "type": "string",
+            "enum": [
+              "one",
+              "many"
+            ]
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "parameter_schema": {
+      "type": "object",
+      "description": "Embedded JSON Schema defining normalized capability parameters.",
+      "properties": {
+        "type": {
+          "type": "string"
+        },
+        "properties": {
+          "type": "object"
+        },
+        "required": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        },
+        "additionalProperties": {
+          "type": [
+            "boolean",
+            "object"
+          ]
+        }
+      },
+      "required": [
+        "type"
+      ],
+      "additionalProperties": true
+    },
+    "output_ports": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "port_id",
+          "data_kind"
+        ],
+        "properties": {
+          "port_id": {
+            "$ref": "./_common.schema.json#/$defs/identifier"
+          },
+          "description": {
+            "type": "string"
+          },
+          "data_kind": {
+            "type": "string",
+            "enum": [
+              "vector",
+              "raster",
+              "table",
+              "point_cloud",
+              "mesh",
+              "file",
+              "any"
+            ]
+          },
+          "media_types": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "uniqueItems": true
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "determinism": {
+      "type": "string",
+      "enum": [
+        "deterministic",
+        "conditionally_deterministic",
+        "nondeterministic"
+      ]
+    },
+    "preconditions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "validation_requirements": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "cache_policy": {
+      "type": "string",
+      "enum": [
+        "allowed",
+        "conditional",
+        "disabled"
+      ],
+      "default": "allowed"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "uniqueItems": true
+    }
+  },
+  "additionalProperties": false
+}
