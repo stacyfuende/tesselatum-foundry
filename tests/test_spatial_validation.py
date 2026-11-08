@@ -56,6 +56,7 @@ def test_invalid_crs_is_reported():
 
 def test_geographic_extent_rejects_latitude_outside_domain():
     artifact = load_fixture("artifact.valid.json")
+    artifact["spatial"]["crs"] = {"authority": "EPSG", "code": 4326}
     artifact["spatial"]["bbox"] = [36.7, -95.0, 37.1, -1.0]
     findings = validate_artifact_spatial_metadata(artifact)
     assert "spatial.bbox_latitude_out_of_range" in finding_codes(findings)
