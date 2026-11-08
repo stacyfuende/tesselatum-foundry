@@ -37,6 +37,15 @@ def test_docker_worker_applies_isolation_limits_and_pins_image(monkeypatch):
                 if item.startswith("type=bind,") and "dst=/run/output" in item
             )
             output_dir = Path(output_mount.split("src=", 1)[1].split(",dst=", 1)[0])
+            request_mount = next(
+                item
+                for item in command
+                if item.startswith("type=bind,") and "dst=/run/request.json" in item
+            )
+            request_path = Path(
+                request_mount.split("src=", 1)[1].split(",dst=", 1)[0]
+            )
+            captured["request"] = json.loads(request_path.read_text(encoding="utf-8"))
             payload = {
                 "feature_collection": {
                     "type": "FeatureCollection",
@@ -66,6 +75,8 @@ def test_docker_worker_applies_isolation_limits_and_pins_image(monkeypatch):
 
     command = captured["command"]
     assert _IMAGE_ID in command
+    assert captured["request"]["capability_id"] == "vector.buffer"
+    assert captured["request"]["capability_version"] == "1.0.0"
     assert "--network=none" in command
     assert "--read-only" in command
     assert "--cap-drop=ALL" in command
