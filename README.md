@@ -18,8 +18,8 @@ The repository follows a contracts-first implementation sequence. The first mile
 - [x] Shared geometry conformance suite added, including topological comparison of both engine results.
 - [x] GitHub Actions configured with a real PostGIS service for conformance testing.
 - [x] PostGIS-backed CI conformance run verified green (91 tests passed).
-- [ ] Methodological, rights, and execution/output validators implemented.
-- [ ] Deterministic local execution path implemented.
+- [~] Initial execution/output validator implemented for vector.buffer; methodological and rights/security policy validators remain outstanding.
+- [~] First local single-cell execution path implemented for vector.buffer; Recipe orchestration and general execution remain outstanding.
 - [ ] Remote worker path implemented and conformance-tested.
 - [ ] Initial raster capabilities implemented.
 - [ ] Read-only recipe graph viewer implemented.
@@ -60,6 +60,6 @@ The Validation Report is a separate evidence object. Implementations are registe
 
 Implementation manifests are stored separately under `implementations/`; their conformance status remains `not_run` until the PostGIS-backed CI suite passes. Install the Shapely backend with the `shapely` extra or the PostGIS backend with the `postgis` extra. The PostGIS adapter does not import or require Shapely. Development installs both extras through `requirements-dev.txt`.
 
-## Scope boundary
+## First local execution slice\n\nThe initial execution service accepts one exact vector.buffer Geo-Cell version with one immutable vector Artifact input. It snapshots the exact Capability and cell versions, Artifact checksum, normalized parameters, implementation, worker and runtime image ID. Shapely executes in a network-disabled, read-only-root, non-root Docker container with resource and file-size limits. The host validates the result before registering an immutable output Artifact. Failed or timed-out retryable attempts remain immutable and retries create new Run records. This is a local demonstrator, not yet a Recipe scheduler or production multi-tenant sandbox. See [ADR-018](docs/decisions/018-first-local-run-and-isolated-worker.md).\n\n## Scope boundary
 
 This repository is Tessellatum Foundry. It is an independent project with its own architecture, implementation, and lifecycle.
