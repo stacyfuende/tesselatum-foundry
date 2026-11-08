@@ -79,8 +79,9 @@ def execute_request(request_path: Path, input_path: Path, output_path: Path) -> 
         "feature_collection": result.feature_collection,
         "crs": output_crs,
     }
-    if result.coordinate_operation is not None:
-        payload["coordinate_operation"] = result.coordinate_operation
+    coordinate_operation = getattr(result, "coordinate_operation", None)
+    if coordinate_operation is not None:
+        payload["coordinate_operation"] = coordinate_operation
     _write_json_once_or_replace(output_path, payload)
 
 
