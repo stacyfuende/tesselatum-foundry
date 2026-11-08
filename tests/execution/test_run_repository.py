@@ -110,3 +110,22 @@ def test_run_can_still_transition_to_terminal_state_without_rewriting_provenance
     assert failed["cell"] == running["cell"]
     assert failed["input_snapshots"] == running["input_snapshots"]
     assert failed["implementation"] == running["implementation"]
+
+
+def test_run_transition_rejects_fields_not_valid_for_target_state(tmp_path):
+    repository, running = create_running_run(tmp_path)
+
+    with pytest.raises(RunStateError, match="outputs are not permitted"):
+        repository.transition(
+            running["run_id"],
+            expected_status="running",
+            new_status="failed",
+            fields={
+                "outputs": [],
+                "finished_at": utc_timestamp(),
+                "error": {"code": "test.failure", "message": "test"},
+            },
+            event_type="run_failed",
+        )
+
+    assert repository.get_run(running["run_id"]) == running
