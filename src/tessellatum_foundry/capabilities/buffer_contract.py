@@ -106,13 +106,13 @@ def _validate_crs(input_crs: Any, measurement_crs: Any, unit: str) -> CRS:
     return measurement
 
 
-def _contains_non_finite_number(value: Any) -> bool:
+def _coordinates_are_finite_numbers(value: Any) -> bool:
     if isinstance(value, bool):
         return False
     if isinstance(value, (int, float)):
-        return not math.isfinite(value)
+        return math.isfinite(value)
     if isinstance(value, (list, tuple)):
-        return any(_contains_non_finite_number(item) for item in value)
+        return all(_coordinates_are_finite_numbers(item) for item in value)
     return False
 
 
@@ -185,7 +185,7 @@ def prepare_buffer_request(
                 f"Feature at index {index} must contain a GeoJSON geometry."
             )
         geometry_type = geometry_json.get("type")
-        if geometry_type not in _SUPPORTED_INPUT_TYPES:
+        if not isinstance(geometry_type, str) or geometry_type not in _SUPPORTED_INPUT_TYPES:
             raise BufferContractError(
                 f"Feature at index {index} has unsupported geometry type {geometry_type!r}."
             )
@@ -194,9 +194,9 @@ def prepare_buffer_request(
             raise BufferContractError(
                 f"Feature at index {index} must contain a coordinate array."
             )
-        if _contains_non_finite_number(coordinates):
+        if not _coordinates_are_finite_numbers(coordinates):
             raise BufferContractError(
-                f"Feature at index {index} has non-finite coordinates."
+                f"Feature at index {index} must contain only finite numeric coordinates."
             )
         if single_sided and geometry_type != "LineString":
             raise BufferContractError(
