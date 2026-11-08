@@ -125,9 +125,18 @@ class VectorBufferRunService:
                 "Recipe reference, execution ID, node ID, and node order must be supplied together."
             )
         if recipe_node_order is not None and (
-            isinstance(recipe_node_order, bool) or recipe_node_order < 0
+            not isinstance(recipe_node_order, int)
+            or isinstance(recipe_node_order, bool)
+            or recipe_node_order < 0
         ):
-            raise ExecutionPreconditionError("Recipe node order must be a non-negative integer.")
+            raise ExecutionPreconditionError(
+                "Recipe node order must be a non-negative integer."
+            )
+        if recipe_node_id is not None and (
+            not isinstance(recipe_node_id, str)
+            or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._:/-]{0,254}", recipe_node_id)
+        ):
+            raise ExecutionPreconditionError("Recipe node ID must be a valid identifier.")
         if pinned_runtime_image_digest is not None and (
             not isinstance(pinned_runtime_image_digest, str)
             or not re.fullmatch(
