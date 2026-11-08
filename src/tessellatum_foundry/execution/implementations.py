@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 from copy import deepcopy
 from pathlib import Path
@@ -47,6 +48,18 @@ class ImplementationRegistry:
             raise ImplementationRegistryError(
                 f"Implementation {implementation_id}@{version} is not registered."
             ) from error
+
+    def manifest_checksum(self, implementation_id: str, version: str) -> str:
+        """Return the SHA-256 digest of the canonical registered manifest."""
+        manifest = self.get(implementation_id, version)
+        canonical = json.dumps(
+            manifest,
+            ensure_ascii=False,
+            allow_nan=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode()
+        return hashlib.sha256(canonical).hexdigest()
 
     def require_conformant(
         self,
