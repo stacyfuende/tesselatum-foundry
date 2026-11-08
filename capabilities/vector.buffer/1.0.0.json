@@ -4,47 +4,110 @@
   "name": "Vector buffer",
   "description": "Construct planar buffers around vector features using an explicit projected measurement CRS.",
   "category": "vector",
-  "input_ports": [{
-    "port_id": "features",
-    "data_kind": "vector",
-    "required": true,
-    "accepted_media_types": ["application/vnd.tessellatum.spatial-feature-collection+json"],
-    "spatial": {
-      "crs_required": true,
-      "geometry_types": ["Point", "MultiPoint", "LineString", "MultiLineString", "Polygon", "MultiPolygon"],
-      "measurement_crs_policy": "must_match"
+  "input_ports": [
+    {
+      "port_id": "features",
+      "data_kind": "vector",
+      "required": true,
+      "accepted_media_types": [
+        "application/vnd.tessellatum.spatial-feature-collection+json"
+      ],
+      "spatial": {
+        "crs_required": true,
+        "geometry_types": [
+          "Point",
+          "MultiPoint",
+          "LineString",
+          "MultiLineString",
+          "Polygon",
+          "MultiPolygon"
+        ],
+        "measurement_crs_policy": "must_match"
+      }
     }
-  }],
+  ],
   "parameter_schema": {
     "type": "object",
     "properties": {
-      "distance": {"type": "number", "exclusiveMinimum": 0},
-      "unit": {"type": "string", "minLength": 1},
-      "quad_segs": {"type": "integer", "minimum": 1, "maximum": 64, "default": 8},
-      "cap_style": {"type": "string", "enum": ["round", "flat", "square"], "default": "round"},
-      "join_style": {"type": "string", "enum": ["round", "mitre", "bevel"], "default": "round"},
-      "mitre_limit": {"type": "number", "exclusiveMinimum": 0, "default": 5},
-      "single_sided": {"type": "boolean", "default": false}
+      "distance": {
+        "type": "number",
+        "exclusiveMinimum": 0,
+        "description": "Positive planar buffer distance in the horizontal units of the declared measurement CRS."
+      },
+      "unit": {
+        "type": "string",
+        "minLength": 1,
+        "description": "Unit label that must match the projected CRS horizontal axis units."
+      },
+      "quad_segs": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 64,
+        "default": 8,
+        "description": "Segments per quarter-circle used to approximate circular arcs."
+      },
+      "cap_style": {
+        "type": "string",
+        "enum": [
+          "round",
+          "flat",
+          "square"
+        ],
+        "default": "round",
+        "description": "End-cap style for ordinary line buffers; single-sided buffers use flat ends."
+      },
+      "join_style": {
+        "type": "string",
+        "enum": [
+          "round",
+          "mitre",
+          "bevel"
+        ],
+        "default": "round",
+        "description": "Join style at outside corners."
+      },
+      "mitre_limit": {
+        "type": "number",
+        "exclusiveMinimum": 0,
+        "default": 5,
+        "description": "Maximum mitre ratio for mitre joins."
+      },
+      "single_sided": {
+        "type": "boolean",
+        "default": false,
+        "description": "For LineString only, a positive distance buffers the left side; end caps are flat."
+      }
     },
-    "required": ["distance", "unit"],
+    "required": [
+      "distance",
+      "unit"
+    ],
     "additionalProperties": false
   },
-  "output_ports": [{
-    "port_id": "result",
-    "data_kind": "vector",
-    "media_types": ["application/vnd.tessellatum.spatial-feature-collection+json"],
-    "spatial": {
-      "crs_required": true,
-      "geometry_types": ["Polygon", "MultiPolygon"],
-      "same_crs_as": "features"
+  "output_ports": [
+    {
+      "port_id": "result",
+      "data_kind": "vector",
+      "media_types": [
+        "application/vnd.tessellatum.spatial-feature-collection+json"
+      ],
+      "spatial": {
+        "crs_required": true,
+        "geometry_types": [
+          "Polygon",
+          "MultiPolygon"
+        ],
+        "same_crs_as": "features"
+      }
     }
-  }],
+  ],
   "determinism": "deterministic",
   "preconditions": [
     "Input geometries are non-empty and valid.",
     "Input CRS equals the projected measurement CRS.",
     "The distance unit matches both horizontal measurement CRS axis units.",
-    "Distance is positive."
+    "Distance is positive.",
+    "When single_sided is true, every input geometry must be a LineString; the positive distance selects the left side and produces flat end caps."
   ],
   "validation_requirements": [
     "Every output geometry is non-empty and valid.",
@@ -53,5 +116,8 @@
     "Feature identifiers and properties are preserved."
   ],
   "cache_policy": "allowed",
-  "measurement": {"unit_parameter": "unit", "unit_kind": "linear"}
+  "measurement": {
+    "unit_parameter": "unit",
+    "unit_kind": "linear"
+  }
 }
