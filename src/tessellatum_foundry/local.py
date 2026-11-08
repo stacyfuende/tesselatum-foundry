@@ -46,7 +46,7 @@ class LocalFoundry:
         )
         self.capabilities = CapabilityRegistry(contracts=self.contracts)
         self.implementations = ImplementationRegistry(contracts=self.contracts)
-        self.worker = worker or DockerWorker()
+        self.worker = worker if worker is not None else DockerWorker()
         self.cell_runner = VectorBufferRunService(
             artifact_store=self.artifacts,
             run_repository=self.runs,
