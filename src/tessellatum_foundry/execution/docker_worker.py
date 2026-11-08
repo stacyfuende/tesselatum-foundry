@@ -9,8 +9,9 @@ import subprocess
 import tempfile
 import time
 import uuid
-from dataclasses import dataclass
 from pathlib import Path
+
+from .protocol import WorkerResult
 from typing import Any
 
 
@@ -31,17 +32,6 @@ class WorkerExecutionError(RuntimeError):
 
 class WorkerTimeoutError(TimeoutError):
     """Raised when a container exceeds its execution deadline."""
-
-
-@dataclass(frozen=True)
-class WorkerResult:
-    """Validated transport envelope returned by a worker container."""
-
-    feature_collection: dict[str, Any]
-    crs: dict[str, Any]
-    geometry_types: tuple[str, ...]
-    duration_ms: int
-    runtime_image_digest: str
 
 
 class DockerWorker:
