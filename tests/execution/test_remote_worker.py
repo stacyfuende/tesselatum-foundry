@@ -9,7 +9,10 @@ from tessellatum_foundry.execution.docker_worker import (
     WorkerExecutionError,
     WorkerUnavailableError,
 )
-from tessellatum_foundry.execution.remote_worker import RemoteVectorBufferWorker
+from tessellatum_foundry.execution.remote_worker import (
+    RemoteVectorBufferWorker,
+    RemoteVectorReprojectWorker,
+)
 
 
 class FakeResponse:
@@ -139,4 +142,58 @@ def test_remote_worker_does_not_follow_redirects():
     worker._opener = FakeOpener([redirect])
 
     with pytest.raises(WorkerUnavailableError, match="redirects"):
+        worker.image_digest()
+
+
+def test_remote_reproject_worker_fetches_identity_and_executes_target_crs():
+    digest = "sha256:" + "c" * 64
+    target_crs = {"authority": "EPSG", "code": 32737}
+    result = {
+        "feature_collection": {"type": "FeatureCollection", "features": []},
+        "crs": target_crs,
+        "duration_ms": 8,
+        "runtime_image_digest": digest,
+    }
+    identity_payload = {
+        "worker_id": "remote-reproject-worker",
+        "capability_id": "vector.reproject",
+        "capability_version": "1.0.0",
+        "implementation_id": "vector-reproject-pyproj-shapely",
+        "implementation_version": "1.0.0",
+        "runtime_image_digest": digest,
+    }
+    worker = RemoteVectorReprojectWorker(
+        "https://worker.example", bearer_token="secret"
+    )
+    opener = FakeOpener([FakeResponse(identity_payload), FakeResponse(result)])
+    worker._opener = opener
+
+    assert worker.worker_id == "remote-reproject-worker"
+    assert worker.implementation_id == "vector-reproject-pyproj-shapely"
+    assert worker.image_digest() == digest
+    execution = worker.execute(
+        input_bytes=b'{"type":"FeatureCollection","features":[]}',
+        capability_version="1.0.0",
+        input_crs={"authority": "EPSG", "code": 4326},
+        target_crs=target_crs,
+        parameters={"target_crs": target_crs},
+        runtime_image_digest=digest,
+    )
+
+    assert execution.runtime_image_digest == digest
+    assert execution.crs == target_crs
+    assert execution.duration_ms == 8
+    request_payload = json.loads(opener.requests[1][0].data)
+    assert request_payload["capability_id"] == "vector.reproject"
+    assert request_payload["target_crs"] == target_crs
+    assert request_payload["parameters"] == {}
+
+
+def test_remote_reproject_worker_rejects_buffer_only_identity():
+    worker = RemoteVectorReprojectWorker(
+        "https://worker.example", bearer_token="secret"
+    )
+    worker._opener = FakeOpener([FakeResponse(identity())])
+
+    with pytest.raises(WorkerUnavailableError, match="vector.reproject@1.0.0"):
         worker.image_digest()
