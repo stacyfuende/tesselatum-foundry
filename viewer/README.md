@@ -1,6 +1,6 @@
 # Read-only Recipe DAG viewer
 
-The viewer is a dependency-free static HTML page. Open `viewer/index.html` in a browser, then paste a canonical Recipe JSON document or select the JSON file from disk.
+The viewer is a dependency-free static HTML page. Open `viewer/index.html` in a browser, then paste a canonical Recipe JSON document or select the JSON file from disk. For a sample, load `tests/fixtures/valid/recipe.valid.json` from the repository root.
 
 It displays:
 - Recipe ID, version, and title;
