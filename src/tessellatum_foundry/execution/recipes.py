@@ -33,6 +33,7 @@ class RecipeExecutionResult:
     node_results: dict[str, ExecutionResult]
     outputs: dict[str, dict[str, Any]]
     failed_node_id: str | None = None
+    error: dict[str, Any] | None = None
 
 
 class RecipeExecutionService:
@@ -182,14 +183,25 @@ class RecipeExecutionService:
                     "artifact": source_output["artifact"],
                 }
 
-            result = self.cell_runner.execute(
-                cell=cell,
-                capability=capability,
-                actor_id=actor_id,
-                recipe_ref=recipe_ref,
-                recipe_execution_id=execution_id,
-                resolved_inputs=resolved_inputs,
-            )
+            try:
+                result = self.cell_runner.execute(
+                    cell=cell,
+                    capability=capability,
+                    actor_id=actor_id,
+                    recipe_ref=recipe_ref,
+                    recipe_execution_id=execution_id,
+                    resolved_inputs=resolved_inputs,
+                )
+            except ExecutionPreconditionError as error:
+                return RecipeExecutionResult(
+                    execution_id=execution_id,
+                    recipe=recipe_ref,
+                    status="failed",
+                    node_results=node_results,
+                    outputs={},
+                    failed_node_id=node_id,
+                    error={"code": "execution.precondition_failed", "message": str(error)},
+                )
             node_results[node_id] = result
             if result.run["status"] != "succeeded":
                 return RecipeExecutionResult(
@@ -199,6 +211,7 @@ class RecipeExecutionService:
                     node_results=node_results,
                     outputs={},
                     failed_node_id=node_id,
+                    error=result.run.get("error"),
                 )
 
         declared_outputs: dict[str, dict[str, Any]] = {}
