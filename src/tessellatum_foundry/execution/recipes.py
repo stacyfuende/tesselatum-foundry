@@ -60,7 +60,6 @@ class RecipeExecutionService:
     ) -> RecipeExecutionResult:
         self.contracts.validate("recipe.schema.json", recipe)
         referenced_cells = []
-        referenced_capabilities = []
         for node in recipe["nodes"]:
             cell_ref = node["cell"]
             cell = cells.get((cell_ref["cell_id"], cell_ref["version"]))
@@ -73,7 +72,6 @@ class RecipeExecutionService:
                 )
                 if capability is not None:
                     self.contracts.validate("capability.schema.json", capability)
-                    referenced_capabilities.append(capability)
 
         graph_findings = validate_recipe_graph(
             recipe,
