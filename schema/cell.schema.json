@@ -1,0 +1,163 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Foundry Geo-Cell Declaration",
+  "description": "Immutable declarative instance of a capability computation; contains no execution state or implementation code.",
+  "type": "object",
+  "required": [
+    "cell_id",
+    "version",
+    "capability",
+    "inputs",
+    "parameters",
+    "output_contracts"
+  ],
+  "properties": {
+    "cell_id": {
+      "$ref": "./_common.schema.json#/$defs/identifier"
+    },
+    "version": {
+      "$ref": "./_common.schema.json#/$defs/version"
+    },
+    "capability": {
+      "$ref": "./_common.schema.json#/$defs/capabilityRef"
+    },
+    "inputs": {
+      "type": "object",
+      "description": "Port bindings. Bindings may reference immutable artifacts or an upstream cell output.",
+      "additionalProperties": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": [
+              "source",
+              "artifact"
+            ],
+            "properties": {
+              "source": {
+                "const": "artifact"
+              },
+              "artifact": {
+                "$ref": "./_common.schema.json#/$defs/artifactRef"
+              }
+            },
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "required": [
+              "source",
+              "cell_id",
+              "cell_version",
+              "output_port"
+            ],
+            "properties": {
+              "source": {
+                "const": "cell_output"
+              },
+              "cell_id": {
+                "$ref": "./_common.schema.json#/$defs/identifier"
+              },
+              "cell_version": {
+                "$ref": "./_common.schema.json#/$defs/version"
+              },
+              "output_port": {
+                "$ref": "./_common.schema.json#/$defs/identifier"
+              }
+            },
+            "additionalProperties": false
+          }
+        ]
+      }
+    },
+    "parameters": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "output_contracts": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "type": "object",
+        "required": [
+          "data_kind"
+        ],
+        "properties": {
+          "data_kind": {
+            "type": "string",
+            "enum": [
+              "vector",
+              "raster",
+              "table",
+              "point_cloud",
+              "mesh",
+              "file",
+              "any"
+            ]
+          },
+          "media_types": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "uniqueItems": true
+          },
+          "crs": {
+            "oneOf": [
+              {
+                "$ref": "./_common.schema.json#/$defs/crs"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "geometry_types": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "uniqueItems": true
+          },
+          "validation_requirements": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "constraints": {
+      "type": "object",
+      "properties": {
+        "measurement_crs": {
+          "$ref": "./_common.schema.json#/$defs/crs"
+        },
+        "linear_unit": {
+          "type": "string"
+        },
+        "area_unit": {
+          "type": "string"
+        },
+        "required_geometry_validity": {
+          "type": "boolean"
+        },
+        "spatial_relationships": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "validation_requirements": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "additionalProperties": false
+}
