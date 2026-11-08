@@ -102,7 +102,7 @@ def test_vector_buffer_runs_in_isolated_docker_and_registers_artifact(tmp_path):
         actor_id="test-operator",
     )
 
-    assert result.run["status"] == "succeeded"
+    assert result.run["status"] == "succeeded", result.run.get("error")
     assert result.run["worker"]["worker_type"] == "local_docker"
     assert result.run["implementation"]["implementation_id"] == "vector-buffer-shapely"
     assert result.run["capability"] == {
@@ -181,7 +181,7 @@ def test_failed_attempt_is_preserved_when_a_retry_succeeds(tmp_path):
         retry_of_run_id=first.run["run_id"],
     )
 
-    assert second.run["status"] == "succeeded"
+    assert second.run["status"] == "succeeded", second.run.get("error")
     assert second.run["attempt"] == 2
     assert second.run["retry_of_run_id"] == first.run["run_id"]
     assert runs.get_run(first.run["run_id"]) == first.run
@@ -218,8 +218,8 @@ class WrongCrsWorker:
 
 def test_output_critic_fails_run_without_registering_invalid_output(tmp_path):
     store, runs, service = make_service(tmp_path, WrongCrsWorker())  # type: ignore[arg-type]
-    make_input(store)
-    cell = load_fixture("cell.valid.json")
+    input_artifact = make_input(store)
+    cell = bind_cell_to_input(input_artifact)
     capability = load_fixture("capability.valid.json")
 
     result = service.execute(
