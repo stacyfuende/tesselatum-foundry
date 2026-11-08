@@ -770,6 +770,25 @@ class VectorBufferRunService:
         if not isinstance(metadata, dict) or not isinstance(spatial, dict):
             return None
         artifact_geometry_types = set(spatial.get("geometry_types", []))
+        source_snapshots = candidate.get("input_snapshots", [])
+        expected_input_ref = {
+            "artifact_id": input_artifact["artifact_id"],
+            "version": input_artifact["version"],
+        }
+        rights_provenance = metadata.get("rights_provenance")
+        if (
+            len(source_snapshots) != 1
+            or source_snapshots[0].get("artifact") != expected_input_ref
+            or not isinstance(rights_provenance, dict)
+            or rights_provenance.get("source_artifact") != expected_input_ref
+            or rights_provenance.get("declaration_status")
+            != (
+                "declared_unverified"
+                if input_artifact.get("rights") is not None
+                else "unknown"
+            )
+        ):
+            return None
         if (
             artifact["media_type"] != output_media_type
             or spatial.get("crs") != output_contract.get("crs")
