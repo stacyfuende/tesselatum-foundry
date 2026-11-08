@@ -3,11 +3,14 @@ from __future__ import annotations
 from tessellatum_foundry.validation.methodology import build_methodology_report
 
 
-def artifact(artifact_id, crs, geometry_types, metadata=None):
+def artifact(artifact_id, crs, geometry_types, metadata=None, bbox=None):
+    spatial = {"kind": "vector", "crs": crs, "geometry_types": geometry_types}
+    if bbox is not None:
+        spatial["bbox"] = bbox
     record = {
         "artifact_id": artifact_id,
         "version": "1.0.0",
-        "spatial": {"kind": "vector", "crs": crs, "geometry_types": geometry_types},
+        "spatial": spatial,
     }
     if metadata is not None:
         record["metadata"] = metadata
@@ -298,3 +301,82 @@ def test_coordinate_operation_evidence_rejects_invalid_accuracy_and_bounds():
             },
         }
     )
+
+
+
+def test_reproject_method_report_passes_when_geographic_bbox_is_within_operation_area():
+    report = build_methodology_report(
+        run_id="run:area-covered",
+        cell={},
+        capability={
+            "capability_id": "vector.reproject",
+            "preconditions": ["A non-ballpark coordinate operation must be available."],
+        },
+        parameters={"target_crs": {"authority": "EPSG", "code": 32737}},
+        input_artifact=artifact(
+            "source.points",
+            {"authority": "EPSG", "code": 4326},
+            ["Point"],
+            bbox=[36.0, -10.0, 42.0, 0.0],
+        ),
+        output_artifact=artifact(
+            "projected.points",
+            {"authority": "EPSG", "code": 32737},
+            ["Point"],
+            metadata={"coordinate_operation": {
+                    "description": "UTM zone 37S",
+                    "definition": "+proj=pipeline +step +proj=utm +zone=37 +south",
+                    "accuracy_m": 0.0,
+                    "area_of_use": {
+                        "west": 36.0,
+                        "south": -80.0,
+                        "east": 42.0,
+                        "north": 0.0,
+                        "name": "UTM zone 37S area",
+                    },
+                }},
+        ),
+    )
+
+    findings = findings_by_code(report)
+    assert findings["method.input_extent_within_operation_area_of_use"]["status"] == "passed"
+    assert "coordinate_operation_area_of_use_coverage" in report["assessed_dimensions"]
+
+
+def test_reproject_method_report_fails_when_geographic_bbox_exceeds_operation_area():
+    report = build_methodology_report(
+        run_id="run:area-exceeded",
+        cell={},
+        capability={
+            "capability_id": "vector.reproject",
+            "preconditions": ["A non-ballpark coordinate operation must be available."],
+        },
+        parameters={"target_crs": {"authority": "EPSG", "code": 32737}},
+        input_artifact=artifact(
+            "source.points",
+            {"authority": "EPSG", "code": 4326},
+            ["Point"],
+            bbox=[43.0, -10.0, 45.0, 0.0],
+        ),
+        output_artifact=artifact(
+            "projected.points",
+            {"authority": "EPSG", "code": 32737},
+            ["Point"],
+            metadata={"coordinate_operation": {
+                    "description": "UTM zone 37S",
+                    "definition": "+proj=pipeline +step +proj=utm +zone=37 +south",
+                    "accuracy_m": 0.0,
+                    "area_of_use": {
+                        "west": 36.0,
+                        "south": -80.0,
+                        "east": 42.0,
+                        "north": 0.0,
+                        "name": "UTM zone 37S area",
+                    },
+                }},
+        ),
+    )
+
+    findings = findings_by_code(report)
+    assert report["overall_status"] == "failed"
+    assert findings["method.input_extent_within_operation_area_of_use"]["status"] == "failed"
