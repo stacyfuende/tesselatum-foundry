@@ -319,7 +319,6 @@ def build_methodology_report(
                     evidence=evidence,
                 )
             )
-        assessed_dimensions.extend(["measurement_crs_and_units", "planar_distance_model"])
         assessed_dimensions.extend([
             "measurement_crs_and_units",
             "planar_distance_model",
