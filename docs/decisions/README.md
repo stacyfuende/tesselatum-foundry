@@ -33,5 +33,6 @@ This register records decisions that constrain Foundry's architecture. Each deci
 | [027](027-run-provenance-immutability.md) | Make Run provenance immutable across state transitions | Accepted |
 | [028](028-read-only-recipe-viewer.md) | Provide a dependency-free read-only Recipe DAG viewer | Accepted |
 | [029](029-cache-validation-evidence.md) | Require current complete validation evidence for cache reuse | Accepted |
+| [030](030-capability-runner-dispatch.md) | Dispatch Recipe nodes through exact Capability runner registrations | Accepted |
 
 A decision may be superseded only by a new decision record that explains the change. Do not silently edit an accepted decision to reverse its meaning.
