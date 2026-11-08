@@ -116,7 +116,10 @@ def test_reproject_report_records_non_ballpark_contract_and_unassessed_accuracy(
         parameters={"target_crs": target},
         input_artifact=artifact("source.points", source, ["Point"]),
         output_artifact=artifact(
-            "projected.points", target, ["Point"], metadata={
+            "projected.points",
+            target,
+            ["Point"],
+            metadata={
                 "coordinate_operation": {
                     "description": "Popular Visualisation Pseudo-Mercator",
                     "accuracy_m": 0.0,
@@ -128,7 +131,7 @@ def test_reproject_report_records_non_ballpark_contract_and_unassessed_accuracy(
                         "name": "World",
                     },
                 }
-            }
+            },
         ),
     )
 
@@ -136,7 +139,9 @@ def test_reproject_report_records_non_ballpark_contract_and_unassessed_accuracy(
     assert report["overall_status"] == "requires_review"
     assert findings["method.target_crs_explicit_and_matches_output"]["status"] == "passed"
     assert findings["method.ballpark_transformations_disallowed"]["status"] == "passed"
-    assert "coordinate_operation_accuracy" in report["unassessed_dimensions"]
+    assert "coordinate_operation_accuracy_suitability" in report["unassessed_dimensions"]
+    assert findings["method.coordinate_operation_accuracy_reported"]["status"] == "passed"
+    assert findings["method.coordinate_operation_area_of_use_reported"]["status"] == "passed"
 
 
 def test_reproject_report_fails_when_output_crs_differs_from_target():
