@@ -225,7 +225,6 @@ class WrongCrsWorker:
                 ],
             },
             crs={"authority": "EPSG", "code": 4326},
-            geometry_types=("Polygon",),
             duration_ms=3,
             runtime_image_digest="sha256:" + "a" * 64,
         )
