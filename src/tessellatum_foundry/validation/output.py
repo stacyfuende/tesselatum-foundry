@@ -132,7 +132,7 @@ def inspect_vector_buffer_output(
             continue
         try:
             geometry = shape(geometry_json)
-        except (AttributeError, TypeError, ValueError):
+        except Exception:
             geometry_validity = False
             output_types_supported = False
             continue
