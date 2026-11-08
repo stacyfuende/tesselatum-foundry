@@ -205,13 +205,21 @@ def build_methodology_report(
         cap_style = parameters.get("cap_style", "round")
         join_style = parameters.get("join_style", "round")
         mitre_limit = parameters.get("mitre_limit", 5.0)
+        try:
+            mitre_limit_valid = (
+                isinstance(mitre_limit, (int, float))
+                and not isinstance(mitre_limit, bool)
+                and math.isfinite(mitre_limit)
+                and mitre_limit > 0
+            )
+        except OverflowError:
+            mitre_limit_valid = False
         cap_join_valid = (
-            cap_style in {"round", "flat", "square"}
+            isinstance(cap_style, str)
+            and cap_style in {"round", "flat", "square"}
+            and isinstance(join_style, str)
             and join_style in {"round", "mitre", "bevel"}
-            and isinstance(mitre_limit, (int, float))
-            and not isinstance(mitre_limit, bool)
-            and math.isfinite(mitre_limit)
-            and mitre_limit > 0
+            and mitre_limit_valid
         )
         findings.extend(
             [
