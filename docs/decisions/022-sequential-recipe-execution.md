@@ -18,7 +18,7 @@ A Recipe execution also needs a way to correlate its per-cell Runs without chang
 5. Validate the complete Recipe graph, all cell/capability references, external Artifact references, and declared spatial relationships before starting the first node. Each cell Run then repeats its own resolved-input and spatial preflight before dispatch.
 6. If a node fails, stop scheduling downstream nodes. Previously succeeded Runs and immutable output Artifacts remain intact; the Recipe execution is reported as failed and is not represented as a successful partial result.
 7. The first Recipe runner is sequential and supports only capabilities with a registered, conformant local worker adapter. It does not implement parallel execution, caching, remote scheduling, or cross-tenant execution.
-8. Correlate Runs through `recipe_execution_id`; do not introduce a sixth core domain object for a Recipe-level Run in this increment. The execution service returns an aggregate result, while the per-cell Run records remain the durable execution evidence.
+8. Pin the immutable runtime image ID digest established by the first node across every subsequent node in the same Recipe execution. Each Run records that same digest; a later change to a mutable image tag must not silently change the runtime halfway through a Recipe.\n9. Correlate Runs through `recipe_execution_id`; do not introduce a sixth core domain object for a Recipe-level Run in this increment. The execution service returns an aggregate result, while the per-cell Run records remain the durable execution evidence.
 
 ## Consequences
 
