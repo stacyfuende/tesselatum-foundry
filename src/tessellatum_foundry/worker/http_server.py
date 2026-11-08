@@ -14,8 +14,8 @@ import sys
 import tempfile
 import threading
 import time
-from pathlib import Path
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path
 from typing import Any
 
 _SUPPORTED_WORKERS = {
