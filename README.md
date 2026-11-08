@@ -19,7 +19,7 @@ The repository follows a contracts-first implementation sequence. The first mile
 - [x] Installed distribution packages schemas, Capability contracts, and implementation manifests.
 - [x] Minimal local Python SDK composes canonical registries, immutable stores, and sequential Recipe execution.
 - [~] Execution/output validation is implemented for vector.buffer; methodological and rights/security policy validators remain outstanding.
-- [~] Recipe execution is currently sequential and limited to vector.buffer@1.0.0; multi-capability execution and parallel scheduling remain outstanding.
+- [~] Recipe orchestration dispatches through exact capability-version runner registrations; the only concrete Run service remains vector.buffer@1.0.0, and parallel scheduling remains outstanding.
 - [ ] Remote worker path implemented and conformance-tested.
 - [ ] Initial raster capabilities implemented.
 - [x] Dependency-free read-only Recipe DAG viewer implemented.
