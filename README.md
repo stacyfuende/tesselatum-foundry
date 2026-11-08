@@ -12,15 +12,18 @@ The repository follows a contracts-first implementation sequence. The first mile
 - [x] v0.1 acceptance criteria documented.
 - [x] Initial JSON Schema validator and Recipe graph semantic validator implemented with CI tests.
 - [x] Initial spatial metadata and pre-execution CRS/unit validator implemented with tests.
-- [x] First executable spatial capability contract and Shapely vector.buffer implementation added with geometry-level tests.
-- [ ] Shared cross-engine conformance suite and independent PostGIS implementation.
+- [x] Engine-independent vector.buffer contract implemented.
+- [x] Independent Shapely and PostGIS vector.buffer adapters implemented on shared request validation.
+- [x] Shared geometry conformance suite added, including topological comparison of both engine results.
+- [x] GitHub Actions configured with a real PostGIS service for conformance testing.
+- [ ] PostGIS-backed CI conformance run verified green.
 - [ ] Methodological, rights, and execution/output validators implemented.
 - [ ] Deterministic local execution path implemented.
 - [ ] Remote worker path implemented and conformance-tested.
 - [ ] Initial raster capabilities implemented.
 - [ ] Read-only recipe graph viewer implemented.
 
-Items are marked complete only when the repository contains implementation and tests demonstrating them.
+Items are marked complete when implementation and corresponding tests are present. Runtime and CI verification are reported separately.
 
 ## Start here
 
@@ -50,9 +53,11 @@ The Validation Report is a separate evidence object. Implementations are registe
 - The planner is optional and never required by the execution core.
 - Security, provenance, licensing, and cost visibility are architectural concerns.
 
-## First capability
+## First capability: vector.buffer
 
-`vector.buffer@1.0.0` has an engine-independent contract and an initial Shapely implementation. It requires an explicit projected measurement CRS equal to the input CRS, rejects invalid input geometries rather than repairing them, and returns valid Polygon/MultiPolygon outputs while preserving feature IDs and properties. PostGIS parity is not yet claimed.
+`vector.buffer@1.0.0` supports Point, MultiPoint, LineString, MultiLineString, Polygon and MultiPolygon inputs. It requires an explicit projected measurement CRS equal to the input CRS, rejects invalid input geometries rather than repairing them, and returns valid Polygon/MultiPolygon outputs while preserving feature IDs and properties. Its first two independent realizations are Shapely and PostGIS; both use the same semantic request validator. The PostGIS adapter requires an unambiguous EPSG CRS and checks the output SRID. Actual engine parity is assessed by shared geometry expectations and a topological comparison in PostGIS-backed CI.
+
+Install the PostGIS adapter's driver with the `postgis` extra; development installs it automatically through `requirements-dev.txt`.
 
 ## Scope boundary
 
