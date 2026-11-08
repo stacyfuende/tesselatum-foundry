@@ -148,7 +148,7 @@ class VectorBufferRunService:
             attempt = previous["attempt"] + 1
 
         run_id = f"run:{uuid.uuid4().hex}"
-        run = self.run_repository.create_queued_run(
+        self.run_repository.create_queued_run(
             run_id=run_id,
             cell={"cell_id": cell["cell_id"], "version": cell["version"]},
             capability={
