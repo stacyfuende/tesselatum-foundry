@@ -52,6 +52,25 @@ _LINEAR_UNITS = {
     "us-ft": 1200.0 / 3937.0,
 }
 
+_AREA_UNITS = {
+    "square metre": 1.0,
+    "square meter": 1.0,
+    "square metres": 1.0,
+    "square meters": 1.0,
+    "m2": 1.0,
+    "hectare": 10_000.0,
+    "hectares": 10_000.0,
+    "ha": 10_000.0,
+    "acre": 4046.8564224,
+    "acres": 4046.8564224,
+    "square kilometre": 1_000_000.0,
+    "square kilometer": 1_000_000.0,
+    "km2": 1_000_000.0,
+    "square foot": 0.09290304,
+    "square feet": 0.09290304,
+    "ft2": 0.09290304,
+}
+
 
 def _crs_from_contract(value: DomainObject) -> CRS:
     if "wkt2" in value:
@@ -320,9 +339,10 @@ def _validate_measurement_constraints(
     constraints = cell.get("constraints", {})
     measurement_crs_value = constraints.get("measurement_crs")
     linear_unit = constraints.get("linear_unit")
+    area_unit = constraints.get("area_unit")
     findings: list[ValidationFinding] = []
 
-    if linear_unit is not None and measurement_crs_value is None:
+    if (linear_unit is not None or area_unit is not None) and measurement_crs_value is None:
         return [
             ValidationFinding(
                 "spatial.measurement_crs_required",
@@ -387,6 +407,14 @@ def _validate_measurement_constraints(
                         json_pointer=f"{pointer}/constraints/linear_unit",
                     )
                 )
+    if area_unit is not None and str(area_unit).strip().lower() not in _AREA_UNITS:
+        findings.append(
+            ValidationFinding(
+                "spatial.area_unit_unsupported",
+                f"Area unit {area_unit!r} is not in Foundry's supported unit vocabulary.",
+                json_pointer=f"{pointer}/constraints/area_unit",
+            )
+        )
     return findings
 
 
@@ -420,6 +448,45 @@ def validate_recipe_spatial(
         capability = capabilities.get(capability_key)
         if capability is None:
             continue
+        measurement_contract = capability.get("measurement")
+        if measurement_contract is not None:
+            unit_kind = measurement_contract["unit_kind"]
+            parameter_name = measurement_contract["unit_parameter"]
+            constraint_name = "linear_unit" if unit_kind == "linear" else "area_unit"
+            parameter_unit = cell.get("parameters", {}).get(parameter_name)
+            constraint_unit = cell.get("constraints", {}).get(constraint_name)
+            unit_map = _LINEAR_UNITS if unit_kind == "linear" else _AREA_UNITS
+            parameter_factor = (
+                unit_map.get(str(parameter_unit).strip().lower())
+                if parameter_unit is not None
+                else None
+            )
+            constraint_factor = (
+                unit_map.get(str(constraint_unit).strip().lower())
+                if constraint_unit is not None
+                else None
+            )
+            if constraint_unit is None:
+                findings.append(
+                    ValidationFinding(
+                        "spatial.measurement_constraint_missing",
+                        f"Capability measurement contract requires cell constraint "
+                        f"{constraint_name!r}.",
+                        json_pointer=f"{pointer}/constraints/{constraint_name}",
+                    )
+                )
+            elif parameter_factor is None or constraint_factor is None or not math.isclose(
+                parameter_factor, constraint_factor, rel_tol=1e-9, abs_tol=1e-12
+            ):
+                findings.append(
+                    ValidationFinding(
+                        "spatial.measurement_parameter_unit_mismatch",
+                        f"Parameter {parameter_name!r} and cell constraint "
+                        f"{constraint_name!r} must declare equivalent units.",
+                        json_pointer=f"{pointer}/parameters/{parameter_name}",
+                    )
+                )
+
         input_ports = _port_map(capability.get("input_ports", []))
         resolved_spatial: dict[str, DomainObject] = {}
 
