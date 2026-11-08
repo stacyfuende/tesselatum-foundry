@@ -106,7 +106,8 @@ def _geometry_findings(
             findings.append(
                 ValidationFinding(
                     "spatial.geometry_type_unsupported",
-                    f"Geometry type {geometry_type!r} is not in Foundry's supported type vocabulary.",
+                    f"Geometry type {geometry_type!r} is not in Foundry's "
+                    "supported type vocabulary.",
                     json_pointer=pointer,
                 )
             )
