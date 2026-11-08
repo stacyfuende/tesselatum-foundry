@@ -485,6 +485,17 @@ def validate_recipe_spatial(
         capability = capabilities.get(capability_key)
         if capability is None:
             continue
+        if (
+            "buffer_arc_tolerance" in cell.get("constraints", {})
+            and capability.get("capability_id") != "vector.buffer"
+        ):
+            findings.append(
+                ValidationFinding(
+                    "spatial.buffer_arc_tolerance_wrong_capability",
+                    "buffer_arc_tolerance is only valid for vector.buffer cells.",
+                    json_pointer=f"{pointer}/constraints/buffer_arc_tolerance",
+                )
+            )
         measurement_contract = capability.get("measurement")
         if measurement_contract is not None:
             unit_kind = measurement_contract["unit_kind"]
