@@ -8,6 +8,11 @@ from .docker_worker import (
     WorkerUnavailableError,
 )
 from .protocol import VectorBufferWorker, WorkerResult
+from .recipes import (
+    RecipeExecutionPreconditionError,
+    RecipeExecutionResult,
+    RecipeExecutionService,
+)
 from .runs import RunRepository, RunStateError
 from .service import (
     ExecutionPreconditionError,
@@ -21,6 +26,9 @@ __all__ = [
     "ExecutionResult",
     "ImplementationRegistry",
     "ImplementationRegistryError",
+    "RecipeExecutionPreconditionError",
+    "RecipeExecutionResult",
+    "RecipeExecutionService",
     "RunRepository",
     "RunStateError",
     "VectorBufferRunService",
