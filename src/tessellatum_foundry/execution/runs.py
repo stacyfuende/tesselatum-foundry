@@ -51,6 +51,8 @@ class RunRepository:
         retry_of_run_id: str | None = None,
         recipe: dict[str, str] | None = None,
         recipe_execution_id: str | None = None,
+        recipe_node_id: str | None = None,
+        recipe_node_order: int | None = None,
     ) -> dict[str, Any]:
         record: dict[str, Any] = {
             "run_id": run_id,
@@ -69,6 +71,10 @@ class RunRepository:
             record["recipe"] = recipe
         if recipe_execution_id is not None:
             record["recipe_execution_id"] = recipe_execution_id
+        if recipe_node_id is not None:
+            record["recipe_node_id"] = recipe_node_id
+        if recipe_node_order is not None:
+            record["recipe_node_order"] = recipe_node_order
         self.contracts.validate("run.schema.json", record)
         path = self._run_path(run_id)
         with self._lock:
@@ -147,7 +153,14 @@ class RunRepository:
             if record.get("recipe_execution_id") == recipe_execution_id:
                 self.contracts.validate("run.schema.json", record)
                 records.append(record)
-        return sorted(records, key=lambda item: (item["created_at"], item["run_id"]))
+        return sorted(
+            records,
+            key=lambda item: (
+                item.get("recipe_node_order", -1),
+                item["created_at"],
+                item["run_id"],
+            ),
+        )
 
     def get_validation_report(self, report_id: str) -> dict[str, Any]:
         path = self._report_path(report_id)
