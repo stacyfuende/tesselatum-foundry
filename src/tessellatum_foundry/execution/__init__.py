@@ -1,5 +1,6 @@
 """Foundry execution orchestration and Run lifecycle components."""
 
+from .implementations import ImplementationRegistry, ImplementationRegistryError
 from .docker_worker import (
     DockerWorker,
     WorkerExecutionError,
@@ -18,6 +19,8 @@ __all__ = [
     "DockerWorker",
     "ExecutionPreconditionError",
     "ExecutionResult",
+    "ImplementationRegistry",
+    "ImplementationRegistryError",
     "RunRepository",
     "RunStateError",
     "VectorBufferRunService",
