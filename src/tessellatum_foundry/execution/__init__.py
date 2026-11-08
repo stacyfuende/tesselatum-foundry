@@ -15,7 +15,7 @@ from .protocol import (
     VectorReprojectWorker,
     WorkerResult,
 )
-from .remote_worker import RemoteVectorBufferWorker
+from .remote_worker import RemoteVectorBufferWorker, RemoteVectorReprojectWorker
 from .runs import RunRepository, RunStateError
 from .service import (
     ExecutionPreconditionError,
@@ -42,6 +42,7 @@ __all__ = [
     "RecipeExecutionResult",
     "RecipeExecutionService",
     "RemoteVectorBufferWorker",
+    "RemoteVectorReprojectWorker",
     "RunRepository",
     "SpatialWorkerIdentity",
     "RunStateError",

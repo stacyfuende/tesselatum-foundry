@@ -165,7 +165,8 @@ class RemoteVectorBufferWorker:
                 or identity.get("capability_version") != self.capability_version
             ):
                 raise WorkerUnavailableError(
-                    "Remote worker does not support vector.buffer@1.0.0."
+                    "Remote worker does not support "
+                    f"{self.capability_id}@{self.capability_version}."
                 )
             self._identity = {key: identity[key] for key in required}
         return self._identity
@@ -237,6 +238,84 @@ class RemoteVectorBufferWorker:
         ):
             raise WorkerExecutionError(
                 "Remote worker result does not match the transport contract."
+            )
+        reported_duration = payload.get("duration_ms")
+        if type(reported_duration) is not int or reported_duration < 0:
+            raise WorkerExecutionError(
+                "Remote worker returned an invalid execution duration."
+            )
+        return WorkerResult(
+            feature_collection=payload["feature_collection"],
+            crs=payload["crs"],
+            duration_ms=reported_duration,
+            runtime_image_digest=pinned_digest,
+        )
+
+
+class RemoteVectorReprojectWorker(RemoteVectorBufferWorker):
+    """Call an authenticated HTTPS worker executing vector.reproject@1.0.0."""
+
+    capability_id = "vector.reproject"
+    capability_version = "1.0.0"
+
+    def execute(
+        self,
+        *,
+        input_bytes: bytes,
+        capability_version: str,
+        input_crs: dict,
+        target_crs: dict,
+        parameters: dict,
+        runtime_image_digest: str | None = None,
+    ) -> WorkerResult:
+        if len(input_bytes) > self.max_input_bytes:
+            raise WorkerExecutionError(
+                "Input Artifact exceeds the remote worker byte limit."
+            )
+        if capability_version != self.capability_version:
+            raise WorkerExecutionError(
+                "Remote worker only executes vector.reproject@1.0.0."
+            )
+        if set(parameters) != {"target_crs"} or parameters["target_crs"] != target_crs:
+            raise WorkerExecutionError(
+                "Reprojection parameters must contain only the matching target_crs."
+            )
+        identity = self._get_identity()
+        pinned_digest = runtime_image_digest or identity["runtime_image_digest"]
+        if pinned_digest != identity["runtime_image_digest"]:
+            raise WorkerUnavailableError(
+                "Remote worker runtime image changed after preflight."
+            )
+        try:
+            feature_collection = json.loads(input_bytes.decode("utf-8"))
+        except (UnicodeDecodeError, json.JSONDecodeError) as error:
+            raise WorkerExecutionError(
+                "Input Artifact is not valid UTF-8 JSON."
+            ) from error
+        payload = self._request_json(
+            "/v1/execute",
+            {
+                "request_version": "0.1.0",
+                "capability_id": self.capability_id,
+                "capability_version": capability_version,
+                "input_feature_collection": feature_collection,
+                "input_crs": input_crs,
+                "target_crs": target_crs,
+                "parameters": {
+                    key: value for key, value in parameters.items() if key != "target_crs"
+                },
+            },
+        )
+        if payload.get("runtime_image_digest") != pinned_digest:
+            raise WorkerUnavailableError(
+                "Remote worker execution used an unexpected runtime image."
+            )
+        if (
+            not isinstance(payload.get("feature_collection"), dict)
+            or payload.get("crs") != target_crs
+        ):
+            raise WorkerExecutionError(
+                "Remote worker result does not match the reprojection transport contract."
             )
         reported_duration = payload.get("duration_ms")
         if type(reported_duration) is not int or reported_duration < 0:
