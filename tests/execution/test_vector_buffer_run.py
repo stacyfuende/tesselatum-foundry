@@ -130,6 +130,10 @@ def test_vector_buffer_runs_in_isolated_docker_and_registers_artifact(tmp_path):
     assert result.output_artifact is not None
     assert result.validation_report is not None
     assert result.validation_report["overall_status"] == "passed"
+    assert result.validation_report["validator"] == {
+        "name": "foundry-spatial-output-critic",
+        "version": "0.2.0",
+    }
     assert runs.get_run(result.run["run_id"])["status"] == "succeeded"
 
     output_bytes = store.read_bytes(result.output_artifact)
