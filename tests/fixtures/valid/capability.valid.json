@@ -11,7 +11,13 @@
       "required": true,
       "accepted_media_types": [
         "application/geo+json"
-      ]
+      ],
+      "spatial": {
+        "crs_required": true,
+        "geometry_types": [
+          "Polygon"
+        ]
+      }
     }
   ],
   "parameter_schema": {
