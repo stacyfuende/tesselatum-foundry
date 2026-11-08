@@ -24,7 +24,10 @@ def main() -> None:
         capability_id="vector.buffer",
         capability_version="1.0.0",
     )
-    print("Installed Foundry schemas, Capability contracts, and implementation manifests resolved successfully.")
+    print(
+        "Installed Foundry schemas, Capability contracts, and implementation "
+        "manifests resolved successfully."
+    )
 
 
 if __name__ == "__main__":
