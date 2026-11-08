@@ -161,8 +161,8 @@ def test_reproject_run_persists_output_artifact_and_validation_evidence(tmp_path
     assert result.output_artifact["spatial"]["geometry_types"] == ["Point"]
     assert result.validation_report["overall_status"] == "passed"
     assert result.validation_report["validator"] == {
-        "name": "foundry-vector-reproject-output-critic",
-        "version": "0.1.0",
+        "name": "foundry-spatial-output-critic",
+        "version": "0.2.0",
     }
     output = json.loads(store.read_bytes(result.output_artifact))
     assert output["features"][0]["id"] == "site-01"
@@ -424,3 +424,39 @@ def test_reproject_cache_reuses_only_output_critic_validated_artifacts(tmp_path)
     assert second.validation_report["validator"]["name"] == "foundry-cache-reuse"
     assert worker.calls == 1
     assert runs.get_run(second.run["run_id"])["cache"]["status"] == "hit"
+
+
+def test_reproject_cache_rejects_failed_target_crs_validation_evidence(
+    tmp_path, monkeypatch
+):
+    worker = FakeReprojectWorker()
+    store, runs, service = make_service(tmp_path, worker)
+    artifact = make_input(store)
+    cell = make_cell(artifact)
+    capability = service.capabilities.get("vector.reproject", "1.0.0")
+    first = service.execute(
+        cell=cell,
+        capability=capability,
+        actor_id="test-operator",
+    )
+    assert first.run["status"] == "succeeded"
+
+    original_get_report = runs.get_validation_report
+
+    def corrupt_target_crs(report_id):
+        report = deepcopy(original_get_report(report_id))
+        for finding in report["findings"]:
+            if finding["code"] == "output.crs_matches_contract":
+                finding["status"] = "failed"
+        return report
+
+    monkeypatch.setattr(runs, "get_validation_report", corrupt_target_crs)
+    second = service.execute(
+        cell=cell,
+        capability=capability,
+        actor_id="test-operator",
+    )
+
+    assert second.run["status"] == "succeeded"
+    assert second.run["cache"]["status"] == "miss"
+    assert worker.calls == 2
