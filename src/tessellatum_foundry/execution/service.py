@@ -43,7 +43,10 @@ from tessellatum_foundry.validation.contracts import (
 )
 from tessellatum_foundry.validation.output import inspect_vector_buffer_output
 from tessellatum_foundry.validation.rights import build_rights_provenance_report
-from tessellatum_foundry.validation.methodology import build_methodology_report
+from tessellatum_foundry.validation.methodology import (
+    build_methodology_report,
+    coordinate_operation_evidence_valid,
+)
 from tessellatum_foundry.validation.spatial import validate_recipe_spatial
 
 
@@ -813,6 +816,13 @@ class VectorBufferRunService:
                 "declared_unverified"
                 if input_artifact.get("rights") is not None
                 else "unknown"
+            )
+        ):
+            return None
+        if (
+            self.worker.capability_id == "vector.reproject"
+            and not coordinate_operation_evidence_valid(
+                metadata.get("coordinate_operation")
             )
         ):
             return None
