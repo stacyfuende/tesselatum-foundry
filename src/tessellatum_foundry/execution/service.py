@@ -614,7 +614,7 @@ class VectorBufferRunService:
                             },
                         }
                     ],
-                    "validation_report_ids": [report["report_id"]],
+                    "validation_report_ids": [report["report_id"], rights_report["report_id"]],
                     "resource_usage": {"duration_ms": result.duration_ms},
                 },
                 event_type="run_succeeded",
