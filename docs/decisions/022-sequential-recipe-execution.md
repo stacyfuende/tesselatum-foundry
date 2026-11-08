@@ -12,7 +12,7 @@ A Recipe execution also needs a way to correlate its per-cell Runs without chang
 ## Decision
 
 1. Execute Recipe nodes in deterministic topological order for the first local Recipe runner. Parallel scheduling is deferred.
-2. Create one ordinary Run per executed node. Every Run retains the exact Geo-Cell and Capability references and also records the exact Recipe reference and a shared `recipe_execution_id` correlation identifier.
+2. Create one ordinary Run per executed node. Every Run retains the exact Geo-Cell and Capability references and also records the exact Recipe reference, shared `recipe_execution_id`, declared `recipe_node_id`, and deterministic topological `recipe_node_order`.
 3. Keep the original Geo-Cell definition immutable. For a `cell_output` binding, the Recipe runner resolves the upstream node's successful Run output to an immutable Artifact reference and supplies that resolution separately to the single-cell Run service.
 4. The Run service verifies that the referenced upstream Run succeeded, belongs to the exact upstream Geo-Cell version named by the binding, and produced the requested output port and Artifact reference. It records the resolved Artifact ID, version, checksum, source Run ID, and source output port in the downstream Run input snapshot.
 5. Validate the complete Recipe graph, all cell/capability references, external Artifact references, and declared spatial relationships before starting the first node. Each cell Run then repeats its own resolved-input and spatial preflight before dispatch.
