@@ -151,6 +151,10 @@ class VectorBufferRunService:
         run = self.run_repository.create_queued_run(
             run_id=run_id,
             cell={"cell_id": cell["cell_id"], "version": cell["version"]},
+            capability={
+                "capability_id": capability["capability_id"],
+                "version": capability["version"],
+            },
             input_snapshots=[input_snapshot],
             normalized_parameters=parameters,
             attempt=attempt,
