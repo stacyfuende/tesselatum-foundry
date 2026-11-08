@@ -6,27 +6,58 @@ import json
 from collections.abc import Mapping
 from typing import Any
 
-from shapely.geometry import shape
-
-from .buffer_contract import BufferContractError, prepare_buffer_request
-from .vector_buffer import BufferOutput
+from .buffer_contract import (
+    BufferContractError,
+    BufferOutput,
+    prepare_buffer_request,
+)
 
 
 _BUFFER_SQL = """
+WITH source AS (
+    SELECT ST_SetSRID(ST_GeomFromGeoJSON(%s), %s) AS geom
+),
+checked AS (
+    SELECT
+        geom,
+        ST_IsValid(geom) AS input_is_valid,
+        ST_IsEmpty(geom) AS input_is_empty,
+        GeometryType(geom) AS input_geometry_type
+    FROM source
+),
+buffered AS (
+    SELECT
+        CASE
+            WHEN input_is_valid AND NOT input_is_empty
+            THEN ST_Buffer(geom, %s, %s)
+            ELSE NULL::geometry
+        END AS geom,
+        input_is_valid,
+        input_is_empty,
+        input_geometry_type
+    FROM checked
+)
 SELECT
     ST_AsGeoJSON(buffered.geom, 15, 0),
     ST_IsValid(buffered.geom),
     ST_IsEmpty(buffered.geom),
     GeometryType(buffered.geom),
-    ST_SRID(buffered.geom)
-FROM (
-    SELECT ST_Buffer(
-        ST_SetSRID(ST_GeomFromGeoJSON(%s), %s),
-        %s,
-        %s
-    ) AS geom
-) AS buffered
+    ST_SRID(buffered.geom),
+    buffered.input_is_valid,
+    buffered.input_is_empty,
+    buffered.input_geometry_type
+FROM buffered
 """
+
+
+_POSTGIS_INPUT_TYPES = {
+    "Point": "POINT",
+    "MultiPoint": "MULTIPOINT",
+    "LineString": "LINESTRING",
+    "MultiLineString": "MULTILINESTRING",
+    "Polygon": "POLYGON",
+    "MultiPolygon": "MULTIPOLYGON",
+}
 
 
 def buffer_feature_collection_postgis(
@@ -43,10 +74,11 @@ def buffer_feature_collection_postgis(
     mitre_limit: float = 5.0,
     single_sided: bool = False,
 ) -> BufferOutput:
-    """Execute vector.buffer through a psycopg 3 connection.
+    """Execute vector.buffer in PostGIS using a psycopg 3 connection.
 
     PostGIS receives geometry JSON plus an explicit EPSG SRID. No ST_Transform or
     geography cast is used: distance remains planar in the declared CRS units.
+    Input validity and output validity are checked by PostGIS itself.
     """
     request = prepare_buffer_request(
         feature_collection,
@@ -85,7 +117,27 @@ def buffer_feature_collection_postgis(
         row = cursor.fetchone()
         if row is None:
             raise RuntimeError(f"PostGIS returned no buffer result for feature {index}.")
-        geometry_text, is_valid, is_empty, geometry_type, output_srid = row
+        (
+            geometry_text,
+            is_valid,
+            is_empty,
+            geometry_type,
+            output_srid,
+            input_is_valid,
+            input_is_empty,
+            input_geometry_type,
+        ) = row
+        if not input_is_valid:
+            raise BufferContractError(
+                f"PostGIS input geometry at feature {index} is invalid; "
+                "repair it explicitly before buffering."
+            )
+        if input_is_empty:
+            raise BufferContractError(f"PostGIS input geometry at feature {index} is empty.")
+        if input_geometry_type != _POSTGIS_INPUT_TYPES[feature.geometry_type]:
+            raise BufferContractError(
+                f"PostGIS input geometry type at feature {index} does not match its declaration."
+            )
         if geometry_text is None or is_empty or not is_valid:
             raise BufferContractError(
                 f"PostGIS produced an empty or invalid buffer result at feature {index}."
@@ -100,15 +152,6 @@ def buffer_feature_collection_postgis(
                 f"at feature {index}."
             )
         output_geometry = json.loads(geometry_text)
-        parsed_output = shape(output_geometry)
-        if (
-            parsed_output.geom_type not in {"Polygon", "MultiPolygon"}
-            or parsed_output.is_empty
-            or not parsed_output.is_valid
-        ):
-            raise BufferContractError(
-                f"PostGIS output geometry at feature {index} failed local validation."
-            )
         output_feature: dict[str, Any] = {
             "type": "Feature",
             "geometry": output_geometry,
