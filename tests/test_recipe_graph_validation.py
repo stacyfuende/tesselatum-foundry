@@ -50,7 +50,9 @@ def test_invalid_parameters_are_reported():
 
 def test_missing_artifact_reference_is_reported():
     recipe, cells, capabilities = base_context()
-    findings = validate_recipe_graph(\n        recipe, cells=cells, capabilities=capabilities, artifacts=set()\n    )
+    findings = validate_recipe_graph(
+        recipe, cells=cells, capabilities=capabilities, artifacts=set()
+    )
     assert "cell.artifact_not_found" in {finding.code for finding in findings}
 
 
