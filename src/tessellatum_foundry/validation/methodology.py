@@ -182,6 +182,69 @@ def build_methodology_report(
                 evidence=evidence,
             )
         )
+        quad_segs = parameters.get("quad_segs", 8)
+        quad_segs_valid = (
+            isinstance(quad_segs, int)
+            and not isinstance(quad_segs, bool)
+            and 1 <= quad_segs <= 64
+        )
+        if quad_segs_valid and distance_valid:
+            relative_sagitta = 1.0 - math.cos(math.pi / (4.0 * quad_segs))
+            absolute_sagitta = float(distance) * relative_sagitta
+            approximation_message = (
+                f"quad_segs={quad_segs} gives a maximum radial sagitta of "
+                f"{absolute_sagitta:.4f} {parameters.get('unit')} "
+                f"({relative_sagitta * 100:.4f}% of the requested radius). "
+                "Acceptability cannot be judged without a declared tolerance."
+            )
+        else:
+            approximation_message = (
+                "Arc approximation error could not be computed because the "
+                "distance or quad_segs parameter is invalid."
+            )
+        cap_style = parameters.get("cap_style", "round")
+        join_style = parameters.get("join_style", "round")
+        mitre_limit = parameters.get("mitre_limit", 5.0)
+        cap_join_valid = (
+            cap_style in {"round", "flat", "square"}
+            and join_style in {"round", "mitre", "bevel"}
+            and isinstance(mitre_limit, (int, float))
+            and not isinstance(mitre_limit, bool)
+            and math.isfinite(mitre_limit)
+            and mitre_limit > 0
+        )
+        findings.extend(
+            [
+                _finding(
+                    "method.quad_segs_valid",
+                    "passed" if quad_segs_valid else "failed",
+                    "quad_segs is an integer from 1 through 64.",
+                    severity="error" if not quad_segs_valid else "info",
+                    evidence=evidence,
+                ),
+                _finding(
+                    "method.buffer_arc_approximation",
+                    "not_assessed",
+                    approximation_message,
+                    severity="warning",
+                    evidence=evidence,
+                ),
+                _finding(
+                    "method.cap_and_join_parameters",
+                    "passed" if cap_join_valid else "failed",
+                    (
+                        f"cap_style={cap_style!r}, join_style={join_style!r}; "
+                        + (
+                            f"mitre_limit={mitre_limit} applies."
+                            if join_style == "mitre"
+                            else f"mitre_limit={mitre_limit} is inactive for this join style."
+                        )
+                    ),
+                    severity="error" if not cap_join_valid else "info",
+                    evidence=evidence,
+                ),
+            ]
+        )
         if parameters.get("single_sided", False):
             line_only = set(
                 input_artifact.get("spatial", {}).get("geometry_types", [])
@@ -201,6 +264,7 @@ def build_methodology_report(
                 "projection_scale_distortion_over_area_of_interest",
                 "distance_accuracy_for_intended_purpose",
                 "geodesic_distance_suitability",
+                "buffer_arc_approximation_acceptability",
             ]
         )
     elif capability_id == "vector.reproject":
