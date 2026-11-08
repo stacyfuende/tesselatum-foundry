@@ -4,62 +4,53 @@
   "name": "Vector buffer",
   "description": "Construct buffers around input geometries.",
   "category": "vector",
-  "input_ports": [
-    {
-      "port_id": "features",
-      "data_kind": "vector",
-      "required": true,
-      "accepted_media_types": [
-        "application/vnd.tessellatum.spatial-feature-collection+json"
-      ],
-      "spatial": {
-        "crs_required": true,
-        "geometry_types": [\n          "Point",\n          "MultiPoint",\n          "LineString",\n          "MultiLineString",\n          "Polygon",\n          "MultiPolygon"\n        ],
-        "measurement_crs_policy": "must_match"
-      }
+  "input_ports": [{
+    "port_id": "features",
+    "data_kind": "vector",
+    "required": true,
+    "accepted_media_types": ["application/vnd.tessellatum.spatial-feature-collection+json"],
+    "spatial": {
+      "crs_required": true,
+      "geometry_types": ["Point", "MultiPoint", "LineString", "MultiLineString", "Polygon", "MultiPolygon"],
+      "measurement_crs_policy": "must_match"
     }
-  ],
+  }],
   "parameter_schema": {
     "type": "object",
     "properties": {
-      "distance": {
-        "type": "number",
-        "exclusiveMinimum": 0
-      },
-      "unit": {
-        "type": "string"
-      }
+      "distance": {"type": "number", "exclusiveMinimum": 0},
+      "unit": {"type": "string"},
+      "quad_segs": {"type": "integer", "minimum": 1, "maximum": 64, "default": 8},
+      "cap_style": {"type": "string", "enum": ["round", "flat", "square"], "default": "round"},
+      "join_style": {"type": "string", "enum": ["round", "mitre", "bevel"], "default": "round"},
+      "mitre_limit": {"type": "number", "exclusiveMinimum": 0, "default": 5},
+      "single_sided": {"type": "boolean", "default": false}
     },
-    "required": [
-      "distance",
-      "unit"
-    ],
+    "required": ["distance", "unit"],
     "additionalProperties": false
   },
-  "output_ports": [
-    {
-      "port_id": "result",
-      "data_kind": "vector",
-      "media_types": [
-        "application/vnd.tessellatum.spatial-feature-collection+json"
-      ],
-      "spatial": {
-        "crs_required": true,
-        "geometry_types": [\n          "Polygon",\n          "MultiPolygon"\n        ],
-        "same_crs_as": "features"
-      }
+  "output_ports": [{
+    "port_id": "result",
+    "data_kind": "vector",
+    "media_types": ["application/vnd.tessellatum.spatial-feature-collection+json"],
+    "spatial": {
+      "crs_required": true,
+      "geometry_types": ["Polygon", "MultiPolygon"],
+      "same_crs_as": "features"
     }
-  ],
+  }],
   "determinism": "deterministic",
   "preconditions": [
-    "A valid measurement CRS must be selected for linear distance units."
+    "A valid projected measurement CRS equal to the input CRS is required.",
+    "The distance unit must match both horizontal measurement CRS axis units.",
+    "Input geometries must be non-empty and valid."
   ],
   "validation_requirements": [
-    "Output geometry validity",
-    "Declared output CRS"
+    "Output geometries must be non-empty and valid.",
+    "Output geometries must be Polygon or MultiPolygon.",
+    "Output CRS must equal input CRS.",
+    "Feature identifiers and properties must be preserved."
   ],
-  "measurement": {
-    "unit_parameter": "unit",
-    "unit_kind": "linear"
-  }
+  "cache_policy": "allowed",
+  "measurement": {"unit_parameter": "unit", "unit_kind": "linear"}
 }
