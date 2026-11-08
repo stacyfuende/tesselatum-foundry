@@ -358,3 +358,20 @@ def test_run_service_rejects_unregistered_worker_implementation(tmp_path):
         )
 
     assert not (runs.root / "runs").exists()
+
+
+def test_run_service_rejects_modified_capability_semantics_before_run(tmp_path):
+    store, runs, service = make_service(tmp_path, WrongCrsWorker())
+    input_artifact = make_input(store)
+    cell = bind_cell_to_input(input_artifact)
+    capability = load_fixture("capability.valid.json")
+    capability["parameter_schema"]["properties"]["distance"]["maximum"] = 1000
+
+    with pytest.raises(ExecutionPreconditionError, match="differs from its canonical"):
+        service.execute(
+            cell=cell,
+            capability=capability,
+            actor_id="test-operator",
+        )
+
+    assert not (runs.root / "runs").exists()
