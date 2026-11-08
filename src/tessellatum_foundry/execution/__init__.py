@@ -6,8 +6,13 @@ from .docker_worker import (
     WorkerTimeoutError,
     WorkerUnavailableError,
 )
-from .protocol import VectorBufferWorker, WorkerResult\nfrom .runs import RunRepository, RunStateError
-from .service import ExecutionPreconditionError, ExecutionResult, VectorBufferRunService
+from .protocol import VectorBufferWorker, WorkerResult
+from .runs import RunRepository, RunStateError
+from .service import (
+    ExecutionPreconditionError,
+    ExecutionResult,
+    VectorBufferRunService,
+)
 
 __all__ = [
     "DockerWorker",
@@ -15,8 +20,10 @@ __all__ = [
     "ExecutionResult",
     "RunRepository",
     "RunStateError",
-    "VectorBufferRunService",\n    "VectorBufferWorker",\n    "WorkerResult",
+    "VectorBufferRunService",
+    "VectorBufferWorker",
     "WorkerExecutionError",
+    "WorkerResult",
     "WorkerTimeoutError",
     "WorkerUnavailableError",
 ]
