@@ -58,3 +58,31 @@ class CellExecutionRunner(Protocol):
     def execute(self, **kwargs: Any) -> Any:
         """Execute one immutable Geo-Cell and return its Run/output evidence."""
         ...
+
+
+class VectorReprojectWorker(Protocol):
+    """Execution contract required by the vector.reproject Run service."""
+
+    capability_id: str
+    capability_version: str
+    implementation_id: str
+    implementation_version: str
+    worker_id: str
+    worker_type: str
+
+    def image_digest(self) -> str:
+        """Return the immutable image identity that will execute the request."""
+        ...
+
+    def execute(
+        self,
+        *,
+        input_bytes: bytes,
+        capability_version: str,
+        input_crs: dict[str, Any],
+        target_crs: dict[str, Any],
+        parameters: dict[str, Any],
+        runtime_image_digest: str | None = None,
+    ) -> WorkerResult:
+        """Execute a normalized reprojection request and return an untrusted result."""
+        ...
