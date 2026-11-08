@@ -187,3 +187,47 @@ def test_input_ports_can_require_equivalent_crs():
         recipe, cells=cells, capabilities=capabilities, artifacts=artifacts
     )
     assert "spatial.input_crs_mismatch" in finding_codes(findings)
+
+
+def test_valid_three_dimensional_extent_uses_min_xyz_max_xyz_order():
+    artifact = load_fixture("artifact.valid.json")
+    artifact["spatial"]["bbox"] = [36.7, -1.4, 10.0, 37.1, -1.0, 50.0]
+    findings = validate_artifact_spatial_metadata(artifact)
+    assert "spatial.bbox_axis_reversed" not in finding_codes(findings)
+
+
+def test_three_dimensional_extent_checks_z_order():
+    artifact = load_fixture("artifact.valid.json")
+    artifact["spatial"]["bbox"] = [36.7, -1.4, 50.0, 37.1, -1.0, 10.0]
+    findings = validate_artifact_spatial_metadata(artifact)
+    assert "spatial.bbox_axis_reversed" in finding_codes(findings)
+
+
+def test_output_port_crs_type_constraint_is_enforced():
+    recipe, cells, capabilities, artifacts = spatial_context()
+    capabilities[("vector.buffer", "1.0.0")]["output_ports"][0]["spatial"] = {
+        "crs_type": "geographic"
+    }
+    findings = validate_recipe_spatial(
+        recipe, cells=cells, capabilities=capabilities, artifacts=artifacts
+    )
+    assert "spatial.output_crs_type_mismatch" in finding_codes(findings)
+
+
+def test_output_port_geometry_constraint_is_enforced():
+    recipe, cells, capabilities, artifacts = spatial_context()
+    capabilities[("vector.buffer", "1.0.0")]["output_ports"][0]["spatial"] = {
+        "geometry_types": ["Point"]
+    }
+    findings = validate_recipe_spatial(
+        recipe, cells=cells, capabilities=capabilities, artifacts=artifacts
+    )
+    assert "spatial.output_geometry_type_mismatch" in finding_codes(findings)
+
+
+def test_raster_artifact_requires_grid_metadata():
+    artifact = load_fixture("artifact.valid.json")
+    artifact["spatial"]["kind"] = "raster"
+    artifact["spatial"].pop("geometry_types")
+    findings = validate_artifact_spatial_metadata(artifact)
+    assert "spatial.raster_grid_missing" in finding_codes(findings)
