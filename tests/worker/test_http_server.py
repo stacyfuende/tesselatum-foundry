@@ -11,6 +11,11 @@ from tessellatum_foundry.execution.remote_worker import (
 )
 from tessellatum_foundry.worker.http_server import WorkerHandler
 from http.server import ThreadingHTTPServer
+from types import SimpleNamespace
+
+from tessellatum_foundry import worker as worker_package
+from tessellatum_foundry.worker import http_server as worker_http_server
+from tessellatum_foundry.worker.http_server import BoundedThreadingHTTPServer
 
 
 def test_remote_worker_http_service_authenticates_and_executes(monkeypatch):
@@ -186,3 +191,83 @@ def test_remote_worker_http_service_executes_vector_reproject(monkeypatch):
         server.shutdown()
         server.server_close()
         thread.join(timeout=2)
+
+
+def test_remote_worker_http_service_bounds_concurrent_requests(monkeypatch):
+    digest = "sha256:" + "e" * 64
+    monkeypatch.setenv("FOUNDRY_REMOTE_WORKER_TOKEN", "test-secret")
+    monkeypatch.setenv("FOUNDRY_WORKER_IMAGE_DIGEST", digest)
+    monkeypatch.setenv("FOUNDRY_MAX_INPUT_BYTES", "1048576")
+    monkeypatch.setenv("FOUNDRY_MAX_OUTPUT_BYTES", "1048576")
+
+    execution_started = threading.Event()
+    allow_execution_to_finish = threading.Event()
+
+    def slow_buffer(*args, **kwargs):
+        execution_started.set()
+        if not allow_execution_to_finish.wait(timeout=5):
+            raise TimeoutError("test execution release timed out")
+        return SimpleNamespace(
+            feature_collection={"type": "FeatureCollection", "features": []}
+        )
+
+    monkeypatch.setattr(worker_http_server, "buffer_feature_collection", slow_buffer)
+    server = BoundedThreadingHTTPServer(
+        ("127.0.0.1", 0), WorkerHandler, max_concurrent_requests=1
+    )
+    server_thread = threading.Thread(target=server.serve_forever, daemon=True)
+    server_thread.start()
+    base_url = f"http://127.0.0.1:{server.server_port}"
+    payload = {
+        "request_version": "0.1.0",
+        "capability_id": "vector.buffer",
+        "capability_version": "1.0.0",
+        "input_feature_collection": {"type": "FeatureCollection", "features": []},
+        "input_crs": {"authority": "EPSG", "code": 32636},
+        "measurement_crs": {"authority": "EPSG", "code": 32636},
+        "parameters": {"distance": 10, "unit": "m"},
+    }
+
+    def post_request():
+        request = Request(
+            f"{base_url}/v1/execute",
+            data=json.dumps(payload).encode(),
+            headers={
+                "Authorization": "Bearer test-secret",
+                "Content-Type": "application/json",
+            },
+            method="POST",
+        )
+        with urlopen(request, timeout=5) as response:
+            return response.status, json.loads(response.read())
+
+    first_result = []
+    first_errors = []
+
+    def run_first():
+        try:
+            first_result.append(post_request())
+        except Exception as error:
+            first_errors.append(error)
+
+    first_thread = threading.Thread(target=run_first, daemon=True)
+    first_thread.start()
+    try:
+        assert execution_started.wait(timeout=2), "first execution did not start"
+        try:
+            post_request()
+            raise AssertionError("second request unexpectedly entered the worker")
+        except HTTPError as error:
+            assert error.code == 503
+            assert error.headers.get("Retry-After") == "2"
+        allow_execution_to_finish.set()
+        first_thread.join(timeout=5)
+        assert not first_thread.is_alive()
+        assert not first_errors
+        assert first_result[0][0] == 200
+    finally:
+        allow_execution_to_finish.set()
+        server.shutdown()
+        server.server_close()
+        server_thread.join(timeout=2)
+        first_thread.join(timeout=2)
