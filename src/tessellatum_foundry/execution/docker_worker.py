@@ -188,7 +188,6 @@ class DockerWorker:
                     timeout=self.timeout_seconds,
                 )
             except subprocess.TimeoutExpired as error:
-                self._remove_container(container_name)
                 raise WorkerTimeoutError(
                     f"Worker exceeded its {self.timeout_seconds}-second timeout."
                 ) from error
