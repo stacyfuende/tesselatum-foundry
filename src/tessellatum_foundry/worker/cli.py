@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import Any
 
 from tessellatum_foundry.capabilities.vector_buffer import buffer_feature_collection
+from tessellatum_foundry.capabilities.vector_reproject import reproject_feature_collection
 
 
 def _write_json_once_or_replace(path: Path, value: dict[str, Any]) -> None:
@@ -52,20 +53,31 @@ def execute_request(request_path: Path, input_path: Path, output_path: Path) -> 
     request = json.loads(request_path.read_text(encoding="utf-8"))
     if request.get("request_version") != "0.1.0":
         raise ValueError("Unsupported worker request version.")
-    if request.get("capability_id") != "vector.buffer":
-        raise ValueError("This worker only executes vector.buffer.")
-    if request.get("capability_version") != "1.0.0":
-        raise ValueError("This worker only executes vector.buffer@1.0.0.")
+    capability_id = request.get("capability_id")
+    capability_version = request.get("capability_version")
     feature_collection = json.loads(input_path.read_text(encoding="utf-8"))
-    result = buffer_feature_collection(
-        feature_collection,
-        input_crs=request["input_crs"],
-        measurement_crs=request["measurement_crs"],
-        **request["parameters"],
-    )
+    if capability_id == "vector.buffer" and capability_version == "1.0.0":
+        result = buffer_feature_collection(
+            feature_collection,
+            input_crs=request["input_crs"],
+            measurement_crs=request["measurement_crs"],
+            **request["parameters"],
+        )
+        output_crs = request["input_crs"]
+    elif capability_id == "vector.reproject" and capability_version == "1.0.0":
+        result = reproject_feature_collection(
+            feature_collection,
+            input_crs=request["input_crs"],
+            target_crs=request["target_crs"],
+        )
+        output_crs = request["target_crs"]
+    else:
+        raise ValueError(
+            f"Unsupported capability request: {capability_id!r}@{capability_version!r}."
+        )
     payload = {
         "feature_collection": result.feature_collection,
-        "crs": request["input_crs"],
+        "crs": output_crs,
     }
     _write_json_once_or_replace(output_path, payload)
 
