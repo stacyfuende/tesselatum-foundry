@@ -276,6 +276,10 @@ class RemoteVectorReprojectWorker(RemoteVectorBufferWorker):
             raise WorkerExecutionError(
                 "Remote worker only executes vector.reproject@1.0.0."
             )
+        if set(parameters) != {"target_crs"} or parameters["target_crs"] != target_crs:
+            raise WorkerExecutionError(
+                "Reprojection parameters must contain only the matching target_crs."
+            )
         identity = self._get_identity()
         pinned_digest = runtime_image_digest or identity["runtime_image_digest"]
         if pinned_digest != identity["runtime_image_digest"]:
