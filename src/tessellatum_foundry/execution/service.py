@@ -361,7 +361,10 @@ class VectorBufferRunService:
             raise ExecutionPreconditionError(
                 "Worker implementation version must be a valid version identifier."
             )
-        if self.worker.worker_type not in {"local_docker", "remote"}:
+        if (
+            not isinstance(self.worker.worker_type, str)
+            or self.worker.worker_type not in {"local_docker", "remote"}
+        ):
             raise ExecutionPreconditionError("Worker type is not supported by the Run contract.")
 
     @staticmethod
