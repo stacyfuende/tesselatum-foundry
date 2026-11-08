@@ -1,6 +1,6 @@
 # v0.1 Acceptance Criteria
 
-**Status:** Planned. These are the definition of done, not claims that the tests already exist or pass.
+**Status:** In progress. These are the definition of done, not claims that every criterion is implemented or passing. The first local single-cell vector.buffer execution path has partial evidence for criteria 5–8; full Recipe, rights/security, remote-worker, and cache acceptance remains outstanding.
 
 Acceptance tests must use versioned fixtures and deterministic test inputs. Every test should record the exact schema, capability, implementation, and runtime versions it exercises.
 
@@ -17,9 +17,9 @@ Acceptance tests must use versioned fixtures and deterministic test inputs. Ever
 
 ## C. Execution and provenance
 
-6. **Run is independently recorded.** A valid Recipe executes through a local worker and produces a Run record containing exact cell/capability versions, immutable input artifact versions and checksums, implementation/runtime identity, timestamps, outputs, and validation references.
-7. **Retry preserves history.** A failed execution followed by a retry creates a new Run linked to the earlier attempt. The original failed Run remains unchanged and inspectable.
-8. **Worker failure is explicit.** Worker loss, timeout, resource exhaustion, and process failure produce structured terminal outcomes and do not register partial outputs as successful artifacts.
+6. **Run is independently recorded.** A valid Recipe executes through a local worker and produces a Run record containing exact cell/capability versions, immutable input artifact versions and checksums, implementation/runtime identity, timestamps, outputs, and validation references. The current evidence covers a single vector.buffer Geo-Cell and Docker worker, not a multi-node Recipe.
+7. **Retry preserves history.** A retryable failed execution followed by a retry creates a new Run linked to the earlier attempt. The original failed Run remains unchanged and inspectable. Non-retryable failures must not be retried.
+8. **Worker failure is explicit.** Worker loss, timeout, resource exhaustion, and process failure produce structured terminal outcomes and do not register partial outputs as successful artifacts. Current tests exercise worker unavailability, output validation failure, and Docker-backed execution; exhaustive resource-exhaustion and host-failure testing remains outstanding.
 
 ## D. Caching and recomputation
 
