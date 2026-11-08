@@ -52,8 +52,9 @@ class VersionedDefinitionStore:
         *,
         created_by: str,
     ) -> dict[str, Any]:
-        schema_name, definition_id = self._identity(kind, definition)
+        schema_name = self._schema_name(kind)
         self.contracts.validate(schema_name, definition)
+        _, definition_id = self._identity(kind, definition)
         canonical = self._canonical_json(definition)
         checksum = hashlib.sha256(canonical).hexdigest()
         record = {
@@ -101,8 +102,9 @@ class VersionedDefinitionStore:
             )
         record = json.loads(path.read_text(encoding="utf-8"))
         self.contracts.validate("definition-record.schema.json", record)
-        schema_name, actual_id = self._identity(kind, record["definition"])
+        schema_name = self._schema_name(kind)
         self.contracts.validate(schema_name, record["definition"])
+        _, actual_id = self._identity(kind, record["definition"])
         if (
             record["kind"] != kind
             or actual_id != definition_id
@@ -142,6 +144,14 @@ class VersionedDefinitionStore:
                 item["definition_ref"]["version"],
             ),
         )
+
+    @staticmethod
+    def _schema_name(kind: DefinitionKind) -> str:
+        if kind == "cell":
+            return "cell.schema.json"
+        if kind == "recipe":
+            return "recipe.schema.json"
+        raise ValueError(f"Unsupported definition kind: {kind!r}.")
 
     @staticmethod
     def _identity(
