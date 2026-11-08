@@ -66,6 +66,13 @@ class VectorBufferRunService:
         self.contracts.validate("capability.schema.json", capability)
         if capability.get("capability_id") != "vector.buffer":
             raise ExecutionPreconditionError("This execution service only supports vector.buffer.")
+        if (
+            self.worker.capability_id != capability["capability_id"]
+            or self.worker.capability_version != capability["version"]
+        ):
+            raise ExecutionPreconditionError(
+                "Selected worker does not implement the exact supplied Capability version."
+            )
         if cell["capability"] != {
             "capability_id": capability["capability_id"],
             "version": capability["version"],
