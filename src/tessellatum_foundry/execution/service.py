@@ -10,11 +10,11 @@ from typing import Any
 from jsonschema import Draft202012Validator, FormatChecker
 
 from tessellatum_foundry.execution.docker_worker import (
-    DockerWorker,
     WorkerExecutionError,
     WorkerTimeoutError,
     WorkerUnavailableError,
 )
+from tessellatum_foundry.execution.protocol import VectorBufferWorker
 from tessellatum_foundry.execution.runs import RunRepository
 from tessellatum_foundry.storage.artifacts import (
     FileSystemArtifactStore,
@@ -48,7 +48,7 @@ class VectorBufferRunService:
         *,
         artifact_store: FileSystemArtifactStore,
         run_repository: RunRepository,
-        worker: DockerWorker,
+        worker: VectorBufferWorker,
         contracts: ContractRegistry | None = None,
     ) -> None:
         self.artifact_store = artifact_store
