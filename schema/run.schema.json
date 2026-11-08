@@ -359,6 +359,18 @@
           "recipe"
         ]
       }
+    },
+    {
+      "if": {
+        "required": [
+          "recipe"
+        ]
+      },
+      "then": {
+        "required": [
+          "recipe_execution_id"
+        ]
+      }
     }
   ],
   "additionalProperties": false,
