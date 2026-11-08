@@ -161,6 +161,11 @@ class WorkerHandler(BaseHTTPRequestHandler):
                     "crs": output_crs,
                     "duration_ms": duration_ms,
                     "runtime_image_digest": digest,
+                    **(
+                        {"coordinate_operation": result.coordinate_operation}
+                        if result.coordinate_operation is not None
+                        else {}
+                    ),
                 },
             )
         except (KeyError, TypeError, ValueError, UnicodeDecodeError, json.JSONDecodeError):
