@@ -41,5 +41,7 @@ jobs:
         run: ruff check .
       - name: Validate schemas and fixtures
         run: python scripts/validate_schemas.py
+      - name: Enable PostGIS extension
+        run: psql "$FOUNDRY_POSTGIS_DSN" -c "CREATE EXTENSION IF NOT EXISTS postgis;"
       - name: Run tests, including PostGIS conformance
         run: python -m pytest
