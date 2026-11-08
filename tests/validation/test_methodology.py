@@ -96,7 +96,10 @@ def test_reproject_report_records_non_ballpark_contract_and_unassessed_accuracy(
             "capability_id": "vector.reproject",
             "preconditions": [
                 "A non-ballpark coordinate operation must be available.",
-                "The operation does not repair geometries, densify segments, clip extents, or split antimeridian crossings.",
+                (
+                    "The operation does not repair geometries, densify segments, "
+                    "clip extents, or split antimeridian crossings."
+                ),
             ],
         },
         parameters={"target_crs": target},
