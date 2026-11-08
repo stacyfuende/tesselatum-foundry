@@ -123,3 +123,20 @@ def test_reproject_rejects_invalid_or_non_finite_transformed_coordinates():
             input_crs={"authority": "EPSG", "code": 4326},
             target_crs={"authority": "EPSG", "code": 3857},
         )
+
+
+def test_vector_reproject_contract_is_canonical_and_implementation_is_registered():
+    from tessellatum_foundry.execution.capabilities import CapabilityRegistry
+    from tessellatum_foundry.execution.implementations import ImplementationRegistry
+    from tessellatum_foundry.validation.contracts import ContractRegistry
+
+    contracts = ContractRegistry()
+    capability_registry = CapabilityRegistry(contracts=contracts)
+    capability = capability_registry.get("vector.reproject", "1.0.0")
+    assert capability_registry.require_exact(capability) == capability
+
+    implementation_registry = ImplementationRegistry(contracts=contracts)
+    manifest = implementation_registry.get("vector-reproject-pyproj-shapely", "1.0.0")
+    assert manifest["capability_id"] == "vector.reproject"
+    assert manifest["capability_version"] == "1.0.0"
+    assert manifest["conformance"]["status"] == "not_run"
