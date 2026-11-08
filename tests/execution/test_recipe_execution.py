@@ -154,7 +154,7 @@ def test_single_node_recipe_executes_and_persists_recipe_correlation(tmp_path):
     assert result.failed_node_id is None
     assert set(result.outputs) == {"buffered_buildings"}
     assert len(result.node_results) == 1
-    run = result.node_results["buffer"]["run"]
+    run = result.node_results["buffer"].run
     assert run["recipe"] == {
         "recipe_id": recipe["recipe_id"],
         "version": recipe["version"],
