@@ -61,6 +61,8 @@ def _resolve_crs(value: Any, label: str) -> CRS:
 
 
 def _coordinates_are_finite(geometry: Any) -> bool:
+    if geometry.geom_type == "GeometryCollection":
+        return all(_coordinates_are_finite(part) for part in geometry.geoms)
     try:
         stack = [geometry.__geo_interface__["coordinates"]]
         while stack:
