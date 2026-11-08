@@ -22,6 +22,4 @@ RUN groupadd --gid 10001 foundry \
 
 USER 10001:10001
 
-EXPOSE 8080
-
-CMD ["python", "-m", "tessellatum_foundry.worker.cli"]
+ENTRYPOINT ["python", "-m", "tessellatum_foundry.worker.cli"]
