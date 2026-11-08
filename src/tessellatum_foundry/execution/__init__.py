@@ -9,7 +9,12 @@ from .docker_worker import (
     WorkerTimeoutError,
     WorkerUnavailableError,
 )
-from .protocol import VectorBufferWorker, VectorReprojectWorker, WorkerResult
+from .protocol import (
+    SpatialWorkerIdentity,
+    VectorBufferWorker,
+    VectorReprojectWorker,
+    WorkerResult,
+)
 from .remote_worker import RemoteVectorBufferWorker
 from .runs import RunRepository, RunStateError
 from .service import (
@@ -38,6 +43,7 @@ __all__ = [
     "RecipeExecutionService",
     "RemoteVectorBufferWorker",
     "RunRepository",
+    "SpatialWorkerIdentity",
     "RunStateError",
     "VectorBufferRunService",
     "VectorBufferWorker",
