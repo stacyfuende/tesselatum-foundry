@@ -21,6 +21,10 @@ from tessellatum_foundry.execution.docker_worker import (
     WorkerTimeoutError,
     WorkerUnavailableError,
 )
+from tessellatum_foundry.execution.capabilities import (
+    CapabilityRegistry,
+    CapabilityRegistryError,
+)
 from tessellatum_foundry.execution.implementations import (
     ImplementationRegistry,
     ImplementationRegistryError,
@@ -61,12 +65,16 @@ class VectorBufferRunService:
         worker: VectorBufferWorker,
         contracts: ContractRegistry | None = None,
         implementations: ImplementationRegistry | None = None,
+        capabilities: CapabilityRegistry | None = None,
     ) -> None:
         self.artifact_store = artifact_store
         self.run_repository = run_repository
         self.worker = worker
         self.contracts = contracts or ContractRegistry()
         self.implementations = implementations or ImplementationRegistry(
+            contracts=self.contracts
+        )
+        self.capabilities = capabilities or CapabilityRegistry(
             contracts=self.contracts
         )
 
@@ -84,6 +92,10 @@ class VectorBufferRunService:
     ) -> ExecutionResult:
         self.contracts.validate("cell.schema.json", cell)
         self.contracts.validate("capability.schema.json", capability)
+        try:
+            capability = self.capabilities.require_exact(capability)
+        except CapabilityRegistryError as error:
+            raise ExecutionPreconditionError(str(error)) from error
         if capability.get("capability_id") != "vector.buffer":
             raise ExecutionPreconditionError("This execution service only supports vector.buffer.")
         if (
