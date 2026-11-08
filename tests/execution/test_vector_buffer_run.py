@@ -198,7 +198,7 @@ def test_failed_attempt_is_preserved_when_a_retry_succeeds(tmp_path):
 class WrongCrsWorker:
     capability_id = "vector.buffer"
     capability_version = "1.0.0"
-    implementation_id = "test-wrong-crs-worker"
+    implementation_id = "vector-buffer-shapely"
     implementation_version = "1.0.0"
     worker_id = "test-worker"
     worker_type = "local_docker"
