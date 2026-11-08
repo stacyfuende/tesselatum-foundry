@@ -20,6 +20,10 @@ from tessellatum_foundry.execution.docker_worker import (
     WorkerTimeoutError,
     WorkerUnavailableError,
 )
+from tessellatum_foundry.execution.implementations import (
+    ImplementationRegistry,
+    ImplementationRegistryError,
+)
 from tessellatum_foundry.execution.protocol import VectorBufferWorker
 from tessellatum_foundry.execution.runs import RunRepository
 from tessellatum_foundry.storage.artifacts import (
@@ -54,11 +58,15 @@ class VectorBufferRunService:
         run_repository: RunRepository,
         worker: VectorBufferWorker,
         contracts: ContractRegistry | None = None,
+        implementations: ImplementationRegistry | None = None,
     ) -> None:
         self.artifact_store = artifact_store
         self.run_repository = run_repository
         self.worker = worker
         self.contracts = contracts or ContractRegistry()
+        self.implementations = implementations or ImplementationRegistry(
+            contracts=self.contracts
+        )
 
     def execute(
         self,
@@ -80,6 +88,15 @@ class VectorBufferRunService:
                 "Selected worker does not implement the exact supplied Capability version."
             )
         self._validate_worker_descriptor()
+        try:
+            implementation_manifest = self.implementations.require_conformant(
+                implementation_id=self.worker.implementation_id,
+                version=self.worker.implementation_version,
+                capability_id=capability["capability_id"],
+                capability_version=capability["version"],
+            )
+        except ImplementationRegistryError as error:
+            raise ExecutionPreconditionError(str(error)) from error
         if cell["capability"] != {
             "capability_id": capability["capability_id"],
             "version": capability["version"],
@@ -236,8 +253,8 @@ class VectorBufferRunService:
                     "worker_type": self.worker.worker_type,
                 },
                 "implementation": {
-                    "implementation_id": self.worker.implementation_id,
-                    "version": self.worker.implementation_version,
+                    "implementation_id": implementation_manifest["implementation_id"],
+                    "version": implementation_manifest["version"],
                 },
                 "runtime_image_digest": image_digest,
             },
