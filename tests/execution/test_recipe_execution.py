@@ -17,6 +17,7 @@ from tessellatum_foundry.execution.recipes import (
 from tessellatum_foundry.execution.runs import RunRepository
 from tessellatum_foundry.execution.service import VectorBufferRunService
 from tessellatum_foundry.storage.artifacts import FileSystemArtifactStore
+from tessellatum_foundry.storage.definitions import VersionedDefinitionStore
 
 ROOT = Path(__file__).resolve().parents[2]
 FIXTURES = ROOT / "tests" / "fixtures" / "valid"
@@ -365,3 +366,48 @@ def test_recipe_preflight_rejects_modified_capability_before_first_node(tmp_path
     assert not (runs.root / "runs").exists()
     assert worker.calls == 0
     assert worker.digest_calls == 0
+
+
+
+def test_registered_recipe_resolves_exact_cell_and_capability_versions(tmp_path):
+    worker = SequenceWorker()
+    store = FileSystemArtifactStore(tmp_path / "artifacts")
+    runs = RunRepository(tmp_path / "control")
+    definitions = VersionedDefinitionStore(tmp_path / "definitions")
+    cell_runner = VectorBufferRunService(
+        artifact_store=store,
+        run_repository=runs,
+        worker=worker,
+    )
+    recipes = RecipeExecutionService(
+        cell_runner=cell_runner,
+        artifact_store=store,
+        definitions=definitions,
+    )
+    source = create_source_artifact(store)
+    cell = load_fixture("cell.valid.json")
+    cell["inputs"]["features"]["artifact"] = {
+        "artifact_id": source["artifact_id"],
+        "version": source["version"],
+    }
+    recipe = load_fixture("recipe.valid.json")
+    definitions.put_cell(cell, created_by="definition-author")
+    definitions.put_recipe(recipe, created_by="definition-author")
+
+    result = recipes.execute_registered(
+        recipe_id=recipe["recipe_id"],
+        version=recipe["version"],
+        actor_id="recipe-test",
+    )
+
+    assert result.status == "succeeded"
+    run = result.node_results["buffer"].run
+    assert run["cell"] == {"cell_id": cell["cell_id"], "version": cell["version"]}
+    assert run["capability"] == {
+        "capability_id": "vector.buffer",
+        "version": "1.0.0",
+    }
+    assert run["recipe"] == {
+        "recipe_id": recipe["recipe_id"],
+        "version": recipe["version"],
+    }
