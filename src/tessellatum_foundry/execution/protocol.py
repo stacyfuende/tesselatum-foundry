@@ -12,7 +12,6 @@ class WorkerResult:
 
     feature_collection: dict[str, Any]
     crs: dict[str, Any]
-    geometry_types: tuple[str, ...]
     duration_ms: int
     runtime_image_digest: str
 
