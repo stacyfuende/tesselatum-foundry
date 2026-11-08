@@ -42,3 +42,19 @@ class VectorBufferWorker(Protocol):
     ) -> WorkerResult:
         """Execute a normalized request and return an untrusted result envelope."""
         ...
+
+
+class CellExecutionRunner(Protocol):
+    """Control-plane interface implemented by capability-specific Run services."""
+
+    worker: Any
+    capabilities: Any
+    implementations: Any
+
+    def validate_worker_configuration(self) -> None:
+        """Verify the selected worker can execute in the current environment."""
+        ...
+
+    def execute(self, **kwargs: Any) -> Any:
+        """Execute one immutable Geo-Cell and return its Run/output evidence."""
+        ...
