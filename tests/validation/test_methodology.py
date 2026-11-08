@@ -3,12 +3,15 @@ from __future__ import annotations
 from tessellatum_foundry.validation.methodology import build_methodology_report
 
 
-def artifact(artifact_id, crs, geometry_types):
-    return {
+def artifact(artifact_id, crs, geometry_types, metadata=None):
+    record = {
         "artifact_id": artifact_id,
         "version": "1.0.0",
         "spatial": {"kind": "vector", "crs": crs, "geometry_types": geometry_types},
     }
+    if metadata is not None:
+        record["metadata"] = metadata
+    return record
 
 
 def findings_by_code(report):
@@ -112,7 +115,21 @@ def test_reproject_report_records_non_ballpark_contract_and_unassessed_accuracy(
         },
         parameters={"target_crs": target},
         input_artifact=artifact("source.points", source, ["Point"]),
-        output_artifact=artifact("projected.points", target, ["Point"]),
+        output_artifact=artifact(
+            "projected.points", target, ["Point"], metadata={
+                "coordinate_operation": {
+                    "description": "Popular Visualisation Pseudo-Mercator",
+                    "accuracy_m": 0.0,
+                    "area_of_use": {
+                        "west": -180.0,
+                        "south": -85.0,
+                        "east": 180.0,
+                        "north": 85.0,
+                        "name": "World",
+                    },
+                }
+            }
+        ),
     )
 
     findings = findings_by_code(report)
@@ -132,7 +149,22 @@ def test_reproject_report_fails_when_output_crs_differs_from_target():
             "source.points", {"authority": "EPSG", "code": 4326}, ["Point"]
         ),
         output_artifact=artifact(
-            "wrong.points", {"authority": "EPSG", "code": 3857}, ["Point"]
+            "wrong.points",
+            {"authority": "EPSG", "code": 3857},
+            ["Point"],
+            metadata={
+                "coordinate_operation": {
+                    "description": "Popular Visualisation Pseudo-Mercator",
+                    "accuracy_m": 0.0,
+                    "area_of_use": {
+                        "west": -180.0,
+                        "south": -85.0,
+                        "east": 180.0,
+                        "north": 85.0,
+                        "name": "World",
+                    },
+                }
+            },
         ),
     )
 
@@ -191,3 +223,23 @@ def test_buffer_arc_tolerance_fails_when_computed_error_exceeds_limit():
     findings = findings_by_code(report)
     assert report["overall_status"] == "failed"
     assert findings["method.buffer_arc_tolerance"]["status"] == "failed"
+
+
+
+def test_reproject_method_report_requires_actual_operation_evidence():
+    report = build_methodology_report(
+        run_id="run:missing-operation",
+        cell={},
+        capability={"capability_id": "vector.reproject"},
+        parameters={"target_crs": {"authority": "EPSG", "code": 32737}},
+        input_artifact=artifact(
+            "source.points", {"authority": "EPSG", "code": 4326}, ["Point"]
+        ),
+        output_artifact=artifact(
+            "projected.points", {"authority": "EPSG", "code": 32737}, ["Point"]
+        ),
+    )
+
+    findings = findings_by_code(report)
+    assert report["overall_status"] == "failed"
+    assert findings["method.coordinate_operation_identity_recorded"]["status"] == "failed"
