@@ -10,6 +10,6 @@ This register records decisions that constrain Foundry's architecture. Each deci
 | [004](004-control-compute-plane-and-workers.md) | Separate control/compute planes; local and remote workers | Accepted |
 | [005](005-capability-contract-and-conformance.md) | Capability contract separate from implementations | Accepted |
 | [006](006-optional-planner-boundary.md) | Planner is optional and outside execution core | Accepted |
-| [007](007-json-schema-and-semantic-validation.md) | JSON Schema plus semantic validation | Accepted |
+| [007](007-json-schema-and-semantic-validation.md) | JSON Schema plus semantic validation | Accepted |\n| [008](008-cell-bindings-and-recipe-edges.md) | Explicit cell bindings mirrored by Recipe edges | Accepted |
 
 A decision may be superseded only by a new decision record that explains the change. Do not silently edit an accepted decision to reverse its meaning.
