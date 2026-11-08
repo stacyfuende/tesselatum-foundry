@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 from collections import defaultdict, deque
+from collections.abc import Mapping
 from dataclasses import asdict, dataclass
-from typing import Any, Mapping
+from typing import Any
 
 from jsonschema import Draft202012Validator, SchemaError
 
