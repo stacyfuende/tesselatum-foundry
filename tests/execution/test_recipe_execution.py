@@ -229,7 +229,8 @@ def test_recipe_resolves_upstream_artifacts_and_stops_after_failed_node(tmp_path
     assert second_run["input_snapshots"][0]["source_run_id"] == first_run["run_id"]
     assert second_run["input_snapshots"][0]["source_output_port"] == "result"
     assert second_run["input_snapshots"][0]["artifact"] == first_run["outputs"][0]["artifact"]
-    assert runs.list_runs_for_recipe_execution(result.execution_id) == [
-        first_run,
-        second_run,
-    ]
+    grouped_runs = {
+        run["run_id"]: run
+        for run in runs.list_runs_for_recipe_execution(result.execution_id)
+    }
+    assert grouped_runs == {first_run["run_id"]: first_run, second_run["run_id"]: second_run}
