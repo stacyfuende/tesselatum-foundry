@@ -2,25 +2,20 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from collections.abc import Mapping
 from typing import Any
 
-from pyproj import CRS
-from shapely.geometry import mapping
+from shapely.geometry import mapping, shape
 
-from .buffer_contract import BufferContractError, prepare_buffer_request
-
-
-@dataclass(frozen=True)
-class BufferOutput:
-    """Buffered features plus the CRS that applies to their coordinates."""
-
-    feature_collection: dict[str, Any]
-    crs: CRS
+from .buffer_contract import (
+    BufferContractError,
+    BufferOutput,
+    prepare_buffer_request,
+)
 
 
 def buffer_feature_collection(
-    feature_collection: dict[str, Any],
+    feature_collection: Mapping[str, Any],
     *,
     input_crs: Any,
     measurement_crs: Any,
@@ -32,12 +27,12 @@ def buffer_feature_collection(
     mitre_limit: float = 5.0,
     single_sided: bool = False,
 ) -> BufferOutput:
-    """Buffer features without reprojection, repair, or implicit unit conversion.
+    """Buffer features with Shapely and GEOS.
 
     Distance uses the projected CRS's native horizontal unit. Feature properties and
     IDs are preserved. Output geometry is Polygon or MultiPolygon. The feature
     payload is GeoJSON-compatible; CRS is separate Foundry metadata, not an RFC 7946
-    CRS member.
+    CRS member. Z coordinates are ignored and output geometries are 2D.
     """
     request = prepare_buffer_request(
         feature_collection,
@@ -53,7 +48,24 @@ def buffer_feature_collection(
     )
     buffered_features: list[dict[str, Any]] = []
     for index, feature in enumerate(request.features):
-        result = feature.geometry.buffer(
+        try:
+            geometry = shape(feature.geometry_json)
+        except (AttributeError, TypeError, ValueError) as error:
+            raise BufferContractError(
+                f"Feature at index {index} has an unreadable geometry: {error}"
+            ) from error
+        if geometry.geom_type != feature.geometry_type:
+            raise BufferContractError(
+                f"Feature at index {index} geometry type does not match its declaration."
+            )
+        if geometry.is_empty:
+            raise BufferContractError(f"Feature at index {index} has empty geometry.")
+        if not geometry.is_valid:
+            raise BufferContractError(
+                f"Feature at index {index} has invalid geometry; "
+                "repair it explicitly before buffering."
+            )
+        result = geometry.buffer(
             request.distance,
             quad_segs=request.quad_segs,
             cap_style=request.cap_style,
