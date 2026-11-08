@@ -9,6 +9,7 @@ WORKDIR /opt/foundry
 
 COPY pyproject.toml README.md ./
 COPY schema ./schema
+COPY capabilities ./capabilities
 COPY implementations ./implementations
 COPY src ./src
 
