@@ -12,10 +12,12 @@ The repository follows a contracts-first implementation sequence. The first mile
 - [x] v0.1 acceptance criteria documented.
 - [x] Initial JSON Schema validator and Recipe graph semantic validator implemented with CI tests.
 - [x] Initial spatial metadata and pre-execution CRS/unit validator implemented with tests.
+- [x] First executable spatial capability contract and Shapely vector.buffer implementation added with geometry-level tests.
+- [ ] Shared cross-engine conformance suite and independent PostGIS implementation.
 - [ ] Methodological, rights, and execution/output validators implemented.
 - [ ] Deterministic local execution path implemented.
 - [ ] Remote worker path implemented and conformance-tested.
-- [ ] Initial vector and raster capabilities implemented.
+- [ ] Initial raster capabilities implemented.
 - [ ] Read-only recipe graph viewer implemented.
 
 Items are marked complete only when the repository contains implementation and tests demonstrating them.
@@ -47,6 +49,10 @@ The Validation Report is a separate evidence object. Implementations are registe
 - Capability implementations must pass conformance tests before being treated as interchangeable.
 - The planner is optional and never required by the execution core.
 - Security, provenance, licensing, and cost visibility are architectural concerns.
+
+## First capability
+
+`vector.buffer@1.0.0` has an engine-independent contract and an initial Shapely implementation. It requires an explicit projected measurement CRS equal to the input CRS, rejects invalid input geometries rather than repairing them, and returns valid Polygon/MultiPolygon outputs while preserving feature IDs and properties. PostGIS parity is not yet claimed.
 
 ## Scope boundary
 
