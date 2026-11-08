@@ -13,7 +13,7 @@ The repository already has a worker CLI that executes the exact capability reque
 ## Decision
 
 1. Execute each remote capability request through `python -m tessellatum_foundry.worker.cli` in a child process rather than invoking capability functions inside the HTTP handler.
-2. Write the normalized worker request, input FeatureCollection and output to a private temporary directory. Do not pass bearer credentials or HTTP headers to the child process.
+2. Write the normalized worker request, input FeatureCollection and output to a private temporary directory. Do not pass bearer credentials, HTTP headers or unrelated service secrets to the child process; construct its environment from an explicit runtime allowlist.
 3. Enforce a hard wall-clock timeout with `subprocess.run(timeout=...)`. The default is 110 seconds; configure `FOUNDRY_EXECUTION_TIMEOUT_SECONDS` from 1 through 3600.
 4. On timeout, terminate the child process and return HTTP 504 with a stable `worker_execution_timeout` error code.
 5. On non-zero exit, missing output, invalid output JSON or output-size violation, fail the request. Never return partial output as a successful execution.
