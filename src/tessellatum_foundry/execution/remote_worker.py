@@ -20,8 +20,16 @@ _ALLOWED_LOCAL_HOSTS = {"localhost", "127.0.0.1", "::1"}
 
 
 class _RejectRedirects(HTTPRedirectHandler):
-    def redirect_request(self, request, file_pointer, code, message, headers, new_url):
-        raise HTTPError(request.full_url, code, "Worker redirects are disabled.", headers, file_pointer)
+    def redirect_request(
+        self, request, file_pointer, code, message, headers, new_url
+    ):
+        raise HTTPError(
+            request.full_url,
+            code,
+            "Worker redirects are disabled.",
+            headers,
+            file_pointer,
+        )
 
 
 class RemoteVectorBufferWorker:
@@ -50,11 +58,17 @@ class RemoteVectorBufferWorker:
             or parsed.query
             or parsed.fragment
         ):
-            raise ValueError("Worker URL must be an absolute HTTP(S) URL without credentials, query, or fragment.")
+            raise ValueError(
+                "Worker URL must be an absolute HTTP(S) URL without credentials, "
+                "query, or fragment."
+            )
         if parsed.scheme != "https" and not (
             allow_insecure_localhost and parsed.hostname in _ALLOWED_LOCAL_HOSTS
         ):
-            raise ValueError("Remote workers require HTTPS; HTTP is allowed only for explicit localhost tests.")
+            raise ValueError(
+                "Remote workers require HTTPS; HTTP is allowed only for explicit "
+                "localhost tests."
+            )
         if not isinstance(bearer_token, str) or not bearer_token.strip():
             raise ValueError("A non-empty worker bearer token is required.")
         if timeout_seconds < 1 or max_input_bytes < 1 or max_output_bytes < 1:
@@ -72,7 +86,9 @@ class RemoteVectorBufferWorker:
             payload, ensure_ascii=False, allow_nan=False, separators=(",", ":")
         ).encode("utf-8")
         if body is not None and len(body) > self.max_input_bytes + 1024 * 1024:
-            raise WorkerExecutionError("Remote worker request exceeds the configured byte limit.")
+            raise WorkerExecutionError(
+                "Remote worker request exceeds the configured byte limit."
+            )
         request = Request(
             f"{self.base_url}{path}",
             data=body,
@@ -83,25 +99,38 @@ class RemoteVectorBufferWorker:
             },
             method="POST" if body is not None else "GET",
         )
-        started = time.monotonic()
         try:
             with self._opener.open(request, timeout=self.timeout_seconds) as response:
                 raw = response.read(self.max_output_bytes + 1)
                 if len(raw) > self.max_output_bytes:
-                    raise WorkerExecutionError("Remote worker response exceeds the configured byte limit.")
+                    raise WorkerExecutionError(
+                        "Remote worker response exceeds the configured byte limit."
+                    )
                 if response.status != 200:
-                    raise WorkerUnavailableError(f"Remote worker returned HTTP {response.status}.")
+                    raise WorkerUnavailableError(
+                        f"Remote worker returned HTTP {response.status}."
+                    )
         except HTTPError as error:
             if error.code in {301, 302, 303, 307, 308}:
-                raise WorkerUnavailableError("Remote worker redirects are not permitted.") from error
+                raise WorkerUnavailableError(
+                    "Remote worker redirects are not permitted."
+                ) from error
             if error.code in {408, 425, 429, 500, 502, 503, 504}:
-                raise WorkerUnavailableError(f"Remote worker temporarily unavailable (HTTP {error.code}).") from error
-            raise WorkerExecutionError(f"Remote worker rejected the request (HTTP {error.code}).") from error
+                raise WorkerUnavailableError(
+                    f"Remote worker temporarily unavailable (HTTP {error.code})."
+                ) from error
+            raise WorkerExecutionError(
+                f"Remote worker rejected the request (HTTP {error.code})."
+            ) from error
         except TimeoutError as error:
-            raise WorkerTimeoutError(f"Remote worker exceeded its {self.timeout_seconds}-second timeout.") from error
+            raise WorkerTimeoutError(
+                f"Remote worker exceeded its {self.timeout_seconds}-second timeout."
+            ) from error
         except URLError as error:
             if isinstance(error.reason, TimeoutError):
-                raise WorkerTimeoutError(f"Remote worker exceeded its {self.timeout_seconds}-second timeout.") from error
+                raise WorkerTimeoutError(
+                    f"Remote worker exceeded its {self.timeout_seconds}-second timeout."
+                ) from error
             raise WorkerUnavailableError("Remote worker could not be reached.") from error
         except OSError as error:
             raise WorkerUnavailableError("Remote worker transport failed.") from error
@@ -122,14 +151,22 @@ class RemoteVectorBufferWorker:
                 "implementation_version",
                 "runtime_image_digest",
             )
-            if any(not isinstance(identity.get(key), str) or not identity[key] for key in required):
+            if any(
+                not isinstance(identity.get(key), str) or not identity[key]
+                for key in required
+            ):
                 raise WorkerUnavailableError("Remote worker identity is incomplete.")
             if not _IMAGE_DIGEST.fullmatch(identity["runtime_image_digest"]):
-                raise WorkerUnavailableError("Remote worker reported an invalid runtime image digest.")
-            if identity.get("capability_id") != self.capability_id or identity.get(
-                "capability_version"
-            ) != self.capability_version:
-                raise WorkerUnavailableError("Remote worker does not support vector.buffer@1.0.0.")
+                raise WorkerUnavailableError(
+                    "Remote worker reported an invalid runtime image digest."
+                )
+            if (
+                identity.get("capability_id") != self.capability_id
+                or identity.get("capability_version") != self.capability_version
+            ):
+                raise WorkerUnavailableError(
+                    "Remote worker does not support vector.buffer@1.0.0."
+                )
             self._identity = {key: identity[key] for key in required}
         return self._identity
 
@@ -159,17 +196,25 @@ class RemoteVectorBufferWorker:
         runtime_image_digest: str | None = None,
     ) -> WorkerResult:
         if len(input_bytes) > self.max_input_bytes:
-            raise WorkerExecutionError("Input Artifact exceeds the remote worker byte limit.")
+            raise WorkerExecutionError(
+                "Input Artifact exceeds the remote worker byte limit."
+            )
         if capability_version != self.capability_version:
-            raise WorkerExecutionError("Remote worker only executes vector.buffer@1.0.0.")
+            raise WorkerExecutionError(
+                "Remote worker only executes vector.buffer@1.0.0."
+            )
         identity = self._get_identity()
         pinned_digest = runtime_image_digest or identity["runtime_image_digest"]
         if pinned_digest != identity["runtime_image_digest"]:
-            raise WorkerUnavailableError("Remote worker runtime image changed after preflight.")
+            raise WorkerUnavailableError(
+                "Remote worker runtime image changed after preflight."
+            )
         try:
             feature_collection = json.loads(input_bytes.decode("utf-8"))
         except (UnicodeDecodeError, json.JSONDecodeError) as error:
-            raise WorkerExecutionError("Input Artifact is not valid UTF-8 JSON.") from error
+            raise WorkerExecutionError(
+                "Input Artifact is not valid UTF-8 JSON."
+            ) from error
         payload = self._request_json(
             "/v1/execute",
             {
@@ -183,12 +228,21 @@ class RemoteVectorBufferWorker:
             },
         )
         if payload.get("runtime_image_digest") != pinned_digest:
-            raise WorkerUnavailableError("Remote worker execution used an unexpected runtime image.")
-        if not isinstance(payload.get("feature_collection"), dict) or payload.get("crs") != input_crs:
-            raise WorkerExecutionError("Remote worker result does not match the transport contract.")
+            raise WorkerUnavailableError(
+                "Remote worker execution used an unexpected runtime image."
+            )
+        if (
+            not isinstance(payload.get("feature_collection"), dict)
+            or payload.get("crs") != input_crs
+        ):
+            raise WorkerExecutionError(
+                "Remote worker result does not match the transport contract."
+            )
         reported_duration = payload.get("duration_ms")
         if type(reported_duration) is not int or reported_duration < 0:
-            raise WorkerExecutionError("Remote worker returned an invalid execution duration.")
+            raise WorkerExecutionError(
+                "Remote worker returned an invalid execution duration."
+            )
         return WorkerResult(
             feature_collection=payload["feature_collection"],
             crs=payload["crs"],
