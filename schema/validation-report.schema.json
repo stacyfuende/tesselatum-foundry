@@ -1,0 +1,167 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Foundry Validation Report",
+  "description": "Evidence-bearing report of validation performed on a specific subject and stage.",
+  "type": "object",
+  "required": [
+    "report_id",
+    "subject",
+    "stage",
+    "overall_status",
+    "created_at",
+    "validator",
+    "findings"
+  ],
+  "properties": {
+    "report_id": {
+      "$ref": "./_common.schema.json#/$defs/identifier"
+    },
+    "subject": {
+      "type": "object",
+      "required": [
+        "kind",
+        "id",
+        "version"
+      ],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "artifact",
+            "capability",
+            "cell",
+            "recipe",
+            "run",
+            "implementation"
+          ]
+        },
+        "id": {
+          "$ref": "./_common.schema.json#/$defs/identifier"
+        },
+        "version": {
+          "$ref": "./_common.schema.json#/$defs/version"
+        }
+      },
+      "additionalProperties": false
+    },
+    "stage": {
+      "type": "string",
+      "enum": [
+        "schema",
+        "reference",
+        "graph",
+        "spatial",
+        "methodological",
+        "rights_security",
+        "execution_output",
+        "conformance"
+      ]
+    },
+    "overall_status": {
+      "type": "string",
+      "enum": [
+        "passed",
+        "failed",
+        "warning",
+        "not_assessed",
+        "requires_review"
+      ]
+    },
+    "created_at": {
+      "$ref": "./_common.schema.json#/$defs/timestamp"
+    },
+    "validator": {
+      "type": "object",
+      "required": [
+        "name",
+        "version"
+      ],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "version": {
+          "$ref": "./_common.schema.json#/$defs/version"
+        }
+      },
+      "additionalProperties": false
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "code",
+          "severity",
+          "status",
+          "message"
+        ],
+        "properties": {
+          "code": {
+            "type": "string",
+            "minLength": 1
+          },
+          "severity": {
+            "type": "string",
+            "enum": [
+              "critical",
+              "error",
+              "warning",
+              "info"
+            ]
+          },
+          "status": {
+            "$ref": "./_common.schema.json#/$defs/findingStatus"
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1
+          },
+          "json_pointer": {
+            "type": "string"
+          },
+          "evidence": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string"
+                },
+                "reference": {
+                  "type": "string"
+                },
+                "summary": {
+                  "type": "string"
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "recommendation": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "summary": {
+      "type": "string"
+    },
+    "assessed_dimensions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "uniqueItems": true
+    },
+    "unassessed_dimensions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "uniqueItems": true
+    }
+  },
+  "additionalProperties": false
+}
