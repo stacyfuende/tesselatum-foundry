@@ -160,7 +160,7 @@ def test_reproject_run_persists_output_artifact_and_validation_evidence(tmp_path
 
 
 def test_reproject_run_fails_closed_when_worker_reports_wrong_crs(tmp_path):
-    store, runs, service = make_service(tmp_path, FakeReprojectWorker(wrong_crs=True))
+    store, _, service = make_service(tmp_path, FakeReprojectWorker(wrong_crs=True))
     artifact = make_input(store)
     result = service.execute(
         cell=make_cell(artifact),
@@ -174,7 +174,7 @@ def test_reproject_run_fails_closed_when_worker_reports_wrong_crs(tmp_path):
 
 
 def test_reproject_run_fails_closed_when_worker_changes_feature_metadata(tmp_path):
-    store, runs, service = make_service(
+    store, _, service = make_service(
         tmp_path, FakeReprojectWorker(mutate_properties=True)
     )
     artifact = make_input(store)
