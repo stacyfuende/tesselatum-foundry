@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-import json
 from copy import deepcopy
+import json
 import os
 from pathlib import Path
 from typing import Any
@@ -462,4 +462,48 @@ def test_deterministic_cache_reuses_only_validated_immutable_outputs(tmp_path):
     assert third.run["status"] == "succeeded"
     assert third.run["cache"]["status"] == "miss"
     assert third.run["cache"]["cache_key"] != first.run["cache"]["cache_key"]
+    assert worker.calls == 2
+
+
+@pytest.mark.parametrize(
+    "corruption",
+    ["validator_version", "failed_finding", "missing_assessment"],
+)
+def test_cache_rejects_stale_or_incomplete_output_validation_evidence(
+    tmp_path, monkeypatch, corruption
+):
+    worker = DeterministicBufferWorker()
+    store, runs, service = make_service(tmp_path, worker)
+    input_artifact = make_input(store)
+    cell = bind_cell_to_input(input_artifact)
+    capability = load_fixture("capability.valid.json")
+
+    first = service.execute(
+        cell=cell,
+        capability=capability,
+        actor_id="test-operator",
+    )
+    assert first.run["status"] == "succeeded"
+
+    original_get_report = runs.get_validation_report
+
+    def corrupted_report(report_id):
+        report = deepcopy(original_get_report(report_id))
+        if corruption == "validator_version":
+            report["validator"]["version"] = "0.0.0"
+        elif corruption == "failed_finding":
+            report["findings"][0]["status"] = "failed"
+        else:
+            report["assessed_dimensions"].remove("feature_metadata")
+        return report
+
+    monkeypatch.setattr(runs, "get_validation_report", corrupted_report)
+    second = service.execute(
+        cell=cell,
+        capability=capability,
+        actor_id="test-operator",
+    )
+
+    assert second.run["status"] == "succeeded"
+    assert second.run["cache"]["status"] == "miss"
     assert worker.calls == 2
