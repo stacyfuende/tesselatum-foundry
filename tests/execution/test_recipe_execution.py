@@ -160,6 +160,8 @@ def test_single_node_recipe_executes_and_persists_recipe_correlation(tmp_path):
         "version": recipe["version"],
     }
     assert run["recipe_execution_id"] == result.execution_id
+    assert run["recipe_node_id"] == "buffer"
+    assert run["recipe_node_order"] == 0
     assert runs.list_runs_for_recipe_execution(result.execution_id) == [run]
 
 
@@ -233,6 +235,10 @@ def test_recipe_resolves_upstream_artifacts_and_stops_after_failed_node(tmp_path
     assert first_run["runtime_image_digest"] == second_run["runtime_image_digest"]
     assert first_run["recipe_execution_id"] == result.execution_id
     assert second_run["recipe_execution_id"] == result.execution_id
+    assert first_run["recipe_node_id"] == "first"
+    assert first_run["recipe_node_order"] == 0
+    assert second_run["recipe_node_id"] == "second"
+    assert second_run["recipe_node_order"] == 1
     assert second_run["input_snapshots"][0]["source_run_id"] == first_run["run_id"]
     assert second_run["input_snapshots"][0]["source_output_port"] == "result"
     assert second_run["input_snapshots"][0]["artifact"] == first_run["outputs"][0]["artifact"]
@@ -294,6 +300,8 @@ def test_two_node_recipe_executes_upstream_artifact_chain(tmp_path):
     first_run = result.node_results["first"].run
     second_run = result.node_results["second"].run
     assert first_run["status"] == second_run["status"] == "succeeded"
+    assert first_run["recipe_node_order"] == 0
+    assert second_run["recipe_node_order"] == 1
     assert first_run["runtime_image_digest"] == second_run["runtime_image_digest"]
     assert second_run["input_snapshots"][0]["source_run_id"] == first_run["run_id"]
     assert second_run["input_snapshots"][0]["artifact"] == first_run["outputs"][0]["artifact"]
