@@ -32,7 +32,12 @@ def load_fixture(name: str) -> dict[str, Any]:
     return json.loads((FIXTURES / name).read_text(encoding="utf-8"))
 
 
-def make_input(store: FileSystemArtifactStore, *, invalid: bool = False) -> dict[str, Any]:
+def make_input(
+    store: FileSystemArtifactStore,
+    *,
+    invalid: bool = False,
+    declared_geometry_types: list[str] | None = None,
+) -> dict[str, Any]:
     if invalid:
         geometry = {
             "type": "Polygon",
@@ -63,7 +68,7 @@ def make_input(store: FileSystemArtifactStore, *, invalid: bool = False) -> dict
         spatial={
             "kind": "vector",
             "crs": PROJECTED,
-            "geometry_types": [geometry_type],
+            "geometry_types": declared_geometry_types or [geometry_type],
         },
     )
 
@@ -293,3 +298,21 @@ def test_invalid_worker_runtime_digest_fails_the_run_cleanly(tmp_path):
     assert result.run["error"]["retryable"] is True
     assert result.output_artifact is None
     assert runs.get_run(result.run["run_id"])["status"] == "failed"
+
+
+
+def test_run_preflight_rejects_geometry_type_metadata_mismatch(tmp_path):
+    worker = WrongCrsWorker()
+    store, runs, service = make_service(tmp_path, worker)
+    input_artifact = make_input(store, declared_geometry_types=["Polygon"])
+    cell = bind_cell_to_input(input_artifact)
+    capability = load_fixture("capability.valid.json")
+
+    with pytest.raises(ExecutionPreconditionError, match="geometry_types metadata"):
+        service.execute(
+            cell=cell,
+            capability=capability,
+            actor_id="test-operator",
+        )
+
+    assert not (runs.root / "runs").exists()
