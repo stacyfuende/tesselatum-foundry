@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import uuid
+from copy import deepcopy
 from collections import defaultdict, deque
 from dataclasses import dataclass
 from typing import Any
@@ -59,6 +60,9 @@ class RecipeExecutionService:
         capabilities: dict[tuple[str, str], dict[str, Any]],
         actor_id: str,
     ) -> RecipeExecutionResult:
+        recipe = deepcopy(recipe)
+        cells = deepcopy(cells)
+        capabilities = deepcopy(capabilities)
         self.contracts.validate("recipe.schema.json", recipe)
         referenced_cells = []
         try:
