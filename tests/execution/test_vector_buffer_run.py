@@ -470,6 +470,9 @@ def test_deterministic_cache_reuses_only_validated_immutable_outputs(tmp_path):
         "id": second.run["run_id"],
     }
     assert second.validation_report["validator"]["name"] == "foundry-cache-reuse"
+    assert len(second.run["validation_report_ids"]) == 2
+    rights_report = runs.get_validation_report(f"report:{second.run['run_id']}:rights")
+    assert rights_report["overall_status"] == "requires_review"
     assert worker.calls == 1
     assert runs.get_run(second.run["run_id"])["cache"]["status"] == "hit"
 
