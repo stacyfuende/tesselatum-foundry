@@ -22,7 +22,7 @@ The repository follows a contracts-first implementation sequence. The first mile
 - [ ] Remote worker path implemented and conformance-tested.
 - [ ] Initial raster capabilities implemented.
 - [ ] Read-only Recipe graph viewer implemented.
-- [ ] Public API and SDK surface implemented.
+- [~] Local Python SDK is available; authenticated network API and generated client SDK remain outstanding.
 
 Items are marked complete when implementation and corresponding tests are present. Runtime and CI verification are reported separately.
 
