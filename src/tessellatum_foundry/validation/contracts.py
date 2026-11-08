@@ -10,6 +10,8 @@ from jsonschema import Draft202012Validator, FormatChecker
 from referencing import Registry, Resource
 from referencing.jsonschema import DRAFT202012
 
+from tessellatum_foundry.data import foundry_data_dir
+
 
 class ContractValidationError(ValueError):
     """Raised when a Foundry object does not satisfy its canonical schema."""
@@ -25,7 +27,7 @@ class ContractRegistry:
     """Load and apply the repository's canonical Draft 2020-12 schemas."""
 
     def __init__(self, schema_dir: Path | None = None) -> None:
-        self.schema_dir = schema_dir or Path(__file__).resolve().parents[3] / "schema"
+        self.schema_dir = schema_dir or foundry_data_dir("schema")
         self.schemas: dict[str, dict[str, Any]] = {}
         self._validators: dict[str, Draft202012Validator] = {}
         registry = Registry()
