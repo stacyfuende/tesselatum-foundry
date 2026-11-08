@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import json
 import re
-import time
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlsplit
 from urllib.request import HTTPRedirectHandler, Request, build_opener
@@ -171,7 +170,6 @@ class RemoteVectorBufferWorker:
             feature_collection = json.loads(input_bytes.decode("utf-8"))
         except (UnicodeDecodeError, json.JSONDecodeError) as error:
             raise WorkerExecutionError("Input Artifact is not valid UTF-8 JSON.") from error
-        started = time.monotonic()
         payload = self._request_json(
             "/v1/execute",
             {
@@ -184,17 +182,16 @@ class RemoteVectorBufferWorker:
                 "parameters": parameters,
             },
         )
-        duration_ms = max(0, int((time.monotonic() - started) * 1000))
         if payload.get("runtime_image_digest") != pinned_digest:
             raise WorkerUnavailableError("Remote worker execution used an unexpected runtime image.")
         if not isinstance(payload.get("feature_collection"), dict) or payload.get("crs") != input_crs:
             raise WorkerExecutionError("Remote worker result does not match the transport contract.")
         reported_duration = payload.get("duration_ms")
-        if not isinstance(reported_duration, int) or reported_duration < 0:
+        if type(reported_duration) is not int or reported_duration < 0:
             raise WorkerExecutionError("Remote worker returned an invalid execution duration.")
         return WorkerResult(
             feature_collection=payload["feature_collection"],
             crs=payload["crs"],
-            duration_ms=reported_duration if reported_duration >= 0 else duration_ms,
+            duration_ms=reported_duration,
             runtime_image_digest=pinned_digest,
         )
