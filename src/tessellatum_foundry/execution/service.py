@@ -533,8 +533,33 @@ class VectorBufferRunService:
         *,
         cell: dict[str, Any],
         capability: dict[str, Any],
-        input_artifact: dict[str, Any],
+        resolved_artifacts: dict[str, dict[str, Any]],
     ) -> None:
+        validation_cell = deepcopy(cell)
+        artifacts: dict[tuple[str, str], dict[str, Any]] = {}
+        for port_id, binding in validation_cell.get("inputs", {}).items():
+            artifact = resolved_artifacts.get(port_id)
+            if artifact is None:
+                raise ExecutionPreconditionError(
+                    f"Spatial input Artifact for port {port_id!r} was not resolved."
+                )
+            artifact_ref = {
+                "artifact_id": artifact["artifact_id"],
+                "version": artifact["version"],
+            }
+            if binding.get("source") == "cell_output":
+                validation_cell["inputs"][port_id] = {
+                    "source": "artifact",
+                    "artifact": artifact_ref,
+                }
+            elif binding.get("source") != "artifact" or binding.get(
+                "artifact"
+            ) != artifact_ref:
+                raise ExecutionPreconditionError(
+                    f"Resolved Artifact does not match input port {port_id!r}."
+                )
+            artifacts[(artifact["artifact_id"], artifact["version"])] = artifact
+
         key = (cell["cell_id"], cell["version"])
         capability_key = (capability["capability_id"], capability["version"])
         recipe_projection = {
@@ -550,11 +575,9 @@ class VectorBufferRunService:
         }
         findings = validate_recipe_spatial(
             recipe_projection,
-            cells={key: cell},
+            cells={key: validation_cell},
             capabilities={capability_key: capability},
-            artifacts={
-                (input_artifact["artifact_id"], input_artifact["version"]): input_artifact
-            },
+            artifacts=artifacts,
         )
         if findings:
             summary = "; ".join(f"{finding.code}: {finding.message}" for finding in findings)
