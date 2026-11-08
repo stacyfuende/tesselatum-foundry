@@ -211,3 +211,39 @@ def test_remote_reproject_worker_rejects_buffer_only_identity():
 
     with pytest.raises(WorkerUnavailableError, match="vector.reproject@1.0.0"):
         worker.image_digest()
+
+
+
+def test_remote_reproject_worker_rejects_missing_operation_evidence():
+    digest = "sha256:" + "c" * 64
+    target_crs = {"authority": "EPSG", "code": 32737}
+    identity_payload = {
+        "worker_id": "remote-reproject-worker",
+        "capability_id": "vector.reproject",
+        "capability_version": "1.0.0",
+        "implementation_id": "vector-reproject-pyproj-shapely",
+        "implementation_version": "1.0.0",
+        "runtime_image_digest": digest,
+    }
+    result = {
+        "feature_collection": {"type": "FeatureCollection", "features": []},
+        "crs": target_crs,
+        "duration_ms": 8,
+        "runtime_image_digest": digest,
+    }
+    worker = RemoteVectorReprojectWorker(
+        "https://worker.example", bearer_token="secret"
+    )
+    worker._opener = FakeOpener(
+        [FakeResponse(identity_payload), FakeResponse(result)]
+    )
+
+    with pytest.raises(WorkerExecutionError, match="omitted coordinate-operation evidence"):
+        worker.execute(
+            input_bytes=b'{"type":"FeatureCollection","features":[]}',
+            capability_version="1.0.0",
+            input_crs={"authority": "EPSG", "code": 4326},
+            target_crs=target_crs,
+            parameters={"target_crs": target_crs},
+            runtime_image_digest=digest,
+        )
