@@ -326,3 +326,41 @@ def test_remote_worker_http_service_times_out_isolated_execution(monkeypatch):
         server.shutdown()
         server.server_close()
         server_thread.join(timeout=2)
+
+
+def test_remote_worker_child_process_receives_only_allowlisted_environment(monkeypatch):
+    monkeypatch.setenv("FOUNDRY_REMOTE_WORKER_TOKEN", "must-not-leak")
+    monkeypatch.setenv("POLAR_API_KEY", "must-not-leak-either")
+    monkeypatch.setenv("FOUNDRY_MAX_OUTPUT_BYTES", "4096")
+    captured = {}
+
+    def fake_process(command, **kwargs):
+        captured.update(kwargs["env"])
+        output_path = Path(command[command.index("--output") + 1])
+        output_path.write_text(
+            json.dumps({
+                "feature_collection": {"type": "FeatureCollection", "features": []},
+                "crs": {"authority": "EPSG", "code": 32636},
+            }),
+            encoding="utf-8",
+        )
+        return subprocess.CompletedProcess(command, 0)
+
+    monkeypatch.setattr(worker_http_server.subprocess, "run", fake_process)
+    result = worker_http_server._execute_isolated(
+        {
+            "request_version": "0.1.0",
+            "capability_id": "vector.buffer",
+            "capability_version": "1.0.0",
+            "input_crs": {"authority": "EPSG", "code": 32636},
+            "measurement_crs": {"authority": "EPSG", "code": 32636},
+            "parameters": {"distance": 10, "unit": "m"},
+        },
+        {"type": "FeatureCollection", "features": []},
+    )
+
+    assert result["feature_collection"]["type"] == "FeatureCollection"
+    assert "FOUNDRY_REMOTE_WORKER_TOKEN" not in captured
+    assert "POLAR_API_KEY" not in captured
+    assert captured["FOUNDRY_MAX_OUTPUT_BYTES"] == "4096"
+    assert captured["PYTHONNOUSERSITE"] == "1"
