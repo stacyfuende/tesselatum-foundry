@@ -1,4 +1,4 @@
-# ADR-028: Require current complete validation evidence for cache reuse
+# ADR-029: Require current complete validation evidence for cache reuse
 
 - **Status:** Accepted
 - **Date:** 2026-11-08
