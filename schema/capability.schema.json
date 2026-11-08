@@ -98,6 +98,14 @@
               },
               "same_crs_as": {
                 "$ref": "urn:tessellatum-foundry:schema:common:1.0.0#/$defs/identifier"
+              },
+              "measurement_crs_policy": {
+                "type": "string",
+                "enum": [
+                  "must_match",
+                  "reproject_to_measurement_crs",
+                  "not_applicable"
+                ]
               }
             },
             "additionalProperties": false
@@ -196,6 +204,14 @@
               },
               "same_crs_as": {
                 "$ref": "urn:tessellatum-foundry:schema:common:1.0.0#/$defs/identifier"
+              },
+              "measurement_crs_policy": {
+                "type": "string",
+                "enum": [
+                  "must_match",
+                  "reproject_to_measurement_crs",
+                  "not_applicable"
+                ]
               }
             },
             "additionalProperties": false
