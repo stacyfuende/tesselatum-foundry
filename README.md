@@ -30,7 +30,7 @@ Items are marked complete when implementation and corresponding tests are presen
 
 ## Python SDK
 
-The local SDK is the first convenience interface over the canonical contracts. Install the Shapely extra for host-side output validation, then use an explicit persistent directory; execution defaults to the isolated Docker worker:
+The local SDK is the first convenience interface over the canonical contracts. It registers exact runners for both vector.buffer and vector.reproject; install the Shapely extra for host-side output validation, then use an explicit persistent directory. Each capability executes through its isolated Docker worker by default:
 
 ```bash
 pip install 'tessellatum-foundry[shapely]'
@@ -52,7 +52,7 @@ result = foundry.execute_recipe(
 print(result.status, result.execution_id)
 ```
 
-The facade also exposes `store_artifact`, `get_run`, `list_recipe_runs`, `get_artifact`, `get_validation_report`, and `read_artifact`. The latter verifies the Artifact checksum. This is a local SDK, not an authenticated network API or multi-tenant service. See [ADR-025](docs/decisions/025-local-python-sdk.md).
+Pass `reproject_worker` to `LocalFoundry` to override the default reprojection worker; the original `worker` argument remains the vector.buffer worker for compatibility. The facade also exposes `store_artifact`, `get_run`, `list_recipe_runs`, `get_artifact`, `get_validation_report`, and `read_artifact`. The latter verifies the Artifact checksum. This is a local SDK, not an authenticated network API or multi-tenant service. See [ADR-025](docs/decisions/025-local-python-sdk.md).
 
 ## Read-only Recipe viewer
 
