@@ -60,6 +60,15 @@ def _finding(
     return finding
 
 
+def _finite_number(value: Any) -> bool:
+    if not isinstance(value, (int, float)) or isinstance(value, bool):
+        return False
+    try:
+        return math.isfinite(value)
+    except OverflowError:
+        return False
+
+
 def coordinate_operation_evidence_valid(value: Any) -> bool:
     """Validate the bounded metadata envelope returned by the reprojection worker."""
     if not isinstance(value, dict):
@@ -72,9 +81,7 @@ def coordinate_operation_evidence_valid(value: Any) -> bool:
     accuracy = value.get("accuracy_m")
     if accuracy is not None:
         if (
-            not isinstance(accuracy, (int, float))
-            or isinstance(accuracy, bool)
-            or not math.isfinite(accuracy)
+            not _finite_number(accuracy)
             or accuracy < 0
         ):
             return False
@@ -84,9 +91,7 @@ def coordinate_operation_evidence_valid(value: Any) -> bool:
             return False
         bounds = [area.get(key) for key in ("west", "south", "east", "north")]
         if any(
-            not isinstance(bound, (int, float))
-            or isinstance(bound, bool)
-            or not math.isfinite(bound)
+            not _finite_number(bound)
             for bound in bounds
         ):
             return False
@@ -96,7 +101,6 @@ def coordinate_operation_evidence_valid(value: Any) -> bool:
             or east > 180
             or south < -90
             or north > 90
-            or west > east
             or south > north
         ):
             return False
