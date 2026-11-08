@@ -113,9 +113,10 @@ def test_vector_buffer_runs_in_isolated_docker_and_registers_artifact(tmp_path):
     assert result.run["status"] == "succeeded", result.run.get("error")
     assert result.run["worker"]["worker_type"] == "local_docker"
     assert result.run["implementation"]["implementation_id"] == "vector-buffer-shapely"
-    assert result.run["implementation"]["manifest_checksum"] == service.implementations.manifest_checksum(
+    expected_manifest_checksum = service.implementations.manifest_checksum(
         "vector-buffer-shapely", "1.0.0"
     )
+    assert result.run["implementation"]["manifest_checksum"] == expected_manifest_checksum
     assert result.run["capability"] == {
         "capability_id": "vector.buffer",
         "version": "1.0.0",
