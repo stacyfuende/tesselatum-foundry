@@ -65,6 +65,15 @@ def make_input(store: FileSystemArtifactStore, *, invalid: bool = False) -> dict
     )
 
 
+def bind_cell_to_input(input_artifact: dict[str, Any]) -> dict[str, Any]:
+    cell = load_fixture("cell.valid.json")
+    cell["inputs"]["features"]["artifact"] = {
+        "artifact_id": input_artifact["artifact_id"],
+        "version": input_artifact["version"],
+    }
+    return cell
+
+
 def make_service(tmp_path: Path, worker: DockerWorker):
     store = FileSystemArtifactStore(tmp_path / "artifacts")
     runs = RunRepository(tmp_path / "control")
@@ -84,7 +93,7 @@ def test_vector_buffer_runs_in_isolated_docker_and_registers_artifact(tmp_path):
     worker = DockerWorker(timeout_seconds=90)
     store, runs, service = make_service(tmp_path, worker)
     input_artifact = make_input(store)
-    cell = load_fixture("cell.valid.json")
+    cell = bind_cell_to_input(input_artifact)
     capability = load_fixture("capability.valid.json")
 
     result = service.execute(
@@ -148,8 +157,8 @@ def test_failed_attempt_is_preserved_when_a_retry_succeeds(tmp_path):
             raise WorkerUnavailableError("simulated transient image registry failure")
 
     store, runs, failed_service = make_service(tmp_path, MissingImageWorker())
-    make_input(store)
-    cell = load_fixture("cell.valid.json")
+    input_artifact = make_input(store)
+    cell = bind_cell_to_input(input_artifact)
     capability = load_fixture("capability.valid.json")
 
     first = failed_service.execute(
