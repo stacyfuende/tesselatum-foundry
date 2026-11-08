@@ -130,11 +130,69 @@ class VectorBufferRunService:
             )
 
         binding = cell.get("inputs", {}).get("features")
-        if not isinstance(binding, dict) or binding.get("source") != "artifact":
-            raise ExecutionPreconditionError(
-                "The first local vector.buffer worker requires an immutable Artifact input."
+        if not isinstance(binding, dict):
+            raise ExecutionPreconditionError("Required features input is not bound.")
+        lineage: dict[str, str] = {}
+        if binding.get("source") == "artifact":
+            if resolved_inputs:
+                raise ExecutionPreconditionError(
+                    "Resolved upstream inputs were supplied for an Artifact-bound cell."
+                )
+            artifact_ref = binding["artifact"]
+        elif binding.get("source") == "cell_output":
+            if recipe_ref is None or recipe_execution_id is None:
+                raise ExecutionPreconditionError(
+                    "A cell-output binding can only execute within a Recipe execution."
+                )
+            resolution = resolved_inputs.get("features")
+            if not isinstance(resolution, dict):
+                raise ExecutionPreconditionError(
+                    "The upstream cell-output binding has not been resolved."
+                )
+            source_run_id = resolution.get("source_run_id")
+            source_output_port = resolution.get("source_output_port")
+            artifact_ref = resolution.get("artifact")
+            if (
+                not isinstance(source_run_id, str)
+                or not isinstance(source_output_port, str)
+                or not isinstance(artifact_ref, dict)
+            ):
+                raise ExecutionPreconditionError(
+                    "Resolved upstream input must identify its source Run, output port, and Artifact."
+                )
+            source_run = self.run_repository.get_run(source_run_id)
+            if source_run["status"] != "succeeded":
+                raise ExecutionPreconditionError("Upstream Run must have succeeded.")
+            if source_run["cell"] != {
+                "cell_id": binding["cell_id"],
+                "version": binding["cell_version"],
+            }:
+                raise ExecutionPreconditionError(
+                    "Upstream Run does not belong to the exact cell version in the binding."
+                )
+            if source_output_port != binding["output_port"]:
+                raise ExecutionPreconditionError(
+                    "Resolved upstream output port differs from the cell binding."
+                )
+            produced = any(
+                output.get("output_port") == source_output_port
+                and output.get("artifact") == artifact_ref
+                for output in source_run.get("outputs", [])
             )
-        artifact_ref = binding["artifact"]
+            if not produced:
+                raise ExecutionPreconditionError(
+                    "Upstream Run did not produce the resolved Artifact on that output port."
+                )
+            lineage = {
+                "source_run_id": source_run_id,
+                "source_output_port": source_output_port,
+            }
+        else:
+            raise ExecutionPreconditionError("Unsupported features input binding source.")
+        if set(resolved_inputs) - {"features"}:
+            raise ExecutionPreconditionError(
+                "Resolved inputs contain ports not declared by this execution service."
+            )
         input_artifact = self.artifact_store.get_artifact(
             artifact_ref["artifact_id"], artifact_ref["version"]
         )
