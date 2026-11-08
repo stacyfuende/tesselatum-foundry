@@ -10,7 +10,7 @@
       "data_kind": "vector",
       "required": true,
       "accepted_media_types": [
-        "application/geo+json"
+        "application/vnd.tessellatum.spatial-feature-collection+json"
       ],
       "spatial": {
         "crs_required": true,
@@ -43,7 +43,7 @@
       "port_id": "result",
       "data_kind": "vector",
       "media_types": [
-        "application/geo+json"
+        "application/vnd.tessellatum.spatial-feature-collection+json"
       ],
       "spatial": {
         "crs_required": true,
