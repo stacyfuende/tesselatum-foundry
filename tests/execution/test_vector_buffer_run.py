@@ -96,6 +96,10 @@ def test_vector_buffer_runs_in_isolated_docker_and_registers_artifact(tmp_path):
     assert result.run["status"] == "succeeded"
     assert result.run["worker"]["worker_type"] == "local_docker"
     assert result.run["implementation"]["implementation_id"] == "vector-buffer-shapely"
+    assert result.run["capability"] == {
+        "capability_id": "vector.buffer",
+        "version": "1.0.0",
+    }
     assert result.run["runtime_image_digest"].startswith("sha256:")
     assert result.run["input_snapshots"][0]["artifact"] == {
         "artifact_id": input_artifact["artifact_id"],
