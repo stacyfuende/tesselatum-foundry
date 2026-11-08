@@ -60,6 +60,11 @@ class RecipeExecutionService:
     ) -> RecipeExecutionResult:
         self.contracts.validate("recipe.schema.json", recipe)
         referenced_cells = []
+        try:
+            self.cell_runner.validate_worker_configuration()
+        except ExecutionPreconditionError as error:
+            raise RecipeExecutionPreconditionError(str(error)) from error
+
         for node in recipe["nodes"]:
             cell_ref = node["cell"]
             cell = cells.get((cell_ref["cell_id"], cell_ref["version"]))
