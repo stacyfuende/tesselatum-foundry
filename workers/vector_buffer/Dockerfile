@@ -11,7 +11,8 @@ COPY pyproject.toml README.md ./
 COPY src ./src
 
 RUN python -m pip install --no-cache-dir ".[shapely]" \
-    && python -m compileall -q /opt/foundry/src
+    && python -m compileall -q /opt/foundry/src \
+    && mkdir -p /run/input /run/output
 
 RUN groupadd --gid 10001 foundry \
     && useradd --uid 10001 --gid 10001 --no-create-home --shell /usr/sbin/nologin foundry
