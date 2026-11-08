@@ -16,7 +16,8 @@
         "crs_required": true,
         "geometry_types": [
           "Polygon"
-        ]
+        ],
+        "measurement_crs_policy": "must_match"
       }
     }
   ],
@@ -43,7 +44,14 @@
       "data_kind": "vector",
       "media_types": [
         "application/geo+json"
-      ]
+      ],
+      "spatial": {
+        "crs_required": true,
+        "geometry_types": [
+          "Polygon"
+        ],
+        "same_crs_as": "features"
+      }
     }
   ],
   "determinism": "deterministic",
