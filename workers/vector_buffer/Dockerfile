@@ -8,6 +8,8 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 WORKDIR /opt/foundry
 
 COPY pyproject.toml README.md ./
+COPY schema ./schema
+COPY implementations ./implementations
 COPY src ./src
 
 RUN python -m pip install --no-cache-dir ".[shapely]" \
