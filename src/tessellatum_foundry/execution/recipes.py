@@ -12,6 +12,7 @@ from tessellatum_foundry.execution.service import (
     ExecutionResult,
     VectorBufferRunService,
 )
+from tessellatum_foundry.execution.capabilities import CapabilityRegistryError
 from tessellatum_foundry.execution.implementations import ImplementationRegistryError
 from tessellatum_foundry.storage.artifacts import FileSystemArtifactStore
 from tessellatum_foundry.validation.contracts import ContractRegistry
@@ -144,6 +145,10 @@ class RecipeExecutionService:
             capability = capabilities[
                 (capability_ref["capability_id"], capability_ref["version"])
             ]
+            try:
+                self.cell_runner.capabilities.require_exact(capability)
+            except CapabilityRegistryError as error:
+                raise RecipeExecutionPreconditionError(str(error)) from error
             if (
                 capability["capability_id"] != self.cell_runner.worker.capability_id
                 or capability["version"] != self.cell_runner.worker.capability_version
