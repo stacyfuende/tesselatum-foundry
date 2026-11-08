@@ -173,9 +173,11 @@ class SequenceWorker:
 
     def __init__(self) -> None:
         self.calls = 0
+        self.digest_calls = 0
 
     def image_digest(self) -> str:
-        return IMAGE_ID
+        self.digest_calls += 1
+        return IMAGE_ID if self.digest_calls == 1 else "sha256:" + "d" * 64
 
     def execute(self, **kwargs: Any) -> WorkerResult:
         self.calls += 1
@@ -196,7 +198,7 @@ class SequenceWorker:
             feature_collection=source,
             crs=output_crs,
             duration_ms=5,
-            runtime_image_digest=IMAGE_ID,
+            runtime_image_digest=kwargs["runtime_image_digest"],
         )
 
 
@@ -222,11 +224,13 @@ def test_recipe_resolves_upstream_artifacts_and_stops_after_failed_node(tmp_path
     assert result.status == "failed"
     assert result.failed_node_id == "second"
     assert worker.calls == 2
+    assert worker.digest_calls == 1
     assert set(result.node_results) == {"first", "second"}
     first_run = result.node_results["first"].run
     second_run = result.node_results["second"].run
     assert first_run["status"] == "succeeded"
     assert second_run["status"] == "failed"
+    assert first_run["runtime_image_digest"] == second_run["runtime_image_digest"]
     assert first_run["recipe_execution_id"] == result.execution_id
     assert second_run["recipe_execution_id"] == result.execution_id
     assert second_run["input_snapshots"][0]["source_run_id"] == first_run["run_id"]
@@ -321,3 +325,4 @@ def test_invalid_recipe_graph_is_rejected_before_any_cell_run(tmp_path):
 
     assert not (runs.root / "runs").exists()
     assert worker.calls == 0
+    assert worker.digest_calls == 0
