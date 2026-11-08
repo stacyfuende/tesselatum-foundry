@@ -34,19 +34,43 @@
         "type": "object",
         "description": "Target CRS as an authority/code pair or a WKT2 declaration.",
         "properties": {
-          "authority": {"type": "string", "minLength": 1},
-          "code": {"type": ["string", "integer"]},
-          "wkt2": {"type": "string", "minLength": 1},
-          "name": {"type": "string"}
+          "authority": {
+            "type": "string",
+            "minLength": 1
+          },
+          "code": {
+            "type": [
+              "string",
+              "integer"
+            ]
+          },
+          "wkt2": {
+            "type": "string",
+            "minLength": 1
+          },
+          "name": {
+            "type": "string"
+          }
         },
         "anyOf": [
-          {"required": ["authority", "code"]},
-          {"required": ["wkt2"]}
+          {
+            "required": [
+              "authority",
+              "code"
+            ]
+          },
+          {
+            "required": [
+              "wkt2"
+            ]
+          }
         ],
         "additionalProperties": false
       }
     },
-    "required": ["target_crs"],
+    "required": [
+      "target_crs"
+    ],
     "additionalProperties": false
   },
   "output_ports": [
@@ -84,5 +108,5 @@
     "Feature count, IDs, properties, geometry types, and coordinate dimensionality are preserved.",
     "Every output geometry is non-empty, valid, and finite."
   ],
-  "cache_policy": "allowed"
+  "cache_policy": "disabled"
 }
