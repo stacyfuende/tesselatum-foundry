@@ -9,6 +9,7 @@ from __future__ import annotations
 import hmac
 import json
 import os
+import threading
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any
@@ -173,6 +174,50 @@ class WorkerHandler(BaseHTTPRequestHandler):
         super().log_message(format, *args)
 
 
+class BoundedThreadingHTTPServer(ThreadingHTTPServer):
+    """Threaded HTTP server with a hard cap on concurrent request handlers."""
+
+    request_queue_size = 16
+    daemon_threads = True
+
+    def __init__(
+        self,
+        server_address,
+        RequestHandlerClass,
+        *,
+        max_concurrent_requests: int = 2,
+    ):
+        if not 1 <= max_concurrent_requests <= 64:
+            raise ValueError("max_concurrent_requests must be between 1 and 64.")
+        self._request_slots = threading.BoundedSemaphore(max_concurrent_requests)
+        super().__init__(server_address, RequestHandlerClass)
+
+    def process_request(self, request, client_address):
+        if not self._request_slots.acquire(blocking=False):
+            try:
+                request.sendall(
+                    b"HTTP/1.1 503 Service Unavailable\r\n"
+                    b"Content-Length: 0\r\n"
+                    b"Connection: close\r\n"
+                    b"Retry-After: 2\r\n\r\n"
+                )
+            except OSError:
+                pass
+            self.shutdown_request(request)
+            return
+        try:
+            super().process_request(request, client_address)
+        except Exception:
+            self._request_slots.release()
+            raise
+
+    def process_request_thread(self, request, client_address):
+        try:
+            super().process_request_thread(request, client_address)
+        finally:
+            self._request_slots.release()
+
+
 def main() -> None:
     token = os.environ.get("FOUNDRY_REMOTE_WORKER_TOKEN", "")
     digest = os.environ.get("FOUNDRY_WORKER_IMAGE_DIGEST", "")
@@ -189,8 +234,17 @@ def main() -> None:
         )
     bind = os.environ.get("FOUNDRY_REMOTE_BIND", "0.0.0.0")
     port = int(os.environ.get("FOUNDRY_REMOTE_PORT", "8080"))
-    server = ThreadingHTTPServer((bind, port), WorkerHandler)
-    server.daemon_threads = True
+    try:
+        max_concurrent_requests = int(
+            os.environ.get("FOUNDRY_MAX_CONCURRENT_REQUESTS", "2")
+        )
+    except ValueError as error:
+        raise SystemExit("FOUNDRY_MAX_CONCURRENT_REQUESTS must be an integer.") from error
+    server = BoundedThreadingHTTPServer(
+        (bind, port),
+        WorkerHandler,
+        max_concurrent_requests=max_concurrent_requests,
+    )
     server.serve_forever()
 
 
