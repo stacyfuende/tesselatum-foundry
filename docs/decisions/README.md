@@ -21,5 +21,6 @@ This register records decisions that constrain Foundry's architecture. Each deci
 | [015](015-spatial-metadata-validation.md) | Spatial metadata and pre-execution CRS/unit validation | Accepted |
 | [016](016-first-executable-capability-vector-buffer.md) | First executable capability and explicit planar buffer semantics | Accepted |
 | [017](017-shared-buffer-validation-and-postgis-conformance.md) | Shared request validation and independent PostGIS conformance | Accepted |
+| [017](017-shared-buffer-validation-and-postgis-conformance.md) | Shared request validation and independent PostGIS conformance | Accepted |
 
 A decision may be superseded only by a new decision record that explains the change. Do not silently edit an accepted decision to reverse its meaning.
