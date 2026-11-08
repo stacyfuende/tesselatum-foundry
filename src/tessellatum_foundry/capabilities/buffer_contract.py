@@ -183,6 +183,15 @@ def prepare_buffer_request(
             )
         if geometry.is_empty:
             raise BufferContractError(f"Feature at index {index} has empty geometry.")
+        coordinates = get_coordinates(geometry)
+        if not all(
+            math.isfinite(float(value))
+            for row in coordinates
+            for value in row
+        ):
+            raise BufferContractError(
+                f"Feature at index {index} has non-finite coordinates."
+            )
         if not geometry.is_valid:
             raise BufferContractError(
                 f"Feature at index {index} has invalid geometry; "
@@ -192,7 +201,9 @@ def prepare_buffer_request(
             raise BufferContractError(
                 "single_sided buffering is supported only for LineString."
             )
-        properties = feature.get("properties") or {}
+        properties = feature.get("properties")
+        if properties is None:
+            properties = {}
         if not isinstance(properties, Mapping):
             raise BufferContractError(
                 f"Feature at index {index} properties must be an object or null."
