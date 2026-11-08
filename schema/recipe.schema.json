@@ -12,10 +12,10 @@
   ],
   "properties": {
     "recipe_id": {
-      "$ref": "./_common.schema.json#/$defs/identifier"
+      "$ref": "urn:tessellatum-foundry:schema:common:1.0.0#/$defs/identifier"
     },
     "version": {
-      "$ref": "./_common.schema.json#/$defs/version"
+      "$ref": "urn:tessellatum-foundry:schema:common:1.0.0#/$defs/version"
     },
     "title": {
       "type": "string",
@@ -35,10 +35,10 @@
         ],
         "properties": {
           "node_id": {
-            "$ref": "./_common.schema.json#/$defs/identifier"
+            "$ref": "urn:tessellatum-foundry:schema:common:1.0.0#/$defs/identifier"
           },
           "cell": {
-            "$ref": "./_common.schema.json#/$defs/cellRef"
+            "$ref": "urn:tessellatum-foundry:schema:common:1.0.0#/$defs/cellRef"
           },
           "label": {
             "type": "string"
@@ -64,10 +64,10 @@
             ],
             "properties": {
               "node_id": {
-                "$ref": "./_common.schema.json#/$defs/identifier"
+                "$ref": "urn:tessellatum-foundry:schema:common:1.0.0#/$defs/identifier"
               },
               "output_port": {
-                "$ref": "./_common.schema.json#/$defs/identifier"
+                "$ref": "urn:tessellatum-foundry:schema:common:1.0.0#/$defs/identifier"
               }
             },
             "additionalProperties": false
@@ -80,10 +80,10 @@
             ],
             "properties": {
               "node_id": {
-                "$ref": "./_common.schema.json#/$defs/identifier"
+                "$ref": "urn:tessellatum-foundry:schema:common:1.0.0#/$defs/identifier"
               },
               "input_port": {
-                "$ref": "./_common.schema.json#/$defs/identifier"
+                "$ref": "urn:tessellatum-foundry:schema:common:1.0.0#/$defs/identifier"
               }
             },
             "additionalProperties": false
@@ -107,10 +107,10 @@
             "minLength": 1
           },
           "node_id": {
-            "$ref": "./_common.schema.json#/$defs/identifier"
+            "$ref": "urn:tessellatum-foundry:schema:common:1.0.0#/$defs/identifier"
           },
           "output_port": {
-            "$ref": "./_common.schema.json#/$defs/identifier"
+            "$ref": "urn:tessellatum-foundry:schema:common:1.0.0#/$defs/identifier"
           }
         },
         "additionalProperties": false
@@ -121,5 +121,6 @@
       "additionalProperties": true
     }
   },
-  "additionalProperties": false
+  "additionalProperties": false,
+  "$id": "urn:tessellatum-foundry:schema:recipe:1.0.0"
 }
