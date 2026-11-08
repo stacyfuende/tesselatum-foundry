@@ -172,7 +172,22 @@
       const adjacency = new Map(ids.map((id) => [id, []]));
       const indegree = new Map(ids.map((id) => [id, 0]));
       const rank = new Map(ids.map((id) => [id, 0]));
-      const edges = Array.isArray(recipe.edges) ? recipe.edges : [];
+      if (!Array.isArray(recipe.edges)) {
+        throw new Error("Recipe edges must be an array.");
+      }
+      const edges = recipe.edges;
+      const outputs = recipe.declared_outputs === undefined ? [] : recipe.declared_outputs;
+      if (!Array.isArray(outputs)) {
+        throw new Error("Recipe declared_outputs must be an array when present.");
+      }
+      for (const output of outputs) {
+        requireString(output && output.name, "declared_outputs.name");
+        requireString(output.node_id, "declared_outputs.node_id");
+        requireString(output.output_port, "declared_outputs.output_port");
+        if (!nodeById.has(output.node_id)) {
+          throw new Error("A declared output references a node that is not in this Recipe.");
+        }
+      }
 
       for (const edge of edges) {
         const from = edge && edge.from;
@@ -229,7 +244,7 @@
           });
         });
       }
-      return { nodes, edges, positions, nodeWidth, nodeHeight, width, height, order };
+      return { nodes, edges, outputs, positions, nodeWidth, nodeHeight, width, height, order };
     }
 
     function renderRecipe(recipe) {
@@ -284,7 +299,7 @@
       }
       graph.append(nodeLayer);
 
-      const outputs = Array.isArray(recipe.declared_outputs) ? recipe.declared_outputs : [];
+      const outputs = layout.outputs;
       byId("recipe-ref").textContent = "RECIPE / " + recipe.recipe_id + "@" + recipe.version;
       byId("recipe-title").textContent = typeof recipe.title === "string" ? recipe.title : recipe.recipe_id;
       byId("recipe-id").textContent = "Canonical Recipe JSON · read-only projection";
