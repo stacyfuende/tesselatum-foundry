@@ -364,11 +364,11 @@ def _validate_measurement_constraints(
             )
         ]
 
-    if not measurement_crs.is_projected:
+    if (linear_unit is not None or area_unit is not None) and not measurement_crs.is_projected:
         findings.append(
             ValidationFinding(
                 "spatial.measurement_crs_not_projected",
-                "A measurement CRS used for linear planar measurements must be projected.",
+                "A measurement CRS used for linear or area planar measurements must be projected.",
                 json_pointer=f"{pointer}/constraints/measurement_crs",
             )
         )
