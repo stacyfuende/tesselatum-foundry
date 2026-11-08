@@ -174,9 +174,9 @@ def buffer_feature_collection(
             )
         if not result.is_valid:
             raise BufferContractError(f"Buffer result at index {index} is not valid.")
-        properties = feature.get("properties") or {};
+        properties = feature.get("properties") or {}
         if not isinstance(properties, Mapping):
-            raise BufferContractError(f"Feature at index {index} properties must be an object or null.")
+            raise BufferContractError(\n                f"Feature at index {index} properties must be an object or null."\n            )
         output_feature: dict[str, Any] = {
             "type": "Feature",
             "geometry": mapping(result),
