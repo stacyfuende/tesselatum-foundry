@@ -316,3 +316,27 @@ def test_run_preflight_rejects_geometry_type_metadata_mismatch(tmp_path):
         )
 
     assert not (runs.root / "runs").exists()
+
+
+@pytest.mark.skipif(
+    not os.getenv("FOUNDRY_VECTOR_BUFFER_IMAGE"),
+    reason="Docker worker image is built and configured only in the container CI job.",
+)
+def test_worker_output_size_limit_prevents_artifact_registration(tmp_path):
+    worker = DockerWorker(timeout_seconds=90, max_output_bytes=128)
+    store, runs, service = make_service(tmp_path, worker)
+    input_artifact = make_input(store)
+    cell = bind_cell_to_input(input_artifact)
+    capability = load_fixture("capability.valid.json")
+
+    result = service.execute(
+        cell=cell,
+        capability=capability,
+        actor_id="test-operator",
+    )
+
+    assert result.run["status"] == "failed"
+    assert result.run["error"]["code"] == "worker.execution_failed"
+    assert "file-size limit" in result.run["error"]["message"]
+    assert result.output_artifact is None
+    assert result.run.get("outputs", []) == []
