@@ -10,7 +10,7 @@ The first Run service used the concrete Docker adapter as its type and imported 
 ## Decision
 
 1. Define a typed `VectorBufferWorker` protocol in the execution domain. It describes the implementation identity, worker identity/type, immutable runtime image digest lookup, and execution method required by the Run service.
-2. Define `WorkerResult` in the protocol module, not in the Docker adapter. The result is an untrusted transport envelope; the control plane remains responsible for validating it.
+2. Define `WorkerResult` in the protocol module, not in the Docker adapter. The result carries the feature collection, CRS, measured duration, and runtime image identity only. It does not carry worker-claimed geometry types; the independent control-plane critic derives those from the actual output geometries. The result is an untrusted transport envelope.
 3. Make `DockerWorker` one implementation of this protocol. The Run service depends on the protocol, not the Docker class.
 4. Include the exact Capability version in the worker request. The current Shapely worker explicitly accepts `vector.buffer@1.0.0` and rejects unsupported versions.
 5. The worker reports its implementation and worker identity through the protocol. The Run records those values alongside the immutable runtime image ID digest.
