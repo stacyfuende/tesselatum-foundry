@@ -99,7 +99,7 @@ A capability implementation is a separately versioned realization of a capabilit
 
 ## 5. Contracts and validation
 
-JSON Schema Draft 2020-12 defines the language-neutral structural contracts in schema/. YAML MAY be used as a human-friendly serialization format, but YAML documents MUST validate against the same JSON Schema contracts. The canonical schema files are JSON and are packaged with the Python distribution under share/tessellatum-foundry/schema/. Implementation manifests are packaged alongside them under share/tessellatum-foundry/implementations/.
+JSON Schema Draft 2020-12 defines the language-neutral structural contracts in schema/. YAML MAY be used as a human-friendly serialization format, but YAML documents MUST validate against the same JSON Schema contracts. The canonical schema files are JSON and are packaged with the Python distribution under share/tessellatum-foundry/schema/. Capability contracts and implementation manifests are packaged alongside them under share/tessellatum-foundry/capabilities/ and share/tessellatum-foundry/implementations/.
 
 Validation is layered:
 
