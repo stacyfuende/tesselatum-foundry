@@ -9,9 +9,6 @@ from typing import Any
 
 from pyproj import CRS
 from pyproj.exceptions import CRSError
-from shapely import get_coordinates
-from shapely.geometry import shape
-from shapely.geometry.base import BaseGeometry
 
 
 class BufferContractError(ValueError):
@@ -26,7 +23,6 @@ _SUPPORTED_INPUT_TYPES = {
     "Polygon",
     "MultiPolygon",
 }
-_LINE_TYPES = {"LineString"}
 _UNIT_ALIASES = {
     "m": "metre",
     "meter": "metre",
@@ -40,11 +36,19 @@ _UNIT_ALIASES = {
 
 
 @dataclass(frozen=True)
-class ValidatedFeature:
-    """A feature after contract checks, with its source geometry preserved."""
+class BufferOutput:
+    """Buffered features plus the CRS that applies to their coordinates."""
 
-    geometry: BaseGeometry
+    feature_collection: dict[str, Any]
+    crs: CRS
+
+
+@dataclass(frozen=True)
+class ValidatedFeature:
+    """A source Feature after engine-neutral structural and metadata checks."""
+
     geometry_json: Mapping[str, Any]
+    geometry_type: str
     properties: Mapping[str, Any]
     feature_id: Any | None
     has_id: bool
@@ -102,6 +106,16 @@ def _validate_crs(input_crs: Any, measurement_crs: Any, unit: str) -> CRS:
     return measurement
 
 
+def _contains_non_finite_number(value: Any) -> bool:
+    if isinstance(value, bool):
+        return False
+    if isinstance(value, (int, float)):
+        return not math.isfinite(value)
+    if isinstance(value, (list, tuple)):
+        return any(_contains_non_finite_number(item) for item in value)
+    return False
+
+
 def prepare_buffer_request(
     feature_collection: Mapping[str, Any],
     *,
@@ -116,7 +130,7 @@ def prepare_buffer_request(
     single_sided: bool = False,
     require_epsg: bool = False,
 ) -> BufferRequest:
-    """Validate once so all engine implementations receive identical semantics."""
+    """Validate shared parameters and metadata without invoking a geometry engine."""
     if not isinstance(distance, (int, float)) or isinstance(distance, bool):
         raise BufferContractError("Distance must be a number.")
     if not math.isfinite(distance) or distance <= 0:
@@ -170,34 +184,21 @@ def prepare_buffer_request(
             raise BufferContractError(
                 f"Feature at index {index} must contain a GeoJSON geometry."
             )
-        try:
-            geometry = shape(geometry_json)
-        except (TypeError, ValueError) as error:
+        geometry_type = geometry_json.get("type")
+        if geometry_type not in _SUPPORTED_INPUT_TYPES:
             raise BufferContractError(
-                f"Feature at index {index} has invalid geometry: {error}"
-            ) from error
-        if geometry.geom_type not in _SUPPORTED_INPUT_TYPES:
-            raise BufferContractError(
-                f"Feature at index {index} has unsupported geometry type "
-                f"{geometry.geom_type!r}."
+                f"Feature at index {index} has unsupported geometry type {geometry_type!r}."
             )
-        if geometry.is_empty:
-            raise BufferContractError(f"Feature at index {index} has empty geometry.")
-        coordinates = get_coordinates(geometry)
-        if not all(
-            math.isfinite(float(value))
-            for row in coordinates
-            for value in row
-        ):
+        coordinates = geometry_json.get("coordinates")
+        if not isinstance(coordinates, (list, tuple)):
+            raise BufferContractError(
+                f"Feature at index {index} must contain a coordinate array."
+            )
+        if _contains_non_finite_number(coordinates):
             raise BufferContractError(
                 f"Feature at index {index} has non-finite coordinates."
             )
-        if not geometry.is_valid:
-            raise BufferContractError(
-                f"Feature at index {index} has invalid geometry; "
-                "repair it explicitly before buffering."
-            )
-        if single_sided and geometry.geom_type not in _LINE_TYPES:
+        if single_sided and geometry_type != "LineString":
             raise BufferContractError(
                 "single_sided buffering is supported only for LineString."
             )
@@ -210,8 +211,8 @@ def prepare_buffer_request(
             )
         validated.append(
             ValidatedFeature(
-                geometry=geometry,
                 geometry_json=geometry_json,
+                geometry_type=geometry_type,
                 properties=dict(properties),
                 feature_id=feature.get("id"),
                 has_id="id" in feature,
