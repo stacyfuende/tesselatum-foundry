@@ -138,7 +138,7 @@ The control plane owns schema and semantic validation, artifact and capability r
 
 The compute plane owns isolated workers, runtime adapters and engine environments, execution of a resolved Run specification, resource enforcement, output staging, and structured execution results.
 
-The control plane submits the same logical Run specification regardless of worker location. Workers advertise supported capability implementations, runtime constraints, and resource limits. The scheduler MUST NOT assume all workers can execute all capabilities.
+The control plane submits the same logical Run specification regardless of worker location. Workers advertise supported capability implementations, runtime constraints, and resource limits. The scheduler MUST NOT assume all workers can execute all capabilities. The initial Python SDK exposes a local composition root over the canonical stores, registries, and Recipe execution service; it is not a network API or authorization boundary.
 
 v0.1 includes a local Docker worker and a simple remote worker protocol. The remote worker is not a Kubernetes commitment. Both paths must satisfy the same protocol and conformance tests.
 
