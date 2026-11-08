@@ -87,6 +87,8 @@ class VectorBufferRunService:
         retry_of_run_id: str | None = None,
         recipe_ref: dict[str, str] | None = None,
         recipe_execution_id: str | None = None,
+        recipe_node_id: str | None = None,
+        recipe_node_order: int | None = None,
         resolved_inputs: dict[str, dict[str, Any]] | None = None,
         pinned_runtime_image_digest: str | None = None,
     ) -> ExecutionResult:
@@ -110,10 +112,22 @@ class VectorBufferRunService:
                 "Selected worker does not implement the exact supplied Capability version."
             )
         self.validate_worker_configuration()
-        if (recipe_ref is None) != (recipe_execution_id is None):
+        recipe_context = (
+            recipe_ref,
+            recipe_execution_id,
+            recipe_node_id,
+            recipe_node_order,
+        )
+        if any(value is None for value in recipe_context) and any(
+            value is not None for value in recipe_context
+        ):
             raise ExecutionPreconditionError(
-                "Recipe reference and recipe_execution_id must be supplied together."
+                "Recipe reference, execution ID, node ID, and node order must be supplied together."
             )
+        if recipe_node_order is not None and (
+            isinstance(recipe_node_order, bool) or recipe_node_order < 0
+        ):
+            raise ExecutionPreconditionError("Recipe node order must be a non-negative integer.")
         if pinned_runtime_image_digest is not None and (
             not isinstance(pinned_runtime_image_digest, str)
             or not re.fullmatch(
@@ -316,6 +330,8 @@ class VectorBufferRunService:
             if (
                 previous.get("recipe") != recipe_ref
                 or previous.get("recipe_execution_id") != recipe_execution_id
+                or previous.get("recipe_node_id") != recipe_node_id
+                or previous.get("recipe_node_order") != recipe_node_order
             ):
                 raise ExecutionPreconditionError(
                     "A retry must preserve the original Recipe execution context."
@@ -340,6 +356,8 @@ class VectorBufferRunService:
             retry_of_run_id=retry_of_run_id,
             recipe=recipe_ref,
             recipe_execution_id=recipe_execution_id,
+            recipe_node_id=recipe_node_id,
+            recipe_node_order=recipe_node_order,
         )
 
         try:
