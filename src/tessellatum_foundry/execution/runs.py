@@ -15,6 +15,26 @@ from tessellatum_foundry.storage.artifacts import utc_timestamp
 
 
 _TERMINAL_STATES = {"succeeded", "failed", "cancelled", "timed_out"}
+_IMMUTABLE_FIELDS = {
+    "run_id",
+    "attempt",
+    "cell",
+    "capability",
+    "created_at",
+    "input_snapshots",
+    "normalized_parameters",
+    "retry_of_run_id",
+    "recipe",
+    "recipe_execution_id",
+    "recipe_node_id",
+    "recipe_node_order",
+}
+_SET_ONCE_FIELDS = {
+    "started_at",
+    "worker",
+    "implementation",
+    "runtime_image_digest",
+}
 _ALLOWED_TRANSITIONS = {
     "queued": {"running", "failed", "cancelled"},
     "waiting_for_resources": {"running", "failed", "cancelled", "timed_out"},
@@ -112,8 +132,23 @@ class RunRepository:
                 )
             if new_status not in _ALLOWED_TRANSITIONS.get(status, set()):
                 raise RunStateError(f"Invalid Run transition: {status} -> {new_status}.")
+            changes = fields or {}
+            for name in _IMMUTABLE_FIELDS:
+                if name in changes and changes[name] != current.get(name):
+                    raise RunStateError(
+                        f"Run provenance field {name!r} is immutable."
+                    )
+            for name in _SET_ONCE_FIELDS:
+                if (
+                    name in changes
+                    and name in current
+                    and changes[name] != current[name]
+                ):
+                    raise RunStateError(
+                        f"Run execution identity field {name!r} cannot be changed."
+                    )
             updated = dict(current)
-            updated.update(fields or {})
+            updated.update(changes)
             updated["status"] = new_status
             event: dict[str, Any] = {
                 "timestamp": utc_timestamp(),
