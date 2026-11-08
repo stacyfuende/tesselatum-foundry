@@ -55,5 +55,9 @@
       "timestamp": "2026-11-08T08:01:01Z",
       "event_type": "worker_started"
     }
-  ]
+  ],
+  "capability": {
+    "capability_id": "vector.buffer",
+    "version": "1.0.0"
+  }
 }
