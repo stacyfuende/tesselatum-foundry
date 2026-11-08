@@ -15,7 +15,7 @@ A bounding-box array also needs a stable coordinate ordering. Leaving the orderi
 2. A 2D extent is [min_x, min_y, max_x, max_y]. A 3D extent is [min_x, min_y, min_z, max_x, max_y, max_z]. Coordinates use GIS x/y order independent of authority axis order.
 3. Extents must contain finite values and each minimum must not exceed its corresponding maximum. Geographic x/y values are checked against the longitude/latitude domain using the CRS angular units. Antimeridian-crossing extents are not encoded by reversing minima and maxima.
 4. Capability input and output ports may declare CRS-required, CRS-kind, geometry-type, same-CRS-as, and measurement-CRS handling constraints. A must_match policy requires an input CRS to equal the Geo-Cell measurement CRS. A reproject_to_measurement_crs policy explicitly permits a capability implementation to transform that input internally; this behavior must be covered by implementation conformance tests.
-5. A Geo-Cell declaring a linear measurement unit must also declare a measurement CRS. The CRS must be projected and its horizontal axis units must match the declared unit.
+5. A Geo-Cell declaring a linear or area measurement unit must also declare a measurement CRS. The CRS must be projected; linear units must match its horizontal axis units. A Capability may bind a normalized parameter to a linear or area unit kind, and the Geo-Cell parameter must be equivalent to its corresponding unit constraint.
 6. CRS parsing and axis inspection use PROJ through the pyproj dependency.
 7. These checks do not authorize implicit input reprojection. Required transformations must be explicit in the computation graph or explicitly guaranteed by a separately versioned capability contract.
 
