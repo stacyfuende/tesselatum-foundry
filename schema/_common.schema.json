@@ -111,12 +111,24 @@
       "additionalProperties": false
     },
     "bbox": {
-      "type": "array",
-      "items": {
-        "type": "number"
-      },
-      "minItems": 4,
-      "maxItems": 6,
+      "oneOf": [
+        {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 4,
+          "maxItems": 4
+        },
+        {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 6,
+          "maxItems": 6
+        }
+      ],
       "description": "GIS x/y order: [min_x, min_y, max_x, max_y], optionally [min_x, min_y, min_z, max_x, max_y, max_z]."
     },
     "findingStatus": {
