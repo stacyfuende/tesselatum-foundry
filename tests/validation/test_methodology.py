@@ -52,6 +52,14 @@ def test_buffer_method_report_assesses_planar_measurement_and_exposes_limits():
     assert findings["method.measurement_crs_projected"]["status"] == "passed"
     assert findings["method.input_crs_matches_measurement_crs"]["status"] == "passed"
     assert findings["method.distance_unit_matches_crs"]["status"] == "passed"
+    approximation = findings["method.buffer_arc_approximation"]
+    assert approximation["status"] == "not_assessed"
+    assert "2.4076 metre" in approximation["message"]
+    assert "0.4815%" in approximation["message"]
+    assert findings["method.cap_and_join_parameters"]["status"] == "passed"
+    assert "buffer_arc_approximation_acceptability" in (
+        report["unassessed_dimensions"]
+    )
     assert "projection_scale_distortion_over_area_of_interest" in (
         report["unassessed_dimensions"]
     )
