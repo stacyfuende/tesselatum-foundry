@@ -13,7 +13,6 @@ from tessellatum_foundry.worker.http_server import WorkerHandler
 from http.server import ThreadingHTTPServer
 from types import SimpleNamespace
 
-from tessellatum_foundry import worker as worker_package
 from tessellatum_foundry.worker import http_server as worker_http_server
 from tessellatum_foundry.worker.http_server import BoundedThreadingHTTPServer
 
