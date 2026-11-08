@@ -38,3 +38,12 @@ or:
     python -m pytest
 
 from the repository root after installing the development dependencies.
+
+
+## Spatial contract notes
+
+- Spatial metadata is carried by Artifact versions; vector, raster, point-cloud and mesh records require a resolvable CRS.
+- Raster metadata includes grid dimensions.
+- Extents use GIS x/y order and contain exactly four (2D) or six (3D) coordinates.
+- Capability ports may declare spatial constraints. Cross-object and CRS/unit semantics are enforced by the Python spatial validator, not JSON Schema alone.
+- CRS inspection uses PROJ through the pyproj runtime dependency.
