@@ -14,7 +14,7 @@
   ],
   "properties": {
     "report_id": {
-      "$ref": "./_common.schema.json#/$defs/identifier"
+      "$ref": "urn:tessellatum-foundry:schema:common:1.0.0#/$defs/identifier"
     },
     "subject": {
       "type": "object",
@@ -36,10 +36,10 @@
           ]
         },
         "id": {
-          "$ref": "./_common.schema.json#/$defs/identifier"
+          "$ref": "urn:tessellatum-foundry:schema:common:1.0.0#/$defs/identifier"
         },
         "version": {
-          "$ref": "./_common.schema.json#/$defs/version"
+          "$ref": "urn:tessellatum-foundry:schema:common:1.0.0#/$defs/version"
         }
       },
       "additionalProperties": false
@@ -68,7 +68,7 @@
       ]
     },
     "created_at": {
-      "$ref": "./_common.schema.json#/$defs/timestamp"
+      "$ref": "urn:tessellatum-foundry:schema:common:1.0.0#/$defs/timestamp"
     },
     "validator": {
       "type": "object",
@@ -81,7 +81,7 @@
           "type": "string"
         },
         "version": {
-          "$ref": "./_common.schema.json#/$defs/version"
+          "$ref": "urn:tessellatum-foundry:schema:common:1.0.0#/$defs/version"
         }
       },
       "additionalProperties": false
@@ -111,7 +111,7 @@
             ]
           },
           "status": {
-            "$ref": "./_common.schema.json#/$defs/findingStatus"
+            "$ref": "urn:tessellatum-foundry:schema:common:1.0.0#/$defs/findingStatus"
           },
           "message": {
             "type": "string",
@@ -163,5 +163,6 @@
       "uniqueItems": true
     }
   },
-  "additionalProperties": false
+  "additionalProperties": false,
+  "$id": "urn:tessellatum-foundry:schema:validation_report:1.0.0"
 }
