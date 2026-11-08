@@ -155,6 +155,7 @@ def test_remote_reproject_worker_fetches_identity_and_executes_target_crs():
         "runtime_image_digest": digest,
         "coordinate_operation": {
             "description": "UTM zone 37S",
+            "definition": "+proj=pipeline +step +proj=utm +zone=37 +south",
             "accuracy_m": 0.0,
             "area_of_use": {
                 "west": 36.0,
