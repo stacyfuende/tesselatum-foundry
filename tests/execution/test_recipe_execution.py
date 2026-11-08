@@ -411,3 +411,63 @@ def test_registered_recipe_resolves_exact_cell_and_capability_versions(tmp_path)
         "recipe_id": recipe["recipe_id"],
         "version": recipe["version"],
     }
+
+
+def test_recipe_runner_registry_requires_an_exact_capability_version(tmp_path):
+    worker = SequenceWorker()
+    store = FileSystemArtifactStore(tmp_path / "artifacts")
+    runs = RunRepository(tmp_path / "control")
+    runner = VectorBufferRunService(
+        artifact_store=store,
+        run_repository=runs,
+        worker=worker,
+    )
+    recipes = RecipeExecutionService(
+        cell_runners={("vector.buffer", "9.9.9"): runner},
+        artifact_store=store,
+    )
+
+    assert recipes._runner_for("vector.buffer", "9.9.9") is runner
+    with pytest.raises(
+        RecipeExecutionPreconditionError,
+        match="No Cell runner is registered for Capability vector.buffer@1.0.0",
+    ):
+        recipes._runner_for("vector.buffer", "1.0.0")
+
+
+def test_missing_capability_runner_is_rejected_before_any_run(tmp_path):
+    worker = SequenceWorker()
+    store = FileSystemArtifactStore(tmp_path / "artifacts")
+    runs = RunRepository(tmp_path / "control")
+    runner = VectorBufferRunService(
+        artifact_store=store,
+        run_repository=runs,
+        worker=worker,
+    )
+    recipes = RecipeExecutionService(
+        cell_runners={("vector.buffer", "9.9.9"): runner},
+        artifact_store=store,
+    )
+    source = create_source_artifact(store)
+    cell = load_fixture("cell.valid.json")
+    cell["inputs"]["features"]["artifact"] = {
+        "artifact_id": source["artifact_id"],
+        "version": source["version"],
+    }
+    recipe = load_fixture("recipe.valid.json")
+    capability = load_fixture("capability.valid.json")
+
+    with pytest.raises(
+        RecipeExecutionPreconditionError,
+        match="No Cell runner is registered for Capability vector.buffer@1.0.0",
+    ):
+        recipes.execute(
+            recipe=recipe,
+            cells={(cell["cell_id"], cell["version"]): cell},
+            capabilities={(capability["capability_id"], capability["version"]): capability},
+            actor_id="recipe-test",
+        )
+
+    assert not (runs.root / "runs").exists()
+    assert worker.calls == 0
+    assert worker.digest_calls == 0
