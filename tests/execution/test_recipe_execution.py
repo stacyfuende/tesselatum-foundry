@@ -10,7 +10,10 @@ import pytest
 
 from tessellatum_foundry.execution.docker_worker import DockerWorker
 from tessellatum_foundry.execution.protocol import WorkerResult
-from tessellatum_foundry.execution.recipes import RecipeExecutionService
+from tessellatum_foundry.execution.recipes import (
+    RecipeExecutionPreconditionError,
+    RecipeExecutionService,
+)
 from tessellatum_foundry.execution.runs import RunRepository
 from tessellatum_foundry.execution.service import VectorBufferRunService
 from tessellatum_foundry.storage.artifacts import FileSystemArtifactStore
@@ -292,3 +295,29 @@ def test_two_node_recipe_executes_upstream_artifact_chain(tmp_path):
     assert second["inputs"]["features"]["source"] == "cell_output"
     assert set(result.outputs) == {"final"}
     assert len(runs.list_runs_for_recipe_execution(result.execution_id)) == 2
+
+
+
+def test_invalid_recipe_graph_is_rejected_before_any_cell_run(tmp_path):
+    worker = SequenceWorker()
+    store, runs, recipes = make_runner(tmp_path, worker)
+    source = create_source_artifact(store)
+    cells = make_cell_chain(source)
+    recipe = make_recipe(cells)
+    recipe["edges"] = recipe["edges"][:1]
+    capability = load_fixture("capability.valid.json")
+    cell_map = {(cell["cell_id"], cell["version"]): cell for cell in cells}
+    capability_map = {
+        (capability["capability_id"], capability["version"]): capability
+    }
+
+    with pytest.raises(RecipeExecutionPreconditionError, match="edge_missing"):
+        recipes.execute(
+            recipe=recipe,
+            cells=cell_map,
+            capabilities=capability_map,
+            actor_id="recipe-test",
+        )
+
+    assert not (runs.root / "runs").exists()
+    assert worker.calls == 0
