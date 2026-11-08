@@ -247,7 +247,7 @@ def inspect_vector_reproject_output(
     except (BufferContractError, TypeError, ValueError) as error:
         crs_matches = False
         crs_message = f"Output CRS could not be resolved: {error}"
-    add("output.crs_matches_input", crs_matches, crs_message, "/spatial/crs")
+    add("output.crs_matches_contract", crs_matches, crs_message, "/spatial/crs")
 
     source_features = input_feature_collection.get("features")
     source_list = source_features if isinstance(source_features, list) else []
