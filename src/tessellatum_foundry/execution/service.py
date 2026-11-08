@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import re
 import uuid
+from copy import deepcopy
 from dataclasses import dataclass
 from typing import Any
 
@@ -75,6 +76,9 @@ class VectorBufferRunService:
         capability: dict[str, Any],
         actor_id: str,
         retry_of_run_id: str | None = None,
+        recipe_ref: dict[str, str] | None = None,
+        recipe_execution_id: str | None = None,
+        resolved_inputs: dict[str, dict[str, Any]] | None = None,
     ) -> ExecutionResult:
         self.contracts.validate("cell.schema.json", cell)
         self.contracts.validate("capability.schema.json", capability)
@@ -88,6 +92,11 @@ class VectorBufferRunService:
                 "Selected worker does not implement the exact supplied Capability version."
             )
         self._validate_worker_descriptor()
+        if (recipe_ref is None) != (recipe_execution_id is None):
+            raise ExecutionPreconditionError(
+                "Recipe reference and recipe_execution_id must be supplied together."
+            )
+        resolved_inputs = resolved_inputs or {}
         try:
             implementation_manifest = self.implementations.require_conformant(
                 implementation_id=self.worker.implementation_id,
