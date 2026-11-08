@@ -99,8 +99,11 @@ class VectorBufferRunService:
                 "Recipe reference and recipe_execution_id must be supplied together."
             )
         resolved_inputs = resolved_inputs or {}
-        if pinned_runtime_image_digest is not None and not re.fullmatch(
-            r"sha256:[a-fA-F0-9]{64}", pinned_runtime_image_digest
+        if pinned_runtime_image_digest is not None and (
+            not isinstance(pinned_runtime_image_digest, str)
+            or not re.fullmatch(
+                r"sha256:[a-fA-F0-9]{64}", pinned_runtime_image_digest
+            )
         ):
             raise ExecutionPreconditionError(
                 "Pinned runtime image digest must be an immutable SHA-256 image ID."
