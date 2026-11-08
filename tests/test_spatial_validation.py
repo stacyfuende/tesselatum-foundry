@@ -101,7 +101,7 @@ def test_input_geometry_type_must_satisfy_capability_port():
 def test_input_crs_type_must_satisfy_capability_port():
     recipe, cells, capabilities, artifacts = spatial_context()
     capabilities[("vector.buffer", "1.0.0")]["input_ports"][0]["spatial"] = {
-        "crs_type": "projected"
+        "crs_type": "geographic"
     }
     findings = validate_recipe_spatial(
         recipe, cells=cells, capabilities=capabilities, artifacts=artifacts
@@ -231,3 +231,45 @@ def test_raster_artifact_requires_grid_metadata():
     artifact["spatial"].pop("geometry_types")
     findings = validate_artifact_spatial_metadata(artifact)
     assert "spatial.raster_grid_missing" in finding_codes(findings)
+
+
+def test_measurement_crs_policy_rejects_implicit_input_reprojection():
+    recipe, cells, capabilities, artifacts = spatial_context()
+    artifacts[("dataset.buildings", "1.0.0")]["spatial"]["crs"] = {
+        "authority": "EPSG",
+        "code": 4326,
+    }
+    findings = validate_recipe_spatial(
+        recipe, cells=cells, capabilities=capabilities, artifacts=artifacts
+    )
+    assert "spatial.input_measurement_crs_mismatch" in finding_codes(findings)
+
+
+def test_explicit_reprojection_policy_allows_different_input_crs():
+    recipe, cells, capabilities, artifacts = spatial_context()
+    artifacts[("dataset.buildings", "1.0.0")]["spatial"]["crs"] = {
+        "authority": "EPSG",
+        "code": 4326,
+    }
+    capabilities[("vector.buffer", "1.0.0")]["input_ports"][0]["spatial"][
+        "measurement_crs_policy"
+    ] = "reproject_to_measurement_crs"
+    capabilities[("vector.buffer", "1.0.0")]["output_ports"][0]["spatial"].pop(
+        "same_crs_as"
+    )
+    findings = validate_recipe_spatial(
+        recipe, cells=cells, capabilities=capabilities, artifacts=artifacts
+    )
+    assert "spatial.input_measurement_crs_mismatch" not in finding_codes(findings)
+
+
+def test_output_crs_must_match_declared_input_port_when_required():
+    recipe, cells, capabilities, artifacts = spatial_context()
+    cells[("buffer-buildings", "1.0.0")]["output_contracts"]["result"]["crs"] = {
+        "authority": "EPSG",
+        "code": 32637,
+    }
+    findings = validate_recipe_spatial(
+        recipe, cells=cells, capabilities=capabilities, artifacts=artifacts
+    )
+    assert "spatial.output_crs_mismatch" in finding_codes(findings)
