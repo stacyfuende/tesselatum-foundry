@@ -117,6 +117,37 @@ def coordinate_operation_evidence_valid(value: Any) -> bool:
     return True
 
 
+def _geographic_bbox_within_area_of_use(
+    bbox: Any,
+    area: dict[str, Any],
+) -> bool | None:
+    """Compare a GIS-order geographic bbox with PROJ longitude/latitude bounds."""
+    if not isinstance(bbox, (list, tuple)) or len(bbox) not in {4, 6}:
+        return None
+    if any(not _finite_number(value) for value in bbox):
+        return None
+    if len(bbox) == 4:
+        min_x, min_y, max_x, max_y = bbox
+    else:
+        min_x, min_y, _, max_x, max_y, _ = bbox
+    if min_x > max_x or min_y > max_y:
+        return None
+
+    west = area["west"]
+    south = area["south"]
+    east = area["east"]
+    north = area["north"]
+    if west <= east:
+        longitude_covered = min_x >= west and max_x <= east
+    else:
+        longitude_covered = (
+            (min_x >= west and max_x <= 180)
+            or (min_x >= -180 and max_x <= east)
+        )
+    latitude_covered = min_y >= south and max_y <= north
+    return longitude_covered and latitude_covered
+
+
 def build_methodology_report(
     *,
     run_id: str,
@@ -395,9 +426,10 @@ def build_methodology_report(
         )
     elif capability_id == "vector.reproject":
         try:
-            _resolve_crs(input_artifact["spatial"]["crs"])
+            source_crs = _resolve_crs(input_artifact["spatial"]["crs"])
             source_crs_resolved = True
         except (CRSError, KeyError, TypeError, ValueError, OverflowError):
+            source_crs = None
             source_crs_resolved = False
         try:
             target_crs = _resolve_crs(parameters["target_crs"])
@@ -439,6 +471,33 @@ def build_methodology_report(
         else:
             operation_accuracy = operation_area = None
             operation_description = operation_definition = None
+
+        area_coverage_status = "not_assessed"
+        area_coverage_message = (
+            "Operation area-of-use coverage cannot be evaluated without a "
+            "geographic input Artifact bbox and reported operation area."
+        )
+        input_bbox = input_artifact.get("spatial", {}).get("bbox")
+        if (
+            operation_valid
+            and operation_area is not None
+            and source_crs_resolved
+            and source_crs is not None
+            and source_crs.is_geographic
+            and input_bbox is not None
+        ):
+            area_covered = _geographic_bbox_within_area_of_use(
+                input_bbox, operation_area
+            )
+            if area_covered is not None:
+                area_coverage_status = "passed" if area_covered else "failed"
+                area_coverage_message = (
+                    "The input Artifact geographic bbox is fully within "
+                    "the selected operation's reported area of use."
+                    if area_covered
+                    else "The input Artifact geographic bbox extends beyond "
+                    "the selected operation's reported area of use."
+                )
 
         findings.extend(
             [
@@ -520,6 +579,15 @@ def build_methodology_report(
                     evidence=evidence,
                 ),
                 _finding(
+                    "method.input_extent_within_operation_area_of_use",
+                    area_coverage_status,
+                    area_coverage_message,
+                    severity=(
+                        "error" if area_coverage_status == "failed" else "warning"
+                    ),
+                    evidence=evidence,
+                ),
+                _finding(
                     "method.ballpark_transformations_disallowed",
                     "passed" if non_ballpark_declared else "not_assessed",
                     (
@@ -553,10 +621,13 @@ def build_methodology_report(
         assessed_dimensions.extend(["source_and_target_crs", "transformation_limitations"])
         if operation_definition is None:
             unassessed.append("exact_coordinate_operation_pipeline")
+        if area_coverage_status in {"passed", "failed"}:
+            assessed_dimensions.append("coordinate_operation_area_of_use_coverage")
+        else:
+            unassessed.append("coordinate_operation_area_of_use_coverage")
         unassessed.extend(
             [
                 "coordinate_operation_accuracy_suitability",
-                "coordinate_operation_area_of_use_coverage",
                 "segment_shape_error_without_densification",
                 "antimeridian_crossing_suitability",
             ]
