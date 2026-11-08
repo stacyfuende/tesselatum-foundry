@@ -52,6 +52,8 @@ def execute_request(request_path: Path, input_path: Path, output_path: Path) -> 
         raise ValueError("Unsupported worker request version.")
     if request.get("capability_id") != "vector.buffer":
         raise ValueError("This worker only executes vector.buffer.")
+    if request.get("capability_version") != "1.0.0":
+        raise ValueError("This worker only executes vector.buffer@1.0.0.")
     feature_collection = json.loads(input_path.read_text(encoding="utf-8"))
     result = buffer_feature_collection(
         feature_collection,
