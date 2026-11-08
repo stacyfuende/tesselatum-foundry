@@ -19,13 +19,13 @@
     "kind": "vector",
     "crs": {
       "authority": "EPSG",
-      "code": 4326
+      "code": 32737
     },
     "bbox": [
-      36.7,
-      -1.4,
-      37.1,
-      -1
+      300000,
+      9800000,
+      340000,
+      9850000
     ],
     "geometry_types": [
       "Polygon"
