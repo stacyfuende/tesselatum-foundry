@@ -6,7 +6,7 @@ import hashlib
 import json
 import os
 import tempfile
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path, PurePosixPath
 from typing import Any
 
@@ -22,11 +22,11 @@ class ArtifactIntegrityError(RuntimeError):
 
 
 def utc_timestamp() -> str:
-    return datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
+    return datetime.now(UTC).isoformat(timespec="seconds").replace("+00:00", "Z")
 
 
 def _identity_key(artifact_id: str, version: str) -> str:
-    return hashlib.sha256(f"{artifact_id}\0{version}".encode("utf-8")).hexdigest()
+    return hashlib.sha256(f"{artifact_id}\0{version}".encode()).hexdigest()
 
 
 class FileSystemArtifactStore:
@@ -112,7 +112,8 @@ class FileSystemArtifactStore:
             )
             if any(existing.get(field) != record.get(field) for field in stable_fields):
                 raise ImmutableArtifactError(
-                    f"Artifact {artifact_id}@{version} already exists with different content or metadata."
+                    f"Artifact {artifact_id}@{version} already exists with "
+                    "different content or metadata."
                 )
             return existing
         return record
@@ -141,7 +142,8 @@ class FileSystemArtifactStore:
         expected = artifact["checksum"]["value"]
         if actual != expected or len(content) != artifact.get("size_bytes"):
             raise ArtifactIntegrityError(
-                f"Artifact {artifact['artifact_id']}@{artifact['version']} failed checksum verification."
+                f"Artifact {artifact['artifact_id']}@{artifact['version']} "
+                "failed checksum verification."
             )
         return content
 
