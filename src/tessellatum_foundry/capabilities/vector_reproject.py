@@ -84,6 +84,14 @@ def _coordinate_operation_evidence(
 ) -> dict[str, Any]:
     """Capture the operation selected by PROJ after coordinate transformation."""
     description = transformer.description
+    definition = transformer.definition
+    if (
+        not isinstance(definition, str)
+        or not definition.strip()
+        or definition.lower().startswith("unavailable")
+        or len(definition) > 8192
+    ):
+        definition = None
     accuracy = transformer.accuracy
     accuracy_m = (
         float(accuracy)
@@ -108,6 +116,7 @@ def _coordinate_operation_evidence(
             }
     return {
         "description": str(description) if description else None,
+        "definition": definition,
         "accuracy_m": accuracy_m,
         "area_of_use": area_of_use,
     }
