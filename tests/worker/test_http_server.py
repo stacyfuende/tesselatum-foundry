@@ -213,7 +213,7 @@ def test_remote_worker_http_service_bounds_concurrent_requests(monkeypatch):
 
     monkeypatch.setattr(worker_http_server, "buffer_feature_collection", slow_buffer)
     server = BoundedThreadingHTTPServer(
-        ("127.0.0.1", 0), WorkerHandler, max_concurrent_requests=1
+        ("127.0.0.1", 0), WorkerHandler, max_concurrent_executions=1
     )
     server_thread = threading.Thread(target=server.serve_forever, daemon=True)
     server_thread.start()
