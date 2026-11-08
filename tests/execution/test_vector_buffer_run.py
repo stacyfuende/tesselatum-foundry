@@ -467,7 +467,16 @@ def test_deterministic_cache_reuses_only_validated_immutable_outputs(tmp_path):
 
 @pytest.mark.parametrize(
     "corruption",
-    ["validator_version", "validator_name", "failed_finding", "duplicate_finding", "missing_assessment", "missing_validator", "malformed_findings", "malformed_assessment"],
+    [
+        "validator_version",
+        "validator_name",
+        "failed_finding",
+        "duplicate_finding",
+        "missing_assessment",
+        "missing_validator",
+        "malformed_findings",
+        "malformed_assessment",
+    ],
 )
 def test_cache_rejects_stale_or_incomplete_output_validation_evidence(
     tmp_path, monkeypatch, corruption
