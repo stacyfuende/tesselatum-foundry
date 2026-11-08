@@ -116,7 +116,8 @@
         "type": "number"
       },
       "minItems": 4,
-      "maxItems": 6
+      "maxItems": 6,
+      "description": "GIS x/y order: [min_x, min_y, max_x, max_y], optionally [min_x, min_y, min_z, max_x, max_y, max_z]."
     },
     "findingStatus": {
       "type": "string",
