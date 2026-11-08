@@ -6,6 +6,7 @@ import math
 from typing import Any
 
 from pyproj import CRS
+from pyproj.exceptions import CRSError
 
 from tessellatum_foundry.storage.artifacts import utc_timestamp
 
@@ -94,6 +95,7 @@ def build_methodology_report(
         },
     ]
     findings: list[dict[str, Any]] = []
+    assessed_dimensions = ["declared_operation_semantics"]
     unassessed: list[str] = [
         "analysis_purpose",
         "acceptable_error_tolerance",
@@ -125,7 +127,7 @@ def build_methodology_report(
                 and math.isfinite(distance)
                 and distance > 0
             )
-        except (KeyError, TypeError, ValueError, OverflowError):
+        except (CRSError, KeyError, TypeError, ValueError, OverflowError):
             projected = crs_matches = output_matches = False
             unit_matches = distance_valid = False
             axis_units = []
@@ -193,6 +195,7 @@ def build_methodology_report(
                     evidence=evidence,
                 )
             )
+        assessed_dimensions.extend(["measurement_crs_and_units", "planar_distance_model"])
         unassessed.extend(
             [
                 "projection_scale_distortion_over_area_of_interest",
@@ -203,16 +206,17 @@ def build_methodology_report(
     elif capability_id == "vector.reproject":
         try:
             _resolve_crs(input_artifact["spatial"]["crs"])
+            source_crs_resolved = True
+        except (CRSError, KeyError, TypeError, ValueError, OverflowError):
+            source_crs_resolved = False
+        try:
             target_crs = _resolve_crs(parameters["target_crs"])
             output_crs = _resolve_crs(output_artifact["spatial"]["crs"])
             target_matches_output = target_crs.equals(
                 output_crs, ignore_axis_order=True
             )
-            crs_resolved = True
-        except (KeyError, TypeError, ValueError, OverflowError):
-            crs_resolved = False
+        except (CRSError, KeyError, TypeError, ValueError, OverflowError):
             target_matches_output = False
-            target_crs = output_crs = None
 
         preconditions = [
             str(item).lower() for item in capability.get("preconditions", [])
@@ -232,9 +236,9 @@ def build_methodology_report(
             [
                 _finding(
                     "method.source_crs_explicit_and_resolvable",
-                    "passed" if crs_resolved else "failed",
+                    "passed" if source_crs_resolved else "failed",
                     "The input Artifact declares a resolvable source CRS.",
-                    severity="error" if not crs_resolved else "info",
+                    severity="error" if not source_crs_resolved else "info",
                     evidence=evidence,
                 ),
                 _finding(
@@ -275,6 +279,7 @@ def build_methodology_report(
                 ),
             ]
         )
+        assessed_dimensions.extend(["source_and_target_crs", "transformation_limitations"])
         unassessed.extend(
             [
                 "coordinate_operation_accuracy",
@@ -312,10 +317,6 @@ def build_methodology_report(
             "remains subject to the unassessed purpose, accuracy, and area-of-use "
             "dimensions listed in this report."
         ),
-        "assessed_dimensions": [
-            "declared_operation_semantics",
-            "measurement_crs_and_units",
-            "explicit_transformation_contract",
-        ],
+        "assessed_dimensions": assessed_dimensions,
         "unassessed_dimensions": sorted(set(unassessed)),
     }
