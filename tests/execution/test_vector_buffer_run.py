@@ -11,7 +11,7 @@ from tessellatum_foundry.execution.docker_worker import (
     DockerWorker,
     WorkerUnavailableError,
 )
-from tessellatum_foundry.execution.protocol import WorkerResult
+from tessellatum_foundry.execution.protocol import VectorBufferWorker, WorkerResult
 from tessellatum_foundry.execution.runs import RunRepository, RunStateError
 from tessellatum_foundry.execution.service import VectorBufferRunService
 from tessellatum_foundry.storage.artifacts import (
@@ -74,7 +74,7 @@ def bind_cell_to_input(input_artifact: dict[str, Any]) -> dict[str, Any]:
     return cell
 
 
-def make_service(tmp_path: Path, worker):
+def make_service(tmp_path: Path, worker: VectorBufferWorker):
     store = FileSystemArtifactStore(tmp_path / "artifacts")
     runs = RunRepository(tmp_path / "control")
     service = VectorBufferRunService(
@@ -188,6 +188,11 @@ def test_failed_attempt_is_preserved_when_a_retry_succeeds(tmp_path):
 
 
 class WrongCrsWorker:
+    implementation_id = "test-wrong-crs-worker"
+    implementation_version = "1.0.0"
+    worker_id = "test-worker"
+    worker_type = "local_docker"
+
     def image_digest(self) -> str:
         return "sha256:" + "a" * 64
 
