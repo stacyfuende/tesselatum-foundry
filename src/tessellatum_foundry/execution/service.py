@@ -363,7 +363,7 @@ class VectorBufferRunService:
             )
         if (
             not isinstance(self.worker.worker_type, str)
-            or self.worker.worker_type not in {"local_docker", "remote"}
+            or self.worker.worker_type != "local_docker"
         ):
             raise ExecutionPreconditionError("Worker type is not supported by the Run contract.")
 
