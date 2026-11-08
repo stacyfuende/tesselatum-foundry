@@ -490,6 +490,7 @@ class VectorBufferRunService:
             rights_report = build_rights_provenance_report(
                 run_id=run_id,
                 input_artifact=input_artifact,
+                output_artifact=cache_reuse["artifact"],
             )
             self.run_repository.save_validation_report(rights_report)
             finished = self.run_repository.transition(
@@ -597,6 +598,7 @@ class VectorBufferRunService:
             rights_report = build_rights_provenance_report(
                 run_id=run_id,
                 input_artifact=input_artifact,
+                output_artifact=output_artifact,
             )
             self.run_repository.save_validation_report(rights_report)
             finished = self.run_repository.transition(
