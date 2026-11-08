@@ -7,7 +7,14 @@ from typing import Any
 from pyproj import CRS
 from pyproj.exceptions import CRSError
 
-from .graph import DomainObject, ObjectKey, ValidationFinding, _object_key
+from .graph import ValidationFinding
+
+DomainObject = Mapping[str, Any]
+ObjectKey = tuple[str, str]
+
+
+def _object_key(object_id: str, version: str) -> ObjectKey:
+    return object_id, version
 
 _GEOGRAPHIC_KINDS = {"geographic", "projected", "geocentric", "engineering", "compound"}
 _SPATIAL_DATA_KINDS = {"vector", "raster", "point_cloud", "mesh"}
@@ -541,7 +548,11 @@ def validate_recipe_spatial(
             output_port_contract = output_ports.get(output_port, {})
             output_spatial_constraints = output_port_contract.get("spatial", {})
             output_crs = contract.get("crs")
-            if contract.get("data_kind") in _SPATIAL_DATA_KINDS and output_crs is None:
+            output_crs_required = (
+                contract.get("data_kind") in _SPATIAL_DATA_KINDS
+                or output_spatial_constraints.get("crs_required", False)
+            )
+            if output_crs_required and output_crs is None:
                 findings.append(
                     ValidationFinding(
                         "spatial.output_crs_missing",
@@ -580,8 +591,11 @@ def validate_recipe_spatial(
             declared_output_geometry_types = set(contract.get("geometry_types", []))
             if (
                 allowed_output_geometry_types
-                and not declared_output_geometry_types.issubset(
-                    allowed_output_geometry_types
+                and (
+                    not declared_output_geometry_types
+                    or not declared_output_geometry_types.issubset(
+                        allowed_output_geometry_types
+                    )
                 )
             ):
                 findings.append(
