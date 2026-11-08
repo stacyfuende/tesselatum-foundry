@@ -1,6 +1,7 @@
-"""Small authenticated HTTP service for a remotely deployed vector.buffer worker.
+"""Authenticated HTTP service for one remotely deployed spatial capability worker.
 
 Terminate TLS at a trusted ingress/proxy and keep this service on a private network.
+Each process advertises and executes exactly one capability version.
 """
 
 from __future__ import annotations
@@ -13,6 +14,19 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any
 
 from tessellatum_foundry.capabilities.vector_buffer import buffer_feature_collection
+from tessellatum_foundry.capabilities.vector_reproject import reproject_feature_collection
+
+_SUPPORTED_WORKERS = {
+    ("vector.buffer", "1.0.0"): "vector-buffer-shapely",
+    ("vector.reproject", "1.0.0"): "vector-reproject-pyproj-shapely",
+}
+
+
+def _worker_capability() -> tuple[str, str]:
+    return (
+        os.environ.get("FOUNDRY_WORKER_CAPABILITY_ID", "vector.buffer"),
+        os.environ.get("FOUNDRY_WORKER_CAPABILITY_VERSION", "1.0.0"),
+    )
 
 
 def _json_bytes(value: dict[str, Any]) -> bytes:
@@ -22,7 +36,7 @@ def _json_bytes(value: dict[str, Any]) -> bytes:
 
 
 class WorkerHandler(BaseHTTPRequestHandler):
-    server_version = "FoundryRemoteWorker/0.1"
+    server_version = "FoundryRemoteWorker/0.2"
 
     def _authorized(self) -> bool:
         expected = os.environ.get("FOUNDRY_REMOTE_WORKER_TOKEN", "")
@@ -52,19 +66,28 @@ class WorkerHandler(BaseHTTPRequestHandler):
         if self.path != "/v1/identity":
             self._send_json(404, {"error": "not_found"})
             return
+        capability_id, capability_version = _worker_capability()
+        default_implementation = _SUPPORTED_WORKERS.get(
+            (capability_id, capability_version), ""
+        )
         identity = {
-            "worker_id": os.environ.get("FOUNDRY_WORKER_ID", "remote-vector-buffer-worker"),
-            "capability_id": "vector.buffer",
-            "capability_version": "1.0.0",
+            "worker_id": os.environ.get(
+                "FOUNDRY_WORKER_ID", f"remote-{capability_id.replace('.', '-')}-worker"
+            ),
+            "capability_id": capability_id,
+            "capability_version": capability_version,
             "implementation_id": os.environ.get(
-                "FOUNDRY_IMPLEMENTATION_ID", "vector-buffer-shapely"
+                "FOUNDRY_IMPLEMENTATION_ID", default_implementation
             ),
             "implementation_version": os.environ.get(
                 "FOUNDRY_IMPLEMENTATION_VERSION", "1.0.0"
             ),
             "runtime_image_digest": os.environ.get("FOUNDRY_WORKER_IMAGE_DIGEST", ""),
         }
-        if not identity["runtime_image_digest"].startswith("sha256:"):
+        if (
+            (capability_id, capability_version) not in _SUPPORTED_WORKERS
+            or not identity["runtime_image_digest"].startswith("sha256:")
+        ):
             self._send_json(503, {"error": "worker_identity_not_configured"})
             return
         self._send_json(200, identity)
@@ -94,21 +117,37 @@ class WorkerHandler(BaseHTTPRequestHandler):
                 raise ValueError("request must be an object")
             if request.get("request_version") != "0.1.0":
                 raise ValueError("unsupported request version")
-            if request.get("capability_id") != "vector.buffer" or request.get(
-                "capability_version"
-            ) != "1.0.0":
-                raise ValueError("unsupported capability version")
+            capability = _worker_capability()
+            requested_capability = (
+                request.get("capability_id"),
+                request.get("capability_version"),
+            )
+            if requested_capability != capability or capability not in _SUPPORTED_WORKERS:
+                self._send_json(400, {"error": "unsupported_capability_version"})
+                return
             feature_collection = request["input_feature_collection"]
             parameters = request["parameters"]
             if not isinstance(feature_collection, dict) or not isinstance(parameters, dict):
                 raise ValueError("invalid feature collection or parameters")
             started = time.monotonic()
-            result = buffer_feature_collection(
-                feature_collection,
-                input_crs=request["input_crs"],
-                measurement_crs=request["measurement_crs"],
-                **parameters,
-            )
+            if capability == ("vector.buffer", "1.0.0"):
+                result = buffer_feature_collection(
+                    feature_collection,
+                    input_crs=request["input_crs"],
+                    measurement_crs=request["measurement_crs"],
+                    **parameters,
+                )
+                output_crs = request["input_crs"]
+            elif capability == ("vector.reproject", "1.0.0"):
+                result = reproject_feature_collection(
+                    feature_collection,
+                    input_crs=request["input_crs"],
+                    target_crs=request["target_crs"],
+                )
+                output_crs = request["target_crs"]
+            else:
+                self._send_json(400, {"error": "unsupported_capability_version"})
+                return
             duration_ms = max(0, int((time.monotonic() - started) * 1000))
             digest = os.environ.get("FOUNDRY_WORKER_IMAGE_DIGEST", "")
             if not digest.startswith("sha256:"):
@@ -117,7 +156,7 @@ class WorkerHandler(BaseHTTPRequestHandler):
                 200,
                 {
                     "feature_collection": result.feature_collection,
-                    "crs": request["input_crs"],
+                    "crs": output_crs,
                     "duration_ms": duration_ms,
                     "runtime_image_digest": digest,
                 },
@@ -135,9 +174,16 @@ class WorkerHandler(BaseHTTPRequestHandler):
 def main() -> None:
     token = os.environ.get("FOUNDRY_REMOTE_WORKER_TOKEN", "")
     digest = os.environ.get("FOUNDRY_WORKER_IMAGE_DIGEST", "")
-    if not token or not digest.startswith("sha256:") or len(digest) != 71:
+    capability = _worker_capability()
+    if (
+        not token
+        or not digest.startswith("sha256:")
+        or len(digest) != 71
+        or capability not in _SUPPORTED_WORKERS
+    ):
         raise SystemExit(
-            "FOUNDRY_REMOTE_WORKER_TOKEN and a full FOUNDRY_WORKER_IMAGE_DIGEST are required."
+            "Configure the bearer token, full immutable image digest, and a supported "
+            "FOUNDRY_WORKER_CAPABILITY_ID/VERSION pair."
         )
     bind = os.environ.get("FOUNDRY_REMOTE_BIND", "0.0.0.0")
     port = int(os.environ.get("FOUNDRY_REMOTE_PORT", "8080"))
