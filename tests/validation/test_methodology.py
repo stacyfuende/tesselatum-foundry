@@ -248,3 +248,50 @@ def test_reproject_method_report_requires_actual_operation_evidence():
     findings = findings_by_code(report)
     assert report["overall_status"] == "failed"
     assert findings["method.coordinate_operation_identity_recorded"]["status"] == "failed"
+
+
+
+def test_coordinate_operation_evidence_accepts_antimeridian_wrapping_area():
+    from tessellatum_foundry.validation.methodology import (
+        coordinate_operation_evidence_valid,
+    )
+
+    assert coordinate_operation_evidence_valid(
+        {
+            "description": "Pacific operation",
+            "accuracy_m": None,
+            "area_of_use": {
+                "west": 170.0,
+                "south": -30.0,
+                "east": -170.0,
+                "north": 30.0,
+                "name": "Dateline region",
+            },
+        }
+    )
+
+
+def test_coordinate_operation_evidence_rejects_invalid_accuracy_and_bounds():
+    from tessellatum_foundry.validation.methodology import (
+        coordinate_operation_evidence_valid,
+    )
+
+    assert not coordinate_operation_evidence_valid(
+        {
+            "description": "Invalid operation",
+            "accuracy_m": -1.0,
+            "area_of_use": None,
+        }
+    )
+    assert not coordinate_operation_evidence_valid(
+        {
+            "description": "Invalid operation",
+            "accuracy_m": 1.0,
+            "area_of_use": {
+                "west": -200.0,
+                "south": -10.0,
+                "east": 100.0,
+                "north": 10.0,
+            },
+        }
+    )
