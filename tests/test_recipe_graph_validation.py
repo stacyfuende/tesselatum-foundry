@@ -114,3 +114,75 @@ def test_recipe_cycle_is_reported():
     }
     findings = validate_recipe_graph(recipe, cells=cells, capabilities=capabilities)
     assert "recipe.cycle_detected" in {finding.code for finding in findings}
+
+
+def test_unknown_input_port_is_reported():
+    recipe, cells, capabilities = base_context()
+    cell = dict(next(iter(cells.values())))
+    cell["inputs"] = {
+        **cell["inputs"],
+        "unexpected": {
+            "source": "artifact",
+            "artifact": {"artifact_id": "dataset.buildings", "version": "1.0.0"},
+        },
+    }
+    cells[(cell["cell_id"], cell["version"])] = cell
+    findings = validate_recipe_graph(recipe, cells=cells, capabilities=capabilities)
+    assert "cell.unknown_input_port" in {finding.code for finding in findings}
+
+
+def test_duplicate_cell_version_in_recipe_is_reported():
+    recipe, cells, capabilities = base_context()
+    recipe["nodes"].append(
+        {
+            "node_id": "same-cell-again",
+            "cell": {"cell_id": "buffer-buildings", "version": "1.0.0"},
+        }
+    )
+    findings = validate_recipe_graph(recipe, cells=cells, capabilities=capabilities)
+    assert "recipe.duplicate_cell_reference" in {finding.code for finding in findings}
+
+
+def test_incompatible_edge_kinds_are_reported():
+    _, cells, capabilities = base_context()
+    source = dict(next(iter(cells.values())))
+    source["cell_id"] = "vector-source"
+    target = dict(next(iter(cells.values())))
+    target["cell_id"] = "raster-target"
+    target["inputs"] = {
+        "features": {
+            "source": "cell_output",
+            "cell_id": "vector-source",
+            "cell_version": "1.0.0",
+            "output_port": "result",
+        }
+    }
+    incompatible_capability = dict(next(iter(capabilities.values())))
+    incompatible_capability["input_ports"] = [
+        {**incompatible_capability["input_ports"][0], "data_kind": "raster"}
+    ]
+    cells = {
+        (source["cell_id"], source["version"]): source,
+        (target["cell_id"], target["version"]): target,
+    }
+    capabilities = {
+        ("vector.buffer", "1.0.0"): incompatible_capability
+    }
+    recipe = {
+        "recipe_id": "incompatible-edge",
+        "version": "1.0.0",
+        "title": "Incompatible edge",
+        "nodes": [
+            {"node_id": "source", "cell": {"cell_id": "vector-source", "version": "1.0.0"}},
+            {"node_id": "target", "cell": {"cell_id": "raster-target", "version": "1.0.0"}},
+        ],
+        "edges": [
+            {
+                "from": {"node_id": "source", "output_port": "result"},
+                "to": {"node_id": "target", "input_port": "features"},
+            }
+        ],
+        "declared_outputs": [],
+    }
+    findings = validate_recipe_graph(recipe, cells=cells, capabilities=capabilities)
+    assert "recipe.edge_kind_mismatch" in {finding.code for finding in findings}
