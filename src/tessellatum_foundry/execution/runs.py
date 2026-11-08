@@ -35,6 +35,38 @@ _SET_ONCE_FIELDS = {
     "implementation",
     "runtime_image_digest",
 }
+_ALLOWED_TRANSITION_FIELDS = {
+    ("queued", "running"): {
+        "started_at",
+        "worker",
+        "implementation",
+        "runtime_image_digest",
+    },
+    ("queued", "failed"): {"finished_at", "error"},
+    ("queued", "cancelled"): {"finished_at", "error"},
+    ("waiting_for_resources", "running"): {
+        "started_at",
+        "worker",
+        "implementation",
+        "runtime_image_digest",
+    },
+    ("waiting_for_resources", "failed"): {"finished_at", "error"},
+    ("waiting_for_resources", "cancelled"): {"finished_at", "error"},
+    ("waiting_for_resources", "timed_out"): {"finished_at", "error"},
+    ("running", "succeeded"): {
+        "finished_at",
+        "outputs",
+        "validation_report_ids",
+        "resource_usage",
+    },
+    ("running", "failed"): {
+        "finished_at",
+        "error",
+        "validation_report_ids",
+    },
+    ("running", "cancelled"): {"finished_at", "error"},
+    ("running", "timed_out"): {"finished_at", "error"},
+}
 _ALLOWED_TRANSITIONS = {
     "queued": {"running", "failed", "cancelled"},
     "waiting_for_resources": {"running", "failed", "cancelled", "timed_out"},
@@ -133,6 +165,14 @@ class RunRepository:
             if new_status not in _ALLOWED_TRANSITIONS.get(status, set()):
                 raise RunStateError(f"Invalid Run transition: {status} -> {new_status}.")
             changes = fields or {}
+            permitted_fields = _ALLOWED_TRANSITION_FIELDS[(status, new_status)]
+            unexpected_fields = set(changes) - permitted_fields
+            if unexpected_fields:
+                names = ", ".join(sorted(unexpected_fields))
+                raise RunStateError(
+                    f"Fields {names} are not permitted for transition "
+                    f"{status} -> {new_status}."
+                )
             for name in _IMMUTABLE_FIELDS:
                 if name in changes and changes[name] != current.get(name):
                     raise RunStateError(
