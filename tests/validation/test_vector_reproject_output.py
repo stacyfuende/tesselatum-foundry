@@ -48,7 +48,7 @@ def test_reproject_output_critic_accepts_conformant_transformation():
     assert report.passed
     assert set(report.geometry_types) == {"Point"}
     assert {finding.code for finding in report.findings} == {
-        "output.crs_matches_input",
+        "output.crs_matches_contract",
         "output.feature_collection",
         "output.feature_count_preserved",
         "output.geometry_validity",
@@ -61,7 +61,7 @@ def test_reproject_output_critic_accepts_conformant_transformation():
 
 def test_reproject_output_critic_rejects_wrong_crs():
     report = inspect(actual_crs={"authority": "EPSG", "code": 3857})
-    finding = next(item for item in report.findings if item.code == "output.crs_matches_input")
+    finding = next(item for item in report.findings if item.code == "output.crs_matches_contract")
     assert finding.status == "failed"
 
 
