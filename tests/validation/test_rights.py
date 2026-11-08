@@ -10,10 +10,31 @@ def artifact(*, rights=None):
     return record
 
 
+def derived_artifact(source):
+    rights = source.get("rights")
+    return {
+        "artifact_id": "derived.output",
+        "version": "1.0.0",
+        "rights": rights,
+        "metadata": {
+            "rights_provenance": {
+                "source_artifact": {
+                    "artifact_id": source["artifact_id"],
+                    "version": source["version"],
+                },
+                "declaration_status": (
+                    "declared_unverified" if rights is not None else "unknown"
+                ),
+            }
+        },
+    }
+
+
 def test_missing_rights_are_unknown_not_permission():
     report = build_rights_provenance_report(
         run_id="run:unknown",
         input_artifact=artifact(),
+        output_artifact=derived_artifact(artifact()),
     )
 
     assert report["stage"] == "rights_security"
@@ -34,6 +55,15 @@ def test_recorded_license_is_not_misrepresented_as_verified_permission():
                 "source_uri": "https://example.org/data",
             }
         ),
+        output_artifact=derived_artifact(
+            artifact(
+                rights={
+                    "license_id": "CC-BY-4.0",
+                    "attribution": "Example source",
+                    "source_uri": "https://example.org/data",
+                }
+            )
+        ),
     )
 
     assert report["overall_status"] == "not_assessed"
@@ -46,8 +76,28 @@ def test_incomplete_rights_declaration_requires_review():
     report = build_rights_provenance_report(
         run_id="run:partial",
         input_artifact=artifact(rights={"attribution": "Example source"}),
+        output_artifact=derived_artifact(
+            artifact(rights={"attribution": "Example source"})
+        ),
     )
 
     assert report["overall_status"] == "requires_review"
     findings = {item["code"]: item for item in report["findings"]}
     assert findings["rights.license_identifier_missing"]["status"] == "not_assessed"
+
+
+
+def test_changed_rights_metadata_fails_inheritance_evidence():
+    source = artifact(rights={"license_id": "CC-BY-4.0"})
+    output = derived_artifact(source)
+    output["rights"] = {"license_id": "UNRESTRICTED"}
+
+    report = build_rights_provenance_report(
+        run_id="run:tampered",
+        input_artifact=source,
+        output_artifact=output,
+    )
+
+    assert report["overall_status"] == "failed"
+    findings = {item["code"]: item for item in report["findings"]}
+    assert findings["rights.declaration_inheritance_failed"]["status"] == "failed"
