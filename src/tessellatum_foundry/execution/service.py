@@ -218,7 +218,7 @@ class VectorBufferRunService:
         self._validate_spatial_declarations(
             cell=cell,
             capability=capability,
-            input_artifact=input_artifact,
+            resolved_artifacts={"features": input_artifact},
         )
         try:
             prepared_input = prepare_buffer_request(
@@ -246,6 +246,7 @@ class VectorBufferRunService:
             "input_port": "features",
             "artifact": artifact_ref,
             "checksum": input_artifact["checksum"]["value"],
+            **lineage,
         }
         attempt = 1
         if retry_of_run_id is not None:
@@ -281,6 +282,8 @@ class VectorBufferRunService:
             normalized_parameters=parameters,
             attempt=attempt,
             retry_of_run_id=retry_of_run_id,
+            recipe=recipe_ref,
+            recipe_execution_id=recipe_execution_id,
         )
 
         try:
