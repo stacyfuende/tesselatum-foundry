@@ -29,7 +29,7 @@ Items are marked complete when implementation and corresponding tests are presen
 
 ## Python SDK
 
-The local SDK is the first convenience interface over the canonical contracts. It uses an explicit persistent directory and defaults to the isolated Docker worker:
+The local SDK is the first convenience interface over the canonical contracts. Install the Shapely extra for host-side output validation, then use an explicit persistent directory; execution defaults to the isolated Docker worker:\n\n```bash\npip install 'tessellatum-foundry[shapely]'\n```
 
 ```python
 from pathlib import Path
