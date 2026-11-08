@@ -150,17 +150,14 @@ class VectorBufferRunService:
         declared_geometry_types = set(
             input_artifact["spatial"].get("geometry_types", [])
         )
-        actual_geometry_types = {feature.geometry_type for feature in prepared_input.features}
+        actual_geometry_types = {
+            feature.geometry_type for feature in prepared_input.features
+        }
         if actual_geometry_types != declared_geometry_types:
             raise ExecutionPreconditionError(
                 "Input Artifact geometry_types metadata does not match its feature data."
             )
 
-        self._validate_spatial_declarations(
-            cell=cell,
-            capability=capability,
-            input_artifact=input_artifact,
-        )
         input_snapshot = {
             "input_port": "features",
             "artifact": artifact_ref,
