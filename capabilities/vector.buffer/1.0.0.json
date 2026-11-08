@@ -107,7 +107,8 @@
     "Input CRS equals the projected measurement CRS.",
     "The distance unit matches both horizontal measurement CRS axis units.",
     "Distance is positive.",
-    "When single_sided is true, every input geometry must be a LineString; the positive distance selects the left side and produces flat end caps."
+    "When single_sided is true, every input geometry must be a LineString; the positive distance selects the left side and produces flat end caps.",
+    "Z coordinates, when present, are ignored by this planar operation; output geometries are 2D."
   ],
   "validation_requirements": [
     "Every output geometry is non-empty and valid.",
