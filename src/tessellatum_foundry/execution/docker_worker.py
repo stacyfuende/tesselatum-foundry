@@ -42,6 +42,7 @@ class WorkerResult:
     crs: dict[str, Any]
     geometry_types: tuple[str, ...]
     duration_ms: int
+    runtime_image_digest: str
 
 
 class DockerWorker:
@@ -113,10 +114,13 @@ class DockerWorker:
         input_crs: dict[str, Any],
         measurement_crs: dict[str, Any],
         parameters: dict[str, Any],
+        runtime_image_digest: str | None = None,
     ) -> WorkerResult:
         if len(input_bytes) > self.max_input_bytes:
             raise WorkerExecutionError("Input Artifact exceeds the worker byte limit.")
-        image_digest = self.image_digest()
+        image_digest = runtime_image_digest or self.image_digest()
+        if not _IMAGE_DIGEST.fullmatch(image_digest):
+            raise WorkerUnavailableError("Worker image digest is invalid.")
         request = {
             "request_version": "0.1.0",
             "capability_id": "vector.buffer",
@@ -165,7 +169,7 @@ class DockerWorker:
                 f"type=bind,src={request_path},dst=/run/request.json,readonly",
                 "--mount",
                 f"type=bind,src={output_dir},dst=/run/output",
-                self.image,
+                image_digest,
                 "--request",
                 "/run/request.json",
                 "--input",
@@ -226,6 +230,7 @@ class DockerWorker:
             crs=output_crs,
             geometry_types=tuple(geometry_types),
             duration_ms=duration_ms,
+            runtime_image_digest=image_digest,
         )
 
     def _remove_container(self, container_name: str) -> None:
