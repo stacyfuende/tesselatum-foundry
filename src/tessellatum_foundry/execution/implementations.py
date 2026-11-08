@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from copy import deepcopy
 from pathlib import Path
 from typing import Any
 
@@ -40,7 +41,7 @@ class ImplementationRegistry:
         """Return an exact implementation manifest or fail closed."""
         key = (implementation_id, version)
         try:
-            return self._manifests[key]
+            return deepcopy(self._manifests[key])
         except KeyError as error:
             raise ImplementationRegistryError(
                 f"Implementation {implementation_id}@{version} is not registered."
