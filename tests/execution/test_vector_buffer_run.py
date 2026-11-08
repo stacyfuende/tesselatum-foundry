@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from copy import deepcopy
 import os
 from pathlib import Path
 from typing import Any
@@ -379,3 +380,86 @@ def test_run_service_rejects_modified_capability_semantics_before_run(tmp_path):
         )
 
     assert not (runs.root / "runs").exists()
+
+
+
+class DeterministicBufferWorker(WrongCrsWorker):
+    def __init__(self):
+        self.calls = 0
+
+    def execute(self, **kwargs) -> WorkerResult:
+        self.calls += 1
+        return WorkerResult(
+            feature_collection={
+                "type": "FeatureCollection",
+                "features": [
+                    {
+                        "type": "Feature",
+                        "id": "source-1",
+                        "geometry": {
+                            "type": "Polygon",
+                            "coordinates": [[
+                                [319900, 9819900],
+                                [320100, 9819900],
+                                [320100, 9820100],
+                                [319900, 9820100],
+                                [319900, 9819900],
+                            ]],
+                        },
+                        "properties": {"category": "test"},
+                    }
+                ],
+            },
+            crs=PROJECTED,
+            duration_ms=3,
+            runtime_image_digest=kwargs["runtime_image_digest"],
+        )
+
+
+def test_deterministic_cache_reuses_only_validated_immutable_outputs(tmp_path):
+    worker = DeterministicBufferWorker()
+    store, runs, service = make_service(tmp_path, worker)
+    input_artifact = make_input(store)
+    cell = bind_cell_to_input(input_artifact)
+    capability = load_fixture("capability.valid.json")
+
+    first = service.execute(
+        cell=cell,
+        capability=capability,
+        actor_id="test-operator",
+    )
+    second = service.execute(
+        cell=cell,
+        capability=capability,
+        actor_id="test-operator",
+    )
+
+    assert first.run["status"] == "succeeded"
+    assert first.run["cache"]["status"] == "miss"
+    assert second.run["status"] == "succeeded"
+    assert second.run["cache"]["status"] == "hit"
+    assert second.run["cache"]["cache_key"] == first.run["cache"]["cache_key"]
+    assert second.run["cache"]["source_run_id"] == first.run["run_id"]
+    assert second.run["run_id"] != first.run["run_id"]
+    assert second.run["outputs"] == first.run["outputs"]
+    assert second.output_artifact == first.output_artifact
+    assert second.validation_report["subject"] == {
+        "kind": "run",
+        "id": second.run["run_id"],
+    }
+    assert second.validation_report["validator"]["name"] == "foundry-cache-reuse"
+    assert worker.calls == 1
+    assert runs.get_run(second.run["run_id"])["cache"]["status"] == "hit"
+
+    changed_cell = deepcopy(cell)
+    changed_cell["parameters"]["distance"] += 1
+    third = service.execute(
+        cell=changed_cell,
+        capability=capability,
+        actor_id="test-operator",
+    )
+
+    assert third.run["status"] == "succeeded"
+    assert third.run["cache"]["status"] == "miss"
+    assert third.run["cache"]["cache_key"] != first.run["cache"]["cache_key"]
+    assert worker.calls == 2
