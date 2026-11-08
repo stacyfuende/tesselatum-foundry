@@ -1,0 +1,57 @@
+{
+  "capability_id": "vector.buffer",
+  "version": "1.0.0",
+  "name": "Vector buffer",
+  "description": "Construct planar buffers around vector features using an explicit projected measurement CRS.",
+  "category": "vector",
+  "input_ports": [{
+    "port_id": "features",
+    "data_kind": "vector",
+    "required": true,
+    "accepted_media_types": ["application/geo+json"],
+    "spatial": {
+      "crs_required": true,
+      "geometry_types": ["Point", "MultiPoint", "LineString", "MultiLineString", "Polygon", "MultiPolygon"],
+      "measurement_crs_policy": "must_match"
+    }
+  }],
+  "parameter_schema": {
+    "type": "object",
+    "properties": {
+      "distance": {"type": "number", "exclusiveMinimum": 0},
+      "unit": {"type": "string", "minLength": 1},
+      "quad_segs": {"type": "integer", "minimum": 1, "maximum": 64, "default": 8},
+      "cap_style": {"type": "string", "enum": ["round", "flat", "square"], "default": "round"},
+      "join_style": {"type": "string", "enum": ["round", "mitre", "bevel"], "default": "round"},
+      "mitre_limit": {"type": "number", "exclusiveMinimum": 0, "default": 5},
+      "single_sided": {"type": "boolean", "default": false}
+    },
+    "required": ["distance", "unit"],
+    "additionalProperties": false
+  },
+  "output_ports": [{
+    "port_id": "result",
+    "data_kind": "vector",
+    "media_types": ["application/geo+json"],
+    "spatial": {
+      "crs_required": true,
+      "geometry_types": ["Polygon", "MultiPolygon"],
+      "same_crs_as": "features"
+    }
+  }],
+  "determinism": "deterministic",
+  "preconditions": [
+    "Input geometries are non-empty and valid.",
+    "Input CRS equals the projected measurement CRS.",
+    "The distance unit matches both horizontal measurement CRS axis units.",
+    "Distance is positive."
+  ],
+  "validation_requirements": [
+    "Every output geometry is non-empty and valid.",
+    "Every output geometry is Polygon or MultiPolygon.",
+    "Output CRS equals input CRS.",
+    "Feature identifiers and properties are preserved."
+  ],
+  "cache_policy": "allowed",
+  "measurement": {"unit_parameter": "unit", "unit_kind": "linear"}
+}
