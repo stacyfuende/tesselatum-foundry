@@ -1,0 +1,255 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Foundry Run",
+  "description": "One immutable execution attempt for an exact Geo-Cell version.",
+  "type": "object",
+  "required": [
+    "run_id",
+    "attempt",
+    "cell",
+    "status",
+    "created_at"
+  ],
+  "properties": {
+    "run_id": {
+      "$ref": "./_common.schema.json#/$defs/identifier"
+    },
+    "attempt": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "cell": {
+      "$ref": "./_common.schema.json#/$defs/cellRef"
+    },
+    "recipe": {
+      "type": "object",
+      "required": [
+        "recipe_id",
+        "version"
+      ],
+      "properties": {
+        "recipe_id": {
+          "$ref": "./_common.schema.json#/$defs/identifier"
+        },
+        "version": {
+          "$ref": "./_common.schema.json#/$defs/version"
+        }
+      },
+      "additionalProperties": false
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "queued",
+        "waiting_for_resources",
+        "running",
+        "retrying",
+        "succeeded",
+        "failed",
+        "cancelled",
+        "timed_out"
+      ]
+    },
+    "created_at": {
+      "$ref": "./_common.schema.json#/$defs/timestamp"
+    },
+    "started_at": {
+      "$ref": "./_common.schema.json#/$defs/timestamp"
+    },
+    "finished_at": {
+      "$ref": "./_common.schema.json#/$defs/timestamp"
+    },
+    "retry_of_run_id": {
+      "$ref": "./_common.schema.json#/$defs/identifier"
+    },
+    "worker": {
+      "type": "object",
+      "required": [
+        "worker_id",
+        "worker_type"
+      ],
+      "properties": {
+        "worker_id": {
+          "$ref": "./_common.schema.json#/$defs/identifier"
+        },
+        "worker_type": {
+          "type": "string",
+          "enum": [
+            "local_docker",
+            "remote"
+          ]
+        },
+        "region": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "implementation": {
+      "type": "object",
+      "required": [
+        "implementation_id",
+        "version"
+      ],
+      "properties": {
+        "implementation_id": {
+          "$ref": "./_common.schema.json#/$defs/identifier"
+        },
+        "version": {
+          "$ref": "./_common.schema.json#/$defs/version"
+        }
+      },
+      "additionalProperties": false
+    },
+    "input_snapshots": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "input_port",
+          "artifact",
+          "checksum"
+        ],
+        "properties": {
+          "input_port": {
+            "$ref": "./_common.schema.json#/$defs/identifier"
+          },
+          "artifact": {
+            "$ref": "./_common.schema.json#/$defs/artifactRef"
+          },
+          "checksum": {
+            "$ref": "./_common.schema.json#/$defs/sha256"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "normalized_parameters": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "runtime_image_digest": {
+      "type": "string",
+      "pattern": "^sha256:[a-fA-F0-9]{64}$"
+    },
+    "resource_usage": {
+      "type": "object",
+      "properties": {
+        "cpu_millis": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "peak_memory_bytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "duration_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "scratch_bytes": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false
+    },
+    "outputs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "output_port",
+          "artifact"
+        ],
+        "properties": {
+          "output_port": {
+            "$ref": "./_common.schema.json#/$defs/identifier"
+          },
+          "artifact": {
+            "$ref": "./_common.schema.json#/$defs/artifactRef"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "validation_report_ids": {
+      "type": "array",
+      "items": {
+        "$ref": "./_common.schema.json#/$defs/identifier"
+      },
+      "uniqueItems": true
+    },
+    "error": {
+      "type": "object",
+      "required": [
+        "code",
+        "message"
+      ],
+      "properties": {
+        "code": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "retryable": {
+          "type": "boolean"
+        },
+        "details": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "events": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "timestamp",
+          "event_type"
+        ],
+        "properties": {
+          "timestamp": {
+            "$ref": "./_common.schema.json#/$defs/timestamp"
+          },
+          "event_type": {
+            "type": "string"
+          },
+          "detail": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "enum": [
+              "succeeded",
+              "failed",
+              "cancelled",
+              "timed_out"
+            ]
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "then": {
+        "required": [
+          "finished_at"
+        ]
+      }
+    }
+  ],
+  "additionalProperties": false
+}
