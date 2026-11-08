@@ -16,7 +16,8 @@ The repository follows a contracts-first implementation sequence. The first mile
 - [x] Immutable versioned Cell and Recipe definition storage implemented.
 - [x] Local Docker execution path for one vector.buffer Geo-Cell implemented and integration-tested.
 - [x] Sequential Recipe runner resolves upstream Runs to immutable Artifacts and preserves node lineage.
-- [x] Installed distribution packages schemas, Capability contracts, and implementation manifests.\n- [x] Minimal local Python SDK composes canonical registries, immutable stores, and sequential Recipe execution.
+- [x] Installed distribution packages schemas, Capability contracts, and implementation manifests.
+- [x] Minimal local Python SDK composes canonical registries, immutable stores, and sequential Recipe execution.
 - [~] Execution/output validation is implemented for vector.buffer; methodological and rights/security policy validators remain outstanding.
 - [~] Recipe execution is currently sequential and limited to vector.buffer@1.0.0; multi-capability execution and parallel scheduling remain outstanding.
 - [ ] Remote worker path implemented and conformance-tested.
