@@ -6,7 +6,6 @@ import json
 from collections.abc import Mapping
 from typing import Any
 
-from pyproj import CRS
 from shapely.geometry import shape
 
 from .buffer_contract import BufferContractError, prepare_buffer_request
@@ -75,7 +74,7 @@ def buffer_feature_collection_postgis(
 
     output_features: list[dict[str, Any]] = []
     for index, feature in enumerate(request.features):
-        geometry_json = json.dumps(feature.geometry_json, allow_nan=False, separators=(",", ":"))
+        geometry_json = json.dumps(\n            feature.geometry_json, allow_nan=False, separators=(",", ":")\n        )
         cursor = connection.execute(
             _BUFFER_SQL,
             (geometry_json, request.epsg_code, request.distance, style),
