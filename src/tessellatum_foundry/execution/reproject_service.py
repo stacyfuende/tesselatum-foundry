@@ -41,6 +41,11 @@ from tessellatum_foundry.validation.output import inspect_vector_reproject_outpu
 class VectorReprojectRunService(VectorBufferRunService):
     """Execute one exact vector.reproject Cell and persist independently checked evidence."""
 
+    @staticmethod
+    def _expected_output_crs_finding() -> str:
+        """Reprojection cache evidence must prove the declared target CRS."""
+        return "output.crs_matches_contract"
+
     def __init__(
         self,
         *,
@@ -500,8 +505,8 @@ class VectorReprojectRunService(VectorBufferRunService):
             )
             report = self._output_report(run_id, inspection)
             report["validator"] = {
-                "name": "foundry-vector-reproject-output-critic",
-                "version": "0.1.0",
+                "name": "foundry-spatial-output-critic",
+                "version": "0.2.0",
             }
             self.run_repository.save_validation_report(report)
             if not inspection.passed:

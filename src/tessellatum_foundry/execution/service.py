@@ -45,10 +45,13 @@ from tessellatum_foundry.validation.output import inspect_vector_buffer_output
 from tessellatum_foundry.validation.spatial import validate_recipe_spatial
 
 
-_OUTPUT_VALIDATOR_NAME = "foundry-vector-output-critic"
-_OUTPUT_VALIDATOR_VERSION = "0.1.0"
-_REQUIRED_OUTPUT_FINDINGS = {
+_OUTPUT_VALIDATOR_NAME = "foundry-spatial-output-critic"
+_OUTPUT_VALIDATOR_VERSION = "0.2.0"
+_REQUIRED_OUTPUT_CRS_FINDINGS = {
     "output.crs_matches_input",
+    "output.crs_matches_contract",
+}
+_REQUIRED_OUTPUT_FINDINGS = {
     "output.feature_collection",
     "output.feature_count_preserved",
     "output.geometry_validity",
@@ -794,13 +797,26 @@ class VectorBufferRunService:
             if not isinstance(finding, dict):
                 continue
             code = finding.get("code")
-            if isinstance(code, str) and code in _REQUIRED_OUTPUT_FINDINGS:
+            if isinstance(code, str) and code in (
+                _REQUIRED_OUTPUT_FINDINGS | _REQUIRED_OUTPUT_CRS_FINDINGS
+            ):
                 if code in finding_statuses:
                     return None
                 finding_statuses[code] = finding.get("status")
         if any(
             finding_statuses.get(code) != "passed"
             for code in _REQUIRED_OUTPUT_FINDINGS
+        ):
+            return None
+        expected_crs_finding = self._expected_output_crs_finding()
+        if (
+            expected_crs_finding not in _REQUIRED_OUTPUT_CRS_FINDINGS
+            or finding_statuses.get(expected_crs_finding) != "passed"
+            or any(
+                code in finding_statuses
+                for code in _REQUIRED_OUTPUT_CRS_FINDINGS
+                if code != expected_crs_finding
+            )
         ):
             return None
         assessed = source_report.get("assessed_dimensions")
@@ -818,6 +834,11 @@ class VectorBufferRunService:
             "source_report": source_report,
             "artifact": artifact,
         }
+
+    @staticmethod
+    def _expected_output_crs_finding() -> str:
+        """Return the CRS invariant required for this capability's output."""
+        return "output.crs_matches_input"
 
     @staticmethod
     def _cache_reuse_report(

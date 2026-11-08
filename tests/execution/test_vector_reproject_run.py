@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+from copy import deepcopy
 from pathlib import Path
 from typing import Any
 
@@ -83,6 +84,7 @@ class FakeReprojectWorker:
     def __init__(self, *, wrong_crs: bool = False, mutate_properties: bool = False):
         self.wrong_crs = wrong_crs
         self.mutate_properties = mutate_properties
+        self.calls = 0
 
     def image_digest(self) -> str:
         return "sha256:" + "a" * 64
@@ -97,6 +99,7 @@ class FakeReprojectWorker:
         parameters: dict[str, Any],
         runtime_image_digest: str | None = None,
     ) -> WorkerResult:
+        self.calls += 1
         collection = json.loads(input_bytes)
         result = reproject_feature_collection(
             collection,
@@ -149,14 +152,18 @@ def test_reproject_run_persists_output_artifact_and_validation_evidence(tmp_path
     assert result.run["implementation"]["implementation_id"] == (
         "vector-reproject-pyproj-shapely"
     )
-    assert result.run["cache"]["status"] == "bypassed"
+    assert result.run["cache"]["status"] == "miss"
+    assert result.validation_report["validator"] == {
+        "name": "foundry-spatial-output-critic",
+        "version": "0.2.0",
+    }
     assert result.output_artifact is not None
     assert result.output_artifact["spatial"]["crs"] == TARGET_CRS
     assert result.output_artifact["spatial"]["geometry_types"] == ["Point"]
     assert result.validation_report["overall_status"] == "passed"
     assert result.validation_report["validator"] == {
-        "name": "foundry-vector-reproject-output-critic",
-        "version": "0.1.0",
+        "name": "foundry-spatial-output-critic",
+        "version": "0.2.0",
     }
     output = json.loads(store.read_bytes(result.output_artifact))
     assert output["features"][0]["id"] == "site-01"
@@ -388,3 +395,105 @@ def test_reproject_run_executes_through_authenticated_remote_worker(tmp_path, mo
         server.shutdown()
         server.server_close()
         thread.join(timeout=2)
+
+
+def test_reproject_cache_reuses_only_output_critic_validated_artifacts(tmp_path):
+    worker = FakeReprojectWorker()
+    store, runs, service = make_service(tmp_path, worker)
+    artifact = make_input(store)
+    cell = make_cell(artifact)
+    capability = service.capabilities.get("vector.reproject", "1.0.0")
+
+    first = service.execute(
+        cell=cell,
+        capability=capability,
+        actor_id="test-operator",
+    )
+    second = service.execute(
+        cell=cell,
+        capability=capability,
+        actor_id="test-operator",
+    )
+
+    assert first.run["status"] == "succeeded"
+    assert first.run["cache"]["status"] == "miss"
+    assert second.run["status"] == "succeeded"
+    assert second.run["cache"]["status"] == "hit"
+    assert second.run["cache"]["source_run_id"] == first.run["run_id"]
+    assert second.run["outputs"] == first.run["outputs"]
+    assert second.output_artifact == first.output_artifact
+    assert second.validation_report["validator"]["name"] == "foundry-cache-reuse"
+    assert worker.calls == 1
+    assert runs.get_run(second.run["run_id"])["cache"]["status"] == "hit"
+
+
+def test_reproject_cache_rejects_failed_target_crs_validation_evidence(
+    tmp_path, monkeypatch
+):
+    worker = FakeReprojectWorker()
+    store, runs, service = make_service(tmp_path, worker)
+    artifact = make_input(store)
+    cell = make_cell(artifact)
+    capability = service.capabilities.get("vector.reproject", "1.0.0")
+    first = service.execute(
+        cell=cell,
+        capability=capability,
+        actor_id="test-operator",
+    )
+    assert first.run["status"] == "succeeded"
+
+    original_get_report = runs.get_validation_report
+
+    def corrupt_target_crs(report_id):
+        report = deepcopy(original_get_report(report_id))
+        for finding in report["findings"]:
+            if finding["code"] == "output.crs_matches_contract":
+                finding["status"] = "failed"
+        return report
+
+    monkeypatch.setattr(runs, "get_validation_report", corrupt_target_crs)
+    second = service.execute(
+        cell=cell,
+        capability=capability,
+        actor_id="test-operator",
+    )
+
+    assert second.run["status"] == "succeeded"
+    assert second.run["cache"]["status"] == "miss"
+    assert worker.calls == 2
+
+
+def test_reproject_cache_rejects_buffer_crs_finding_as_target_evidence(
+    tmp_path, monkeypatch
+):
+    worker = FakeReprojectWorker()
+    store, runs, service = make_service(tmp_path, worker)
+    artifact = make_input(store)
+    cell = make_cell(artifact)
+    capability = service.capabilities.get("vector.reproject", "1.0.0")
+    first = service.execute(
+        cell=cell,
+        capability=capability,
+        actor_id="test-operator",
+    )
+    assert first.run["status"] == "succeeded"
+
+    original_get_report = runs.get_validation_report
+
+    def replace_target_crs_with_input_crs(report_id):
+        report = deepcopy(original_get_report(report_id))
+        for finding in report["findings"]:
+            if finding["code"] == "output.crs_matches_contract":
+                finding["code"] = "output.crs_matches_input"
+        return report
+
+    monkeypatch.setattr(runs, "get_validation_report", replace_target_crs_with_input_crs)
+    second = service.execute(
+        cell=cell,
+        capability=capability,
+        actor_id="test-operator",
+    )
+
+    assert second.run["status"] == "succeeded"
+    assert second.run["cache"]["status"] == "miss"
+    assert worker.calls == 2
