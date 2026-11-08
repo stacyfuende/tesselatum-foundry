@@ -149,6 +149,7 @@ def test_reproject_run_persists_output_artifact_and_validation_evidence(tmp_path
     assert result.run["implementation"]["implementation_id"] == (
         "vector-reproject-pyproj-shapely"
     )
+    assert result.run["cache"]["status"] == "bypassed"
     assert result.output_artifact is not None
     assert result.output_artifact["spatial"]["crs"] == TARGET_CRS
     assert result.output_artifact["spatial"]["geometry_types"] == ["Point"]
