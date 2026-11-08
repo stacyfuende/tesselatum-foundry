@@ -239,6 +239,12 @@ def test_measurement_crs_policy_rejects_implicit_input_reprojection():
         "authority": "EPSG",
         "code": 4326,
     }
+    artifacts[("dataset.buildings", "1.0.0")]["spatial"]["bbox"] = [
+        36.7,
+        -1.4,
+        37.1,
+        -1.0,
+    ]
     findings = validate_recipe_spatial(
         recipe, cells=cells, capabilities=capabilities, artifacts=artifacts
     )
@@ -251,6 +257,12 @@ def test_explicit_reprojection_policy_allows_different_input_crs():
         "authority": "EPSG",
         "code": 4326,
     }
+    artifacts[("dataset.buildings", "1.0.0")]["spatial"]["bbox"] = [
+        36.7,
+        -1.4,
+        37.1,
+        -1.0,
+    ]
     capabilities[("vector.buffer", "1.0.0")]["input_ports"][0]["spatial"][
         "measurement_crs_policy"
     ] = "reproject_to_measurement_crs"
