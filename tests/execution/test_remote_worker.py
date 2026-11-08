@@ -7,6 +7,7 @@ import pytest
 
 from tessellatum_foundry.execution.docker_worker import (
     WorkerExecutionError,
+    WorkerTimeoutError,
     WorkerUnavailableError,
 )
 from tessellatum_foundry.execution.remote_worker import (
@@ -196,4 +197,20 @@ def test_remote_reproject_worker_rejects_buffer_only_identity():
     worker._opener = FakeOpener([FakeResponse(identity())])
 
     with pytest.raises(WorkerUnavailableError, match="vector.reproject@1.0.0"):
+        worker.image_digest()
+
+
+@pytest.mark.parametrize("status_code", [408, 504])
+def test_remote_worker_maps_http_timeout_to_timed_out_run(status_code):
+    worker = RemoteVectorBufferWorker("https://worker.example", bearer_token="secret")
+    timeout = HTTPError(
+        "https://worker.example/v1/identity",
+        status_code,
+        "Gateway Timeout",
+        {},
+        None,
+    )
+    worker._opener = FakeOpener([timeout])
+
+    with pytest.raises(WorkerTimeoutError, match="timed out"):
         worker.image_digest()
