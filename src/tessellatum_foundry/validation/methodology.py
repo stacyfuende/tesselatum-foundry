@@ -107,6 +107,10 @@ def build_methodology_report(
             crs_matches = input_crs.equals(
                 measurement_crs, ignore_axis_order=True
             )
+            output_crs = _resolve_crs(output_artifact["spatial"]["crs"])
+            output_matches = output_crs.equals(
+                measurement_crs, ignore_axis_order=True
+            )
             axes = measurement_crs.axis_info[:2]
             axis_units = [_unit_name(axis.unit_name or "") for axis in axes]
             declared_unit = _unit_name(str(parameters["unit"]))
@@ -122,7 +126,8 @@ def build_methodology_report(
                 and distance > 0
             )
         except (KeyError, TypeError, ValueError, OverflowError):
-            projected = crs_matches = unit_matches = distance_valid = False
+            projected = crs_matches = output_matches = False
+            unit_matches = distance_valid = False
             axis_units = []
             declared_unit = str(parameters.get("unit", "unknown"))
 
@@ -136,6 +141,11 @@ def build_methodology_report(
                 "method.input_crs_matches_measurement_crs",
                 crs_matches,
                 "The input coordinates already use the declared measurement CRS.",
+            ),
+            (
+                "method.output_crs_matches_measurement_crs",
+                output_matches,
+                "The output Artifact remains in the declared measurement CRS.",
             ),
             (
                 "method.distance_unit_matches_crs",
@@ -192,7 +202,7 @@ def build_methodology_report(
         )
     elif capability_id == "vector.reproject":
         try:
-            source_crs = _resolve_crs(input_artifact["spatial"]["crs"])
+            _resolve_crs(input_artifact["spatial"]["crs"])
             target_crs = _resolve_crs(parameters["target_crs"])
             output_crs = _resolve_crs(output_artifact["spatial"]["crs"])
             target_matches_output = target_crs.equals(
@@ -202,8 +212,22 @@ def build_methodology_report(
         except (KeyError, TypeError, ValueError, OverflowError):
             crs_resolved = False
             target_matches_output = False
-            source_crs = target_crs = output_crs = None
+            target_crs = output_crs = None
 
+        preconditions = [
+            str(item).lower() for item in capability.get("preconditions", [])
+        ]
+        non_ballpark_declared = any(
+            "non-ballpark" in item for item in preconditions
+        )
+        no_densification_declared = any(
+            "does not" in item and "densify segments" in item
+            for item in preconditions
+        )
+        no_antimeridian_split_declared = any(
+            "does not" in item and "split antimeridian" in item
+            for item in preconditions
+        )
         findings.extend(
             [
                 _finding(
@@ -222,7 +246,7 @@ def build_methodology_report(
                 ),
                 _finding(
                     "method.ballpark_transformations_disallowed",
-                    "passed",
+                    "passed" if non_ballpark_declared else "not_assessed",
                     (
                         "The capability requires a non-ballpark coordinate operation; "
                         "this is not a measurement of achieved positional accuracy."
@@ -231,7 +255,7 @@ def build_methodology_report(
                 ),
                 _finding(
                     "method.segment_densification_not_performed",
-                    "passed",
+                    "passed" if no_densification_declared else "not_assessed",
                     (
                         "The capability transforms stored vertices and does not densify "
                         "segments; curved-edge approximation is therefore not evaluated."
@@ -241,7 +265,7 @@ def build_methodology_report(
                 ),
                 _finding(
                     "method.antimeridian_splitting_not_performed",
-                    "passed",
+                    "passed" if no_antimeridian_split_declared else "not_assessed",
                     (
                         "The capability does not split antimeridian crossings; "
                         "datasets crossing that discontinuity require separate handling."
