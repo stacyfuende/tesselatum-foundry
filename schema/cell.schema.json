@@ -140,6 +140,11 @@
         "area_unit": {
           "type": "string"
         },
+        "buffer_arc_tolerance": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "Maximum permitted radial sagitta for vector.buffer, expressed in the declared linear_unit."
+        },
         "required_geometry_validity": {
           "type": "boolean"
         },

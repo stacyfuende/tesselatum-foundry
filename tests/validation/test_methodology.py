@@ -53,7 +53,7 @@ def test_buffer_method_report_assesses_planar_measurement_and_exposes_limits():
     assert findings["method.input_crs_matches_measurement_crs"]["status"] == "passed"
     assert findings["method.distance_unit_matches_crs"]["status"] == "passed"
     approximation = findings["method.buffer_arc_approximation"]
-    assert approximation["status"] == "not_assessed"
+    assert approximation["status"] == "passed"
     assert "2.4076 metre" in approximation["message"]
     assert "0.4815%" in approximation["message"]
     assert findings["method.cap_and_join_parameters"]["status"] == "passed"
@@ -139,3 +139,55 @@ def test_reproject_report_fails_when_output_crs_differs_from_target():
     findings = findings_by_code(report)
     assert report["overall_status"] == "failed"
     assert findings["method.target_crs_explicit_and_matches_output"]["status"] == "failed"
+
+
+
+def test_buffer_arc_tolerance_passes_when_computed_error_is_within_limit():
+    report = build_methodology_report(
+        run_id="run:buffer-tolerance-pass",
+        cell={
+            "constraints": {
+                "measurement_crs": {"authority": "EPSG", "code": 32737},
+                "linear_unit": "metre",
+                "buffer_arc_tolerance": 3.0,
+            }
+        },
+        capability={"capability_id": "vector.buffer"},
+        parameters={"distance": 500, "unit": "metre", "quad_segs": 8},
+        input_artifact=artifact(
+            "source.points", {"authority": "EPSG", "code": 32737}, ["Point"]
+        ),
+        output_artifact=artifact(
+            "buffered.points", {"authority": "EPSG", "code": 32737}, ["Polygon"]
+        ),
+    )
+
+    findings = findings_by_code(report)
+    assert findings["method.buffer_arc_tolerance"]["status"] == "passed"
+    assert "2.4076 metre" in findings["method.buffer_arc_tolerance"]["message"]
+    assert "buffer_arc_approximation_acceptability" in report["assessed_dimensions"]
+
+
+def test_buffer_arc_tolerance_fails_when_computed_error_exceeds_limit():
+    report = build_methodology_report(
+        run_id="run:buffer-tolerance-fail",
+        cell={
+            "constraints": {
+                "measurement_crs": {"authority": "EPSG", "code": 32737},
+                "linear_unit": "metre",
+                "buffer_arc_tolerance": 1.0,
+            }
+        },
+        capability={"capability_id": "vector.buffer"},
+        parameters={"distance": 500, "unit": "metre", "quad_segs": 8},
+        input_artifact=artifact(
+            "source.points", {"authority": "EPSG", "code": 32737}, ["Point"]
+        ),
+        output_artifact=artifact(
+            "buffered.points", {"authority": "EPSG", "code": 32737}, ["Polygon"]
+        ),
+    )
+
+    findings = findings_by_code(report)
+    assert report["overall_status"] == "failed"
+    assert findings["method.buffer_arc_tolerance"]["status"] == "failed"
