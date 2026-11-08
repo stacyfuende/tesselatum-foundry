@@ -5,6 +5,8 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import resource
+import signal
 import sys
 import tempfile
 from pathlib import Path
@@ -37,6 +39,13 @@ def _write_json_once_or_replace(path: Path, value: dict[str, Any]) -> None:
 
 
 def execute_request(request_path: Path, input_path: Path, output_path: Path) -> None:
+    max_output_bytes = int(os.environ["FOUNDRY_MAX_OUTPUT_BYTES"])
+    if max_output_bytes < 1:
+        raise ValueError("FOUNDRY_MAX_OUTPUT_BYTES must be positive.")
+    resource.setrlimit(
+        resource.RLIMIT_FSIZE, (max_output_bytes, max_output_bytes)
+    )
+    signal.signal(signal.SIGXFSZ, signal.SIG_DFL)
     request = json.loads(request_path.read_text(encoding="utf-8"))
     if request.get("request_version") != "0.1.0":
         raise ValueError("Unsupported worker request version.")
