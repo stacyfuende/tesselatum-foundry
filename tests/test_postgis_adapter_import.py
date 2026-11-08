@@ -2,11 +2,17 @@ from __future__ import annotations
 
 import subprocess
 import sys
+from pathlib import Path
+
+
+SOURCE_ROOT = Path(__file__).resolve().parents[1] / "src"
 
 
 def test_postgis_adapter_imports_without_shapely_installed():
-    source = """
+    source = f"""
 import sys
+
+sys.path.insert(0, {str(SOURCE_ROOT)!r})
 
 class BlockShapelyImports:
     def find_spec(self, fullname, path=None, target=None):
