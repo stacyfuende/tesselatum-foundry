@@ -78,6 +78,13 @@ def coordinate_operation_evidence_valid(value: Any) -> bool:
         return False
     if len(description) > 2048:
         return False
+    definition = value.get("definition")
+    if definition is not None and (
+        not isinstance(definition, str)
+        or not definition.strip()
+        or len(definition) > 8192
+    ):
+        return False
     accuracy = value.get("accuracy_m")
     if accuracy is not None:
         if (
@@ -428,9 +435,10 @@ def build_methodology_report(
             operation_accuracy = coordinate_operation.get("accuracy_m")
             operation_area = coordinate_operation.get("area_of_use")
             operation_description = coordinate_operation["description"]
+            operation_definition = coordinate_operation.get("definition")
         else:
             operation_accuracy = operation_area = None
-            operation_description = None
+            operation_description = operation_definition = None
 
         findings.extend(
             [
@@ -460,6 +468,21 @@ def build_methodology_report(
                         )
                     ),
                     severity="error" if not operation_valid else "info",
+                    evidence=evidence,
+                ),
+                _finding(
+                    "method.coordinate_operation_pipeline_recorded",
+                    (
+                        "passed"
+                        if operation_valid and operation_definition is not None
+                        else "not_assessed"
+                    ),
+                    (
+                        "The worker recorded the selected PROJ pipeline definition."
+                        if operation_definition is not None
+                        else "The worker did not expose an exact PROJ pipeline definition."
+                    ),
+                    severity="info",
                     evidence=evidence,
                 ),
                 _finding(
@@ -528,6 +551,8 @@ def build_methodology_report(
             ]
         )
         assessed_dimensions.extend(["source_and_target_crs", "transformation_limitations"])
+        if operation_definition is None:
+            unassessed.append("exact_coordinate_operation_pipeline")
         unassessed.extend(
             [
                 "coordinate_operation_accuracy_suitability",
