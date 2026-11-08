@@ -18,7 +18,7 @@ The repository follows a contracts-first implementation sequence. The first mile
 - [x] Sequential Recipe runner resolves upstream Runs to immutable Artifacts and preserves node lineage.
 - [x] Installed distribution packages schemas, Capability contracts, and implementation manifests.
 - [x] Minimal local Python SDK composes canonical registries, immutable stores, and sequential Recipe execution.
-- [~] Execution/output validation is implemented for vector.buffer and vector.reproject; methodological and rights/security policy validators remain outstanding.
+- [~] Execution/output validation is implemented for vector.buffer and vector.reproject. Rights provenance evidence now records declarations and lineage without inferring permission; authoritative rights/security policy evaluation and methodological validation remain outstanding.
 - [~] Recipe orchestration dispatches through exact capability-version runner registrations. vector.buffer@1.0.0 and vector.reproject@1.0.0 now have separate Run services and isolated local Docker workers; a mixed-capability sequential Recipe is integration-tested. Parallel scheduling remains outstanding.
 - [~] Authenticated HTTPS remote worker adapter and HTTP execution service implemented; deployment hardening and end-to-end remote Run conformance remain outstanding.
 - [ ] Initial raster capabilities implemented.
@@ -73,7 +73,7 @@ Open [viewer/index.html](viewer/index.html) in a browser, then paste a canonical
 4. **Run** — one attempt to execute a Geo-Cell.
 5. **Recipe** — a versioned graph composing Geo-Cells.
 
-The Validation Report is a separate evidence object. Implementations are registered separately from Capability contracts.
+The Validation Report is a separate evidence object. Implementations are registered separately from Capability contracts. Rights declarations are preserved through vector transformations and linked to their source Artifact; a recorded licence is not treated as proof of permission. See [ADR-038](docs/decisions/038-rights-provenance-evidence.md).
 
 ## Development principles
 
