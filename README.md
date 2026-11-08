@@ -11,7 +11,8 @@ The repository is intentionally being established from architectural contracts b
 - [x] Core domain contracts drafted as JSON Schema.
 - [x] v0.1 acceptance criteria documented.
 - [x] Initial JSON Schema validator and Recipe graph semantic validator implemented with CI tests.
-- [ ] Spatial, methodological, rights, and execution/output validators implemented.
+- [x] Initial spatial metadata and pre-execution CRS/unit validator implemented with tests.
+- [ ] Methodological, rights, and execution/output validators implemented.
 - [ ] Deterministic local execution path implemented.
 - [ ] Remote worker path implemented and conformance-tested.
 - [ ] Initial vector and raster capabilities implemented.
