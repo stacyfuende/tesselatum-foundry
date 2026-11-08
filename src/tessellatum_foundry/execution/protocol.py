@@ -20,6 +20,8 @@ class WorkerResult:
 class VectorBufferWorker(Protocol):
     """Execution contract required by the vector.buffer Run service."""
 
+    capability_id: str
+    capability_version: str
     implementation_id: str
     implementation_version: str
     worker_id: str
