@@ -22,7 +22,7 @@ The repository follows a contracts-first implementation sequence. The first mile
 - [~] Recipe execution is currently sequential and limited to vector.buffer@1.0.0; multi-capability execution and parallel scheduling remain outstanding.
 - [ ] Remote worker path implemented and conformance-tested.
 - [ ] Initial raster capabilities implemented.
-- [ ] Read-only Recipe graph viewer implemented.
+- [x] Dependency-free read-only Recipe DAG viewer implemented.
 - [~] Local Python SDK is available; authenticated network API and generated client SDK remain outstanding.
 
 Items are marked complete when implementation and corresponding tests are present. Runtime and CI verification are reported separately.
@@ -52,6 +52,10 @@ print(result.status, result.execution_id)
 ```
 
 The facade also exposes `store_artifact`, `get_run`, `list_recipe_runs`, `get_artifact`, `get_validation_report`, and `read_artifact`. The latter verifies the Artifact checksum. This is a local SDK, not an authenticated network API or multi-tenant service. See [ADR-025](docs/decisions/025-local-python-sdk.md).
+
+## Read-only Recipe viewer
+
+Open [viewer/index.html](viewer/index.html) in a browser, then paste a canonical Recipe JSON document or select it from disk. The viewer renders exact Geo-Cell references, directed port dependencies, topological depth, and declared outputs. It is a read-only projection: it does not edit or execute a Recipe and does not replace Foundry's validators. See [viewer documentation](viewer/README.md) and [ADR-028](docs/decisions/028-read-only-recipe-viewer.md).
 
 ## Start here
 
