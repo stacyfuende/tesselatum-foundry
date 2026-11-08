@@ -165,7 +165,7 @@ class RemoteVectorBufferWorker:
                 or identity.get("capability_version") != self.capability_version
             ):
                 raise WorkerUnavailableError(
-                    "Remote worker does not support {self.capability_id}@{self.capability_version}."
+                    f"Remote worker does not support {self.capability_id}@{self.capability_version}."
                 )
             self._identity = {key: identity[key] for key in required}
         return self._identity
