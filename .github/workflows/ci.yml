@@ -24,4 +24,6 @@ jobs:
       - name: Lint
         run: ruff check .
       - name: Validate schemas and fixtures
+        run: python scripts/validate_schemas.py
+      - name: Run tests
         run: python -m pytest
