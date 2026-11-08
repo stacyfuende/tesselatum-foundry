@@ -340,3 +340,22 @@ def test_worker_output_size_limit_prevents_artifact_registration(tmp_path):
     assert "file-size limit" in result.run["error"]["message"]
     assert result.output_artifact is None
     assert result.run.get("outputs", []) == []
+
+
+def test_run_service_rejects_unregistered_worker_implementation(tmp_path):
+    class UnregisteredWorker(WrongCrsWorker):
+        implementation_id = "unregistered-buffer-engine"
+
+    store, runs, service = make_service(tmp_path, UnregisteredWorker())
+    input_artifact = make_input(store)
+    cell = bind_cell_to_input(input_artifact)
+    capability = load_fixture("capability.valid.json")
+
+    with pytest.raises(ExecutionPreconditionError, match="not registered"):
+        service.execute(
+            cell=cell,
+            capability=capability,
+            actor_id="test-operator",
+        )
+
+    assert not (runs.root / "runs").exists()
