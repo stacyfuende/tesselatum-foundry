@@ -234,3 +234,61 @@ def test_recipe_resolves_upstream_artifacts_and_stops_after_failed_node(tmp_path
         for run in runs.list_runs_for_recipe_execution(result.execution_id)
     }
     assert grouped_runs == {first_run["run_id"]: first_run, second_run["run_id"]: second_run}
+
+
+@pytest.mark.skipif(
+    not os.getenv("FOUNDRY_VECTOR_BUFFER_IMAGE"),
+    reason="Docker worker image is built and configured only in the container CI job.",
+)
+def test_two_node_recipe_executes_upstream_artifact_chain(tmp_path):
+    worker = DockerWorker(timeout_seconds=90)
+    store, runs, recipes = make_runner(tmp_path, worker)
+    source = create_source_artifact(store)
+    first, second, _ = make_cell_chain(source)
+    capability = load_fixture("capability.valid.json")
+    recipe = {
+        "recipe_id": "two-buffer-steps",
+        "version": "1.0.0",
+        "title": "Two sequential buffers",
+        "nodes": [
+            {"node_id": "second", "cell": {
+                "cell_id": second["cell_id"], "version": second["version"]
+            }},
+            {"node_id": "first", "cell": {
+                "cell_id": first["cell_id"], "version": first["version"]
+            }},
+        ],
+        "edges": [
+            {
+                "from": {"node_id": "first", "output_port": "result"},
+                "to": {"node_id": "second", "input_port": "features"},
+            }
+        ],
+        "declared_outputs": [
+            {"name": "final", "node_id": "second", "output_port": "result"}
+        ],
+    }
+    cell_map = {
+        (cell["cell_id"], cell["version"]): cell for cell in (first, second)
+    }
+    capability_map = {
+        (capability["capability_id"], capability["version"]): capability
+    }
+
+    result = recipes.execute(
+        recipe=recipe,
+        cells=cell_map,
+        capabilities=capability_map,
+        actor_id="recipe-test",
+    )
+
+    assert result.status == "succeeded"
+    assert set(result.node_results) == {"first", "second"}
+    first_run = result.node_results["first"].run
+    second_run = result.node_results["second"].run
+    assert first_run["status"] == second_run["status"] == "succeeded"
+    assert second_run["input_snapshots"][0]["source_run_id"] == first_run["run_id"]
+    assert second_run["input_snapshots"][0]["artifact"] == first_run["outputs"][0]["artifact"]
+    assert second["inputs"]["features"]["source"] == "cell_output"
+    assert set(result.outputs) == {"final"}
+    assert len(runs.list_runs_for_recipe_execution(result.execution_id)) == 2
