@@ -423,9 +423,14 @@ def test_reproject_cache_reuses_only_output_critic_validated_artifacts(tmp_path)
     assert second.run["outputs"] == first.run["outputs"]
     assert second.output_artifact == first.output_artifact
     assert second.validation_report["validator"]["name"] == "foundry-cache-reuse"
-    assert len(second.run["validation_report_ids"]) == 2
+    assert len(second.run["validation_report_ids"]) == 3
     rights_report = runs.get_validation_report(f"report:{second.run['run_id']}:rights")
     assert rights_report["overall_status"] == "requires_review"
+    methodology_report = runs.get_validation_report(
+        f"report:{second.run['run_id']}:methodology"
+    )
+    assert methodology_report["stage"] == "methodological"
+    assert methodology_report["overall_status"] == "requires_review"
     assert worker.calls == 1
     assert runs.get_run(second.run["run_id"])["cache"]["status"] == "hit"
 
