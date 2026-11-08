@@ -93,6 +93,7 @@ class RunRepository:
         self.root.mkdir(parents=True, exist_ok=True)
         self.contracts = contracts or ContractRegistry()
         self._lock = threading.RLock()
+        self._creation_sequence = self._load_creation_sequence()
 
     def create_queued_run(
         self,
@@ -135,7 +136,8 @@ class RunRepository:
         with self._lock:
             if path.exists():
                 raise RunStateError(f"Run {run_id} already exists.")
-            record["creation_sequence"] = self._next_creation_sequence()
+            self._creation_sequence += 1
+            record["creation_sequence"] = self._creation_sequence
             self.contracts.validate("run.schema.json", record)
             self._write_atomic(path, record, replace=False)
         return record
@@ -275,8 +277,8 @@ class RunRepository:
         self.contracts.validate("validation-report.schema.json", report)
         return report
 
-    def _next_creation_sequence(self) -> int:
-        """Allocate a monotonic local sequence, including legacy Run records."""
+    def _load_creation_sequence(self) -> int:
+        """Recover the latest local sequence once when opening the repository."""
         runs_dir = self.root / "runs"
         highest = 0
         record_count = 0
@@ -290,7 +292,7 @@ class RunRepository:
                 sequence = record.get("creation_sequence") if isinstance(record, dict) else None
                 if isinstance(sequence, int) and not isinstance(sequence, bool):
                     highest = max(highest, sequence)
-        return max(highest, record_count) + 1
+        return max(highest, record_count)
 
     def _run_path(self, run_id: str) -> Path:
         key = hashlib.sha256(run_id.encode("utf-8")).hexdigest()
