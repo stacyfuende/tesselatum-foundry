@@ -1,0 +1,15 @@
+{
+  "implementation_id": "vector-buffer-postgis",
+  "capability_id": "vector.buffer",
+  "capability_version": "1.0.0",
+  "version": "1.0.0",
+  "engine": "PostGIS ST_Buffer / GEOS",
+  "runtime": "Python 3.11 or later; psycopg 3.2 or later; PostGIS 3.4 or later",
+  "entrypoint": "tessellatum_foundry.capabilities.postgis_vector_buffer:buffer_feature_collection_postgis",
+  "network_access": "restricted",
+  "conformance": {
+    "status": "not_run",
+    "suite_version": "0.1.0"
+  },
+  "determinism": "deterministic"
+}
