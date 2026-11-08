@@ -2,8 +2,7 @@
   "report_id": "report-buffer-001",
   "subject": {
     "kind": "run",
-    "id": "run-buffer-001",
-    "version": "1.0.0"
+    "id": "run-buffer-001"
   },
   "stage": "execution_output",
   "overall_status": "passed",
