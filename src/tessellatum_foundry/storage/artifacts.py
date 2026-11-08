@@ -59,7 +59,14 @@ class FileSystemArtifactStore:
         checksum = hashlib.sha256(content).hexdigest()
         object_key = f"objects/sha256/{checksum[:2]}/{checksum}"
         object_path = self.root / object_key
-        self._write_once(object_path, content)
+        try:
+            self._write_once(object_path, content)
+        except FileExistsError:
+            existing_bytes = object_path.read_bytes()
+            if hashlib.sha256(existing_bytes).hexdigest() != checksum:
+                raise ArtifactIntegrityError(
+                    f"Content-addressed object {checksum} is corrupted."
+                )
 
         record: dict[str, Any] = {
             "artifact_id": artifact_id,
