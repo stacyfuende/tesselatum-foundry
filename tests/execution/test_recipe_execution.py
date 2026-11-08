@@ -247,6 +247,10 @@ def test_recipe_resolves_upstream_artifacts_and_stops_after_failed_node(tmp_path
         for run in runs.list_runs_for_recipe_execution(result.execution_id)
     }
     assert grouped_runs == {first_run["run_id"]: first_run, second_run["run_id"]: second_run}
+    assert [
+        run["recipe_node_id"]
+        for run in runs.list_runs_for_recipe_execution(result.execution_id)
+    ] == ["first", "second"]
 
 
 @pytest.mark.skipif(
