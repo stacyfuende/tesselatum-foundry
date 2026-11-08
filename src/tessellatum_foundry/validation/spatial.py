@@ -340,16 +340,49 @@ def _validate_measurement_constraints(
     measurement_crs_value = constraints.get("measurement_crs")
     linear_unit = constraints.get("linear_unit")
     area_unit = constraints.get("area_unit")
+    buffer_arc_tolerance = constraints.get("buffer_arc_tolerance")
     findings: list[ValidationFinding] = []
 
-    if (linear_unit is not None or area_unit is not None) and measurement_crs_value is None:
-        return [
+    if buffer_arc_tolerance is not None:
+        try:
+            tolerance_valid = (
+                isinstance(buffer_arc_tolerance, (int, float))
+                and not isinstance(buffer_arc_tolerance, bool)
+                and math.isfinite(buffer_arc_tolerance)
+                and buffer_arc_tolerance > 0
+            )
+        except OverflowError:
+            tolerance_valid = False
+        if not tolerance_valid:
+            findings.append(
+                ValidationFinding(
+                    "spatial.buffer_arc_tolerance_invalid",
+                    "Buffer arc tolerance must be a finite positive number.",
+                    json_pointer=f"{pointer}/constraints/buffer_arc_tolerance",
+                )
+            )
+        if linear_unit is None:
+            findings.append(
+                ValidationFinding(
+                    "spatial.buffer_arc_tolerance_unit_missing",
+                    "Buffer arc tolerance uses the declared linear_unit, which is required.",
+                    json_pointer=f"{pointer}/constraints/linear_unit",
+                )
+            )
+
+    if (
+        linear_unit is not None
+        or area_unit is not None
+        or buffer_arc_tolerance is not None
+    ) and measurement_crs_value is None:
+        findings.append(
             ValidationFinding(
                 "spatial.measurement_crs_required",
-                "A declared linear measurement unit requires an explicit measurement CRS.",
+                "A declared measurement unit or buffer tolerance requires an explicit measurement CRS.",
                 json_pointer=f"{pointer}/constraints/measurement_crs",
             )
-        ]
+        )
+        return findings
     if measurement_crs_value is None:
         return []
 
