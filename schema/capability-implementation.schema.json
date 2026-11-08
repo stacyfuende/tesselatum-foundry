@@ -1,0 +1,119 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Foundry Capability Implementation",
+  "description": "A separately versioned engine/runtime realization of a capability contract.",
+  "type": "object",
+  "required": [
+    "implementation_id",
+    "capability_id",
+    "capability_version",
+    "version",
+    "engine",
+    "runtime",
+    "conformance"
+  ],
+  "properties": {
+    "implementation_id": {
+      "$ref": "./_common.schema.json#/$defs/identifier"
+    },
+    "capability_id": {
+      "$ref": "./_common.schema.json#/$defs/identifier"
+    },
+    "capability_version": {
+      "$ref": "./_common.schema.json#/$defs/semver"
+    },
+    "version": {
+      "$ref": "./_common.schema.json#/$defs/version"
+    },
+    "engine": {
+      "type": "string",
+      "minLength": 1
+    },
+    "runtime": {
+      "type": "string",
+      "minLength": 1
+    },
+    "entrypoint": {
+      "type": "string",
+      "minLength": 1
+    },
+    "runtime_image_digest": {
+      "type": "string",
+      "pattern": "^sha256:[a-fA-F0-9]{64}$"
+    },
+    "supported_platforms": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "uniqueItems": true
+    },
+    "resource_requirements": {
+      "type": "object",
+      "properties": {
+        "cpu_millis": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "memory_mib": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "scratch_mib": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "gpu_count": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false
+    },
+    "network_access": {
+      "type": "string",
+      "enum": [
+        "none",
+        "restricted",
+        "required"
+      ]
+    },
+    "conformance": {
+      "type": "object",
+      "required": [
+        "status"
+      ],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": [
+            "not_run",
+            "passed",
+            "failed",
+            "partial"
+          ]
+        },
+        "suite_version": {
+          "type": "string"
+        },
+        "last_run_at": {
+          "$ref": "./_common.schema.json#/$defs/timestamp"
+        },
+        "report_uri": {
+          "type": "string",
+          "format": "uri"
+        }
+      },
+      "additionalProperties": false
+    },
+    "determinism": {
+      "type": "string",
+      "enum": [
+        "deterministic",
+        "conditionally_deterministic",
+        "nondeterministic"
+      ]
+    }
+  },
+  "additionalProperties": false
+}
