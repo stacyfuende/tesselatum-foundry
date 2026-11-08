@@ -34,6 +34,7 @@ _SET_ONCE_FIELDS = {
     "worker",
     "implementation",
     "runtime_image_digest",
+    "cache",
 }
 _ALLOWED_TRANSITION_FIELDS = {
     ("queued", "running"): {
@@ -41,6 +42,7 @@ _ALLOWED_TRANSITION_FIELDS = {
         "worker",
         "implementation",
         "runtime_image_digest",
+        "cache",
     },
     ("queued", "failed"): {"finished_at", "error"},
     ("queued", "cancelled"): {"finished_at", "error"},
