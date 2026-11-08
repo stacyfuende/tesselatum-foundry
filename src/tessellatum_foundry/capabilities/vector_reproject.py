@@ -9,8 +9,8 @@ from typing import Any
 
 from pyproj import CRS, Transformer
 from pyproj.exceptions import ProjError
+from shapely import transform as transform_geometry
 from shapely.geometry import mapping, shape
-from shapely.ops import transform
 
 
 class ReprojectContractError(ValueError):
@@ -138,7 +138,9 @@ def reproject_feature_collection(
                 f"Feature at index {index} contains non-finite coordinates."
             )
         try:
-            projected = transform(transformer.transform, geometry)
+            projected = transform_geometry(
+                geometry, transformer.transform, include_z=None, interleaved=False
+            )
         except (ProjError, TypeError, ValueError, OverflowError) as error:
             raise ReprojectContractError(
                 f"Coordinate transformation failed for feature at index {index}: {error}"
