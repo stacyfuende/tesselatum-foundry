@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 import json
+import subprocess
 import threading
 from http.server import ThreadingHTTPServer
-from types import SimpleNamespace
+from pathlib import Path
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
@@ -203,15 +204,21 @@ def test_remote_worker_http_service_bounds_concurrent_requests(monkeypatch):
     execution_started = threading.Event()
     allow_execution_to_finish = threading.Event()
 
-    def slow_buffer(*args, **kwargs):
+    def slow_process(command, **kwargs):
         execution_started.set()
         if not allow_execution_to_finish.wait(timeout=5):
-            raise TimeoutError("test execution release timed out")
-        return SimpleNamespace(
-            feature_collection={"type": "FeatureCollection", "features": []}
+            raise subprocess.TimeoutExpired(command, kwargs.get("timeout"))
+        output_path = Path(command[command.index("--output") + 1])
+        output_path.write_text(
+            json.dumps({
+                "feature_collection": {"type": "FeatureCollection", "features": []},
+                "crs": payload["input_crs"],
+            }),
+            encoding="utf-8",
         )
+        return subprocess.CompletedProcess(command, 0)
 
-    monkeypatch.setattr(worker_http_server, "buffer_feature_collection", slow_buffer)
+    monkeypatch.setattr(worker_http_server.subprocess, "run", slow_process)
     server = BoundedThreadingHTTPServer(
         ("127.0.0.1", 0), WorkerHandler, max_concurrent_requests=1
     )
