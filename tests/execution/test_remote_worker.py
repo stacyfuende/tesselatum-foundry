@@ -153,6 +153,17 @@ def test_remote_reproject_worker_fetches_identity_and_executes_target_crs():
         "crs": target_crs,
         "duration_ms": 8,
         "runtime_image_digest": digest,
+        "coordinate_operation": {
+            "description": "UTM zone 37S",
+            "accuracy_m": 0.0,
+            "area_of_use": {
+                "west": 36.0,
+                "south": -80.0,
+                "east": 42.0,
+                "north": 0.0,
+                "name": "UTM zone 37S area",
+            },
+        },
     }
     identity_payload = {
         "worker_id": "remote-reproject-worker",
@@ -183,6 +194,7 @@ def test_remote_reproject_worker_fetches_identity_and_executes_target_crs():
     assert execution.runtime_image_digest == digest
     assert execution.crs == target_crs
     assert execution.duration_ms == 8
+    assert execution.coordinate_operation["description"] == "UTM zone 37S"
     request_payload = json.loads(opener.requests[1][0].data)
     assert request_payload["capability_id"] == "vector.reproject"
     assert request_payload["target_crs"] == target_crs
