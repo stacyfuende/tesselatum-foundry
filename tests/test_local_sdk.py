@@ -40,7 +40,7 @@ def test_local_sdk_exposes_persisted_artifact_store(tmp_path):
         "type": "FeatureCollection",
         "features": [],
     }
-    artifact = foundry.artifacts.put_bytes(
+    artifact = foundry.store_artifact(
         artifact_id="empty.features",
         version="1.0.0",
         content=json.dumps(content).encode(),
