@@ -113,6 +113,14 @@ Validation is layered:
 
 JSON Schema cannot establish cross-object or data-dependent truths. Those rules belong in semantic validators and runtime checks. Python is the initial implementation language for those validators; client types may be generated from the canonical schemas.
 
+### Spatial metadata and pre-execution validation
+
+Spatial Artifact metadata for vector, raster, point-cloud, and mesh data MUST declare a resolvable CRS. Raster artifacts MUST also declare grid dimensions. Capability input and output ports MAY declare machine-readable spatial constraints: required CRS, CRS kind, accepted geometry types, and equality with another named input port's CRS.
+
+Foundry interprets extents in GIS x/y order, independent of the authority axis order recorded by a CRS: a 2D extent is [min_x, min_y, max_x, max_y]; a 3D extent is [min_x, min_y, min_z, max_x, max_y, max_z]. Extents MUST be finite and ordered. For geographic CRSs, x/y bounds are checked against the longitude/latitude domain after accounting for the CRS angular units. Antimeridian-crossing extents must be split or represented by a future explicit wrap-aware extent type; a reversed min/max extent is not a wrap encoding.
+
+The initial spatial validator uses PROJ through pyproj to resolve CRS definitions and inspect CRS kinds and axis units. If a Geo-Cell declares a linear measurement unit, it MUST also declare a measurement CRS; that CRS MUST be projected and its horizontal axis units MUST match the declared unit. This check does not imply or authorize implicit reprojection of input data. Any transformation required by a workflow must be represented explicitly by a computation or by a separately specified capability contract.
+
 Validation is evidence-producing. Validators MUST report what they assessed, what they did not assess, and the evidence supporting each finding. The Spatial Critic is logically independent from the planner and must not silently repair a graph or rewrite a result.
 
 ## 6. Control plane and compute plane
