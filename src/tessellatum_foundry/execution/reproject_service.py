@@ -37,6 +37,7 @@ from tessellatum_foundry.storage.artifacts import (
 from tessellatum_foundry.validation.contracts import ContractRegistry
 from tessellatum_foundry.validation.output import inspect_vector_reproject_output
 from tessellatum_foundry.validation.rights import build_rights_provenance_report
+from tessellatum_foundry.validation.methodology import build_methodology_report
 
 
 class VectorReprojectRunService(VectorBufferRunService):
@@ -467,6 +468,15 @@ class VectorReprojectRunService(VectorBufferRunService):
                 output_artifact=cache_reuse["artifact"],
             )
             self.run_repository.save_validation_report(rights_report)
+            methodology_report = build_methodology_report(
+                run_id=run_id,
+                cell=cell,
+                capability=capability,
+                parameters=parameters,
+                input_artifact=input_artifact,
+                output_artifact=cache_reuse["artifact"],
+            )
+            self.run_repository.save_validation_report(methodology_report)
             finished = self.run_repository.transition(
                 run_id,
                 expected_status="running",
@@ -482,7 +492,11 @@ class VectorReprojectRunService(VectorBufferRunService):
                             },
                         }
                     ],
-                    "validation_report_ids": [report["report_id"], rights_report["report_id"]],
+                    "validation_report_ids": [
+                        report["report_id"],
+                        rights_report["report_id"],
+                        methodology_report["report_id"],
+                    ],
                     "resource_usage": {"duration_ms": 0},
                 },
                 event_type="run_succeeded_from_cache",
@@ -577,6 +591,15 @@ class VectorReprojectRunService(VectorBufferRunService):
                 output_artifact=output_artifact,
             )
             self.run_repository.save_validation_report(rights_report)
+            methodology_report = build_methodology_report(
+                run_id=run_id,
+                cell=cell,
+                capability=capability,
+                parameters=parameters,
+                input_artifact=input_artifact,
+                output_artifact=output_artifact,
+            )
+            self.run_repository.save_validation_report(methodology_report)
             finished = self.run_repository.transition(
                 run_id,
                 expected_status="running",
@@ -592,7 +615,11 @@ class VectorReprojectRunService(VectorBufferRunService):
                             },
                         }
                     ],
-                    "validation_report_ids": [report["report_id"], rights_report["report_id"]],
+                    "validation_report_ids": [
+                        report["report_id"],
+                        rights_report["report_id"],
+                        methodology_report["report_id"],
+                    ],
                     "resource_usage": {"duration_ms": result.duration_ms},
                 },
                 event_type="run_succeeded",
