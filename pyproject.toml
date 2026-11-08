@@ -30,6 +30,7 @@ where = ["src"]
 
 [tool.setuptools.data-files]
 "share/tessellatum-foundry/schema" = ["schema/*.schema.json"]
+"share/tessellatum-foundry/capabilities/vector.buffer" = ["capabilities/vector.buffer/1.0.0.json"]
 "share/tessellatum-foundry/implementations/vector.buffer/shapely" = ["implementations/vector.buffer/shapely/1.0.0.json"]
 "share/tessellatum-foundry/implementations/vector.buffer/postgis" = ["implementations/vector.buffer/postgis/1.0.0.json"]
 
