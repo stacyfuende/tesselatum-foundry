@@ -16,7 +16,7 @@ The repository follows a contracts-first implementation sequence. The first mile
 - [x] Immutable versioned Cell and Recipe definition storage implemented.
 - [x] Local Docker execution path for one vector.buffer Geo-Cell implemented and integration-tested.
 - [x] Sequential Recipe runner resolves upstream Runs to immutable Artifacts and preserves node lineage.
-- [x] Installed distribution packages schemas, Capability contracts, and implementation manifests.
+- [x] Installed distribution packages schemas, Capability contracts, and implementation manifests.\n- [x] Minimal local Python SDK composes canonical registries, immutable stores, and sequential Recipe execution.
 - [~] Execution/output validation is implemented for vector.buffer; methodological and rights/security policy validators remain outstanding.
 - [~] Recipe execution is currently sequential and limited to vector.buffer@1.0.0; multi-capability execution and parallel scheduling remain outstanding.
 - [ ] Remote worker path implemented and conformance-tested.
@@ -25,6 +25,28 @@ The repository follows a contracts-first implementation sequence. The first mile
 - [ ] Public API and SDK surface implemented.
 
 Items are marked complete when implementation and corresponding tests are present. Runtime and CI verification are reported separately.
+
+## Python SDK
+
+The local SDK is the first convenience interface over the canonical contracts. It uses an explicit persistent directory and defaults to the isolated Docker worker:
+
+```python
+from pathlib import Path
+from tessellatum_foundry import LocalFoundry
+
+foundry = LocalFoundry(Path("./foundry-data"))
+foundry.register_cell(cell_definition, created_by="local-operator")
+foundry.register_recipe(recipe_definition, created_by="local-operator")
+
+result = foundry.execute_recipe(
+    recipe_id="site-selection",
+    version="1.0.0",
+    actor_id="local-operator",
+)
+print(result.status, result.execution_id)
+```
+
+The facade also exposes `get_run`, `list_recipe_runs`, `get_artifact`, and `read_artifact`. The latter verifies the Artifact checksum. This is a local SDK, not an authenticated network API or multi-tenant service. See [ADR-025](docs/decisions/025-local-python-sdk.md).
 
 ## Start here
 
