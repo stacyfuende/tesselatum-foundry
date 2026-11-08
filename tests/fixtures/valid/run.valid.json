@@ -1,0 +1,59 @@
+{
+  "run_id": "run-buffer-001",
+  "attempt": 1,
+  "cell": {
+    "cell_id": "buffer-buildings",
+    "version": "1.0.0"
+  },
+  "status": "succeeded",
+  "created_at": "2026-11-08T08:01:00Z",
+  "started_at": "2026-11-08T08:01:01Z",
+  "finished_at": "2026-11-08T08:01:04Z",
+  "worker": {
+    "worker_id": "local-worker-1",
+    "worker_type": "local_docker"
+  },
+  "implementation": {
+    "implementation_id": "vector-buffer-shapely",
+    "version": "1.0.0"
+  },
+  "input_snapshots": [
+    {
+      "input_port": "features",
+      "artifact": {
+        "artifact_id": "dataset.buildings",
+        "version": "1.0.0"
+      },
+      "checksum": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    }
+  ],
+  "normalized_parameters": {
+    "distance": 500,
+    "unit": "metre"
+  },
+  "runtime_image_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "resource_usage": {
+    "cpu_millis": 400,
+    "peak_memory_bytes": 104857600,
+    "duration_ms": 3000,
+    "scratch_bytes": 4096
+  },
+  "outputs": [
+    {
+      "output_port": "result",
+      "artifact": {
+        "artifact_id": "dataset.buffered-buildings",
+        "version": "1.0.0"
+      }
+    }
+  ],
+  "validation_report_ids": [
+    "report-buffer-001"
+  ],
+  "events": [
+    {
+      "timestamp": "2026-11-08T08:01:01Z",
+      "event_type": "worker_started"
+    }
+  ]
+}
