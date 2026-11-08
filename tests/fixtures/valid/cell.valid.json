@@ -1,0 +1,50 @@
+{
+  "cell_id": "buffer-buildings",
+  "version": "1.0.0",
+  "capability": {
+    "capability_id": "vector.buffer",
+    "version": "1.0.0"
+  },
+  "inputs": {
+    "features": {
+      "source": "artifact",
+      "artifact": {
+        "artifact_id": "dataset.buildings",
+        "version": "1.0.0"
+      }
+    }
+  },
+  "parameters": {
+    "distance": 500,
+    "unit": "metre"
+  },
+  "output_contracts": {
+    "result": {
+      "data_kind": "vector",
+      "media_types": [
+        "application/geo+json"
+      ],
+      "crs": {
+        "authority": "EPSG",
+        "code": 32637
+      },
+      "geometry_types": [
+        "Polygon"
+      ],
+      "validation_requirements": [
+        "valid_geometry"
+      ]
+    }
+  },
+  "constraints": {
+    "measurement_crs": {
+      "authority": "EPSG",
+      "code": 32637
+    },
+    "linear_unit": "metre",
+    "required_geometry_validity": true
+  },
+  "validation_requirements": [
+    "Check measurement CRS before execution."
+  ]
+}
