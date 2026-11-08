@@ -9,8 +9,8 @@ def main() -> None:
     contracts = ContractRegistry()
     implementations = ImplementationRegistry(contracts=contracts)
     capabilities = CapabilityRegistry(contracts=contracts)
-    if len(contracts.schemas) != 8:
-        raise SystemExit(f"Expected 8 installed schemas, found {len(contracts.schemas)}.")
+    if len(contracts.schemas) != 9:
+        raise SystemExit(f"Expected 9 installed schemas, found {len(contracts.schemas)}.")
     capabilities.get("vector.buffer", "1.0.0")
     implementations.require_conformant(
         implementation_id="vector-buffer-shapely",
