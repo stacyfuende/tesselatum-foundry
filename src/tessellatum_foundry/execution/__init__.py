@@ -1,5 +1,6 @@
 """Foundry execution orchestration and Run lifecycle components."""
 
+from .capabilities import CapabilityRegistry, CapabilityRegistryError
 from .implementations import ImplementationRegistry, ImplementationRegistryError
 from .docker_worker import (
     DockerWorker,
@@ -21,6 +22,8 @@ from .recipes import (
 )
 
 __all__ = [
+    "CapabilityRegistry",
+    "CapabilityRegistryError",
     "DockerWorker",
     "ExecutionPreconditionError",
     "ExecutionResult",
