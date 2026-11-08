@@ -214,7 +214,9 @@ class DockerWorker:
             try:
                 payload = json.loads(output_path.read_text(encoding="utf-8"))
             except (OSError, UnicodeDecodeError, json.JSONDecodeError) as error:
-                raise WorkerExecutionError("Worker produced unreadable JSON output.") from error
+                raise WorkerExecutionError(
+                    f"Worker produced unreadable JSON output: {error}"
+                ) from error
 
         if not isinstance(payload, dict):
             raise WorkerExecutionError("Worker result must be a JSON object.")
