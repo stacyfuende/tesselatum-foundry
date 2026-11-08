@@ -70,6 +70,37 @@
               "type": "string"
             },
             "uniqueItems": true
+          },
+          "spatial": {
+            "type": "object",
+            "properties": {
+              "crs_required": {
+                "type": "boolean"
+              },
+              "crs_type": {
+                "type": "string",
+                "enum": [
+                  "geographic",
+                  "projected",
+                  "geocentric",
+                  "engineering",
+                  "compound",
+                  "any"
+                ]
+              },
+              "geometry_types": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "uniqueItems": true
+              },
+              "same_crs_as": {
+                "$ref": "urn:tessellatum-foundry:schema:common:1.0.0#/$defs/identifier"
+              }
+            },
+            "additionalProperties": false
           }
         },
         "additionalProperties": false
@@ -137,6 +168,37 @@
               "type": "string"
             },
             "uniqueItems": true
+          },
+          "spatial": {
+            "type": "object",
+            "properties": {
+              "crs_required": {
+                "type": "boolean"
+              },
+              "crs_type": {
+                "type": "string",
+                "enum": [
+                  "geographic",
+                  "projected",
+                  "geocentric",
+                  "engineering",
+                  "compound",
+                  "any"
+                ]
+              },
+              "geometry_types": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "uniqueItems": true
+              },
+              "same_crs_as": {
+                "$ref": "urn:tessellatum-foundry:schema:common:1.0.0#/$defs/identifier"
+              }
+            },
+            "additionalProperties": false
           }
         },
         "additionalProperties": false
