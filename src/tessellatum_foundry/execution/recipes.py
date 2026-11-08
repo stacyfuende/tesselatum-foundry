@@ -183,7 +183,7 @@ class RecipeExecutionService:
         }
         runtime_image_digest: str | None = None
 
-        for node_id in node_order:
+        for node_order_index, node_id in enumerate(node_order):
             node = next(item for item in recipe["nodes"] if item["node_id"] == node_id)
             cell_ref = node["cell"]
             cell = cells[(cell_ref["cell_id"], cell_ref["version"])]
@@ -228,6 +228,8 @@ class RecipeExecutionService:
                     actor_id=actor_id,
                     recipe_ref=recipe_ref,
                     recipe_execution_id=execution_id,
+                    recipe_node_id=node_id,
+                    recipe_node_order=node_order_index,
                     resolved_inputs=resolved_inputs,
                     pinned_runtime_image_digest=runtime_image_digest,
                 )
