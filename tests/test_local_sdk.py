@@ -68,3 +68,15 @@ def test_local_sdk_retrieves_persisted_validation_reports(tmp_path):
     stored = foundry.runs.save_validation_report(report)
 
     assert foundry.get_validation_report(report["report_id"]) == stored
+
+
+def test_local_sdk_composes_exact_runners_for_both_vector_capabilities(tmp_path):
+    foundry = LocalFoundry(tmp_path)
+
+    assert set(foundry.cell_runners) == {
+        ("vector.buffer", "1.0.0"),
+        ("vector.reproject", "1.0.0"),
+    }
+    assert foundry.cell_runner.worker.capability_id == "vector.buffer"
+    assert foundry.reproject_runner.worker.capability_id == "vector.reproject"
+    assert foundry.recipes.cell_runners == foundry.cell_runners
