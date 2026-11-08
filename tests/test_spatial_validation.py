@@ -286,3 +286,39 @@ def test_output_crs_must_match_declared_input_port_when_required():
         recipe, cells=cells, capabilities=capabilities, artifacts=artifacts
     )
     assert "spatial.output_crs_mismatch" in finding_codes(findings)
+
+
+def test_capability_measurement_parameter_must_match_cell_unit_constraint():
+    recipe, cells, capabilities, artifacts = spatial_context()
+    cells[("buffer-buildings", "1.0.0")]["parameters"]["unit"] = "foot"
+    findings = validate_recipe_spatial(
+        recipe, cells=cells, capabilities=capabilities, artifacts=artifacts
+    )
+    assert "spatial.measurement_parameter_unit_mismatch" in finding_codes(findings)
+
+
+def test_area_measurement_units_are_supported_and_checked():
+    recipe, cells, capabilities, artifacts = spatial_context()
+    capability = capabilities[("vector.buffer", "1.0.0")]
+    capability["measurement"] = {
+        "unit_parameter": "area_unit",
+        "unit_kind": "area",
+    }
+    cell = cells[("buffer-buildings", "1.0.0")]
+    cell["parameters"]["area_unit"] = "hectare"
+    cell["constraints"]["area_unit"] = "hectare"
+    findings = validate_recipe_spatial(
+        recipe, cells=cells, capabilities=capabilities, artifacts=artifacts
+    )
+    assert "spatial.area_unit_unsupported" not in finding_codes(findings)
+    assert "spatial.measurement_parameter_unit_mismatch" not in finding_codes(findings)
+
+
+def test_unsupported_area_unit_is_reported():
+    recipe, cells, capabilities, artifacts = spatial_context()
+    cell = cells[("buffer-buildings", "1.0.0")]
+    cell["constraints"]["area_unit"] = "football_fields"
+    findings = validate_recipe_spatial(
+        recipe, cells=cells, capabilities=capabilities, artifacts=artifacts
+    )
+    assert "spatial.area_unit_unsupported" in finding_codes(findings)
