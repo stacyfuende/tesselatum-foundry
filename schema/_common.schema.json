@@ -128,5 +128,6 @@
         "requires_review"
       ]
     }
-  }
+  },
+  "$id": "urn:tessellatum-foundry:schema:common:1.0.0"
 }
