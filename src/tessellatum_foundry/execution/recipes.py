@@ -64,9 +64,26 @@ class RecipeExecutionService:
         for capability in capabilities.values():
             self.contracts.validate("capability.schema.json", capability)
 
+        graph_findings = validate_recipe_graph(
+            recipe,
+            cells=cells,
+            capabilities=capabilities,
+        )
+        if graph_findings:
+            detail = "; ".join(
+                f"{finding.code}: {finding.message}" for finding in graph_findings
+            )
+            raise RecipeExecutionPreconditionError(
+                f"Recipe graph preconditions failed: {detail}"
+            )
+
+        recipe_cells = [
+            cells[(node["cell"]["cell_id"], node["cell"]["version"])]
+            for node in recipe["nodes"]
+        ]
         artifacts: dict[tuple[str, str], dict[str, Any]] = {}
         artifact_keys: set[tuple[str, str]] = set()
-        for cell in cells.values():
+        for cell in recipe_cells:
             for binding in cell.get("inputs", {}).values():
                 if binding["source"] != "artifact":
                     continue
