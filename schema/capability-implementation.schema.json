@@ -14,16 +14,16 @@
   ],
   "properties": {
     "implementation_id": {
-      "$ref": "./_common.schema.json#/$defs/identifier"
+      "$ref": "urn:tessellatum-foundry:schema:common:1.0.0#/$defs/identifier"
     },
     "capability_id": {
-      "$ref": "./_common.schema.json#/$defs/identifier"
+      "$ref": "urn:tessellatum-foundry:schema:common:1.0.0#/$defs/identifier"
     },
     "capability_version": {
-      "$ref": "./_common.schema.json#/$defs/semver"
+      "$ref": "urn:tessellatum-foundry:schema:common:1.0.0#/$defs/semver"
     },
     "version": {
-      "$ref": "./_common.schema.json#/$defs/version"
+      "$ref": "urn:tessellatum-foundry:schema:common:1.0.0#/$defs/version"
     },
     "engine": {
       "type": "string",
@@ -97,7 +97,7 @@
           "type": "string"
         },
         "last_run_at": {
-          "$ref": "./_common.schema.json#/$defs/timestamp"
+          "$ref": "urn:tessellatum-foundry:schema:common:1.0.0#/$defs/timestamp"
         },
         "report_uri": {
           "type": "string",
@@ -115,5 +115,6 @@
       ]
     }
   },
-  "additionalProperties": false
+  "additionalProperties": false,
+  "$id": "urn:tessellatum-foundry:schema:capability_implementation:1.0.0"
 }
