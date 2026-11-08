@@ -122,6 +122,10 @@ class LocalFoundry:
         """Retrieve immutable Artifact metadata."""
         return self.artifacts.get_artifact(artifact_id, version)
 
+    def get_validation_report(self, report_id: str) -> dict[str, Any]:
+        """Retrieve persisted validation evidence for an exact report ID."""
+        return self.runs.get_validation_report(report_id)
+
     def read_artifact(self, artifact: dict[str, Any]) -> bytes:
         """Read and checksum-verify the bytes of a registered Artifact."""
         return self.artifacts.read_bytes(artifact)
