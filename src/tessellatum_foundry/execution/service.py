@@ -198,6 +198,7 @@ class VectorBufferRunService:
             event_detail={"runtime_image_digest": image_digest},
         )
 
+        failure_message = ""
         try:
             result = self.worker.execute(
                 input_bytes=input_bytes,
@@ -288,14 +289,17 @@ class VectorBufferRunService:
             terminal_status = "timed_out"
             error_code = "worker.timeout"
             retryable = True
+            failure_message = str(error)
         except (WorkerExecutionError, WorkerUnavailableError) as error:
             terminal_status = "failed"
             error_code = "worker.execution_failed"
             retryable = isinstance(error, WorkerUnavailableError)
+            failure_message = str(error)
         except Exception as error:
             terminal_status = "failed"
             error_code = "execution.internal_error"
             retryable = False
+            failure_message = f"{type(error).__name__}: {error}"
 
         failed = self.run_repository.transition(
             run_id,
@@ -305,7 +309,7 @@ class VectorBufferRunService:
                 "finished_at": utc_timestamp(),
                 "error": {
                     "code": error_code,
-                    "message": str(error),
+                    "message": failure_message,
                     "retryable": retryable,
                 },
             },
