@@ -129,3 +129,56 @@ def test_run_transition_rejects_fields_not_valid_for_target_state(tmp_path):
         )
 
     assert repository.get_run(running["run_id"]) == running
+
+
+def test_run_listing_preserves_creation_order_when_timestamps_match(tmp_path, monkeypatch):
+    import tessellatum_foundry.execution.runs as runs_module
+
+    monkeypatch.setattr(runs_module, "utc_timestamp", lambda: "2026-11-08T17:00:00Z")
+    repository = RunRepository(tmp_path)
+    common = {
+        "cell": {"cell_id": "buffer-buildings", "version": "1.0.0"},
+        "capability": {"capability_id": "vector.buffer", "version": "1.0.0"},
+        "input_snapshots": [
+            {
+                "input_port": "features",
+                "artifact": {"artifact_id": "dataset.buildings", "version": "1.0.0"},
+                "checksum": _DIGEST,
+            }
+        ],
+        "normalized_parameters": {"distance": 100, "unit": "metre"},
+    }
+
+    first = repository.create_queued_run(run_id="run:first-created", **common)
+    second = repository.create_queued_run(run_id="run:second-created", **common)
+
+    listed = repository.list_runs()
+    assert [record["run_id"] for record in listed] == [
+        "run:first-created",
+        "run:second-created",
+    ]
+    assert [record["creation_sequence"] for record in listed] == [1, 2]
+    assert first["creation_sequence"] == 1
+    assert second["creation_sequence"] == 2
+
+
+def test_run_creation_sequence_continues_after_repository_reopen(tmp_path):
+    first_repository = RunRepository(tmp_path)
+    common = {
+        "cell": {"cell_id": "buffer-buildings", "version": "1.0.0"},
+        "capability": {"capability_id": "vector.buffer", "version": "1.0.0"},
+        "input_snapshots": [
+            {
+                "input_port": "features",
+                "artifact": {"artifact_id": "dataset.buildings", "version": "1.0.0"},
+                "checksum": _DIGEST,
+            }
+        ],
+        "normalized_parameters": {"distance": 100, "unit": "metre"},
+    }
+    first_repository.create_queued_run(run_id="run:before-reopen", **common)
+
+    reopened = RunRepository(tmp_path)
+    second = reopened.create_queued_run(run_id="run:after-reopen", **common)
+
+    assert second["creation_sequence"] == 2
