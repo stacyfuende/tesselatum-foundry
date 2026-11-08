@@ -1,0 +1,329 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Read-only viewer for canonical Tessellatum Foundry Recipe DAGs.">
+  <title>Foundry / Recipe Viewer</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #101214;
+      color: #eef0ec;
+      font-synthesis: none;
+      text-rendering: optimizeLegibility;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-width: 320px; }
+    header {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 20px; padding: 22px 28px; border-bottom: 1px solid #353a3d;
+    }
+    .brand { display: flex; align-items: center; gap: 12px; font-weight: 750; letter-spacing: .08em; }
+    .mark { width: 18px; height: 18px; border: 2px solid #d8f06a; transform: rotate(45deg); }
+    .eyebrow, .muted, small { color: #9ba39f; }
+    .eyebrow { font-size: 11px; letter-spacing: .16em; text-transform: uppercase; }
+    main { max-width: 1500px; margin: 0 auto; padding: 34px 28px 56px; }
+    h1 { margin: 6px 0 8px; font-size: clamp(28px, 4vw, 46px); letter-spacing: -.045em; }
+    .intro { max-width: 760px; color: #aeb6b1; line-height: 1.55; margin: 0 0 28px; }
+    .loader {
+      display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px;
+      padding: 16px; background: #191d20; border: 1px solid #353a3d; margin-bottom: 20px;
+    }
+    textarea {
+      width: 100%; min-height: 112px; resize: vertical; background: #0d1011;
+      color: #e9eee8; border: 1px solid #3b4243; padding: 12px;
+      font: 12px/1.5 ui-monospace, SFMono-Regular, Consolas, monospace;
+    }
+    .load-actions { display: flex; flex-direction: column; gap: 10px; min-width: 180px; }
+    button, input::file-selector-button {
+      border: 1px solid #d8f06a; background: #d8f06a; color: #141710;
+      padding: 10px 14px; font-weight: 750; cursor: pointer;
+    }
+    button:hover { background: #e6ff85; }
+    input[type=file] { color: #aeb6b1; font-size: 12px; max-width: 100%; }
+    input::file-selector-button { margin-right: 8px; padding: 7px 9px; }
+    .error { display: none; border-left: 3px solid #ff786f; padding: 10px 12px; color: #ffc0bb; background: #281a1a; margin: 12px 0; }
+    .summary {
+      display: none; grid-template-columns: 1fr auto; align-items: end; gap: 20px;
+      padding: 20px 0 16px; border-bottom: 1px solid #353a3d;
+    }
+    .summary h2 { margin: 4px 0; font-size: 24px; overflow-wrap: anywhere; }
+    .stats { display: flex; gap: 18px; color: #aeb6b1; font-size: 12px; }
+    .stats strong { color: #eef0ec; font-size: 18px; display: block; }
+    .graph-wrap {
+      display: none; margin-top: 18px; border: 1px solid #353a3d;
+      background-color: #141719;
+      background-image: radial-gradient(#343a3a 1px, transparent 1px);
+      background-size: 18px 18px; overflow: auto; min-height: 260px;
+    }
+    svg { display: block; max-width: none; }
+    .node rect { fill: #202629; stroke: #65706d; stroke-width: 1.4; }
+    .node .node-id { fill: #d8f06a; font: 700 11px ui-monospace, monospace; }
+    .node .cell-ref { fill: #f0f2ed; font: 600 13px ui-monospace, monospace; }
+    .node .cell-version { fill: #9ba39f; font: 11px ui-monospace, monospace; }
+    .edge { fill: none; stroke: #87928c; stroke-width: 1.5; }
+    .edge-label { fill: #aeb6b1; font: 10px ui-monospace, monospace; }
+    .legend { display: flex; gap: 18px; flex-wrap: wrap; padding: 14px 0; color: #9ba39f; font-size: 11px; }
+    .legend span::before { content: ""; display: inline-block; width: 7px; height: 7px; background: #d8f06a; margin-right: 7px; }
+    .outputs { margin-top: 12px; padding: 14px 16px; background: #191d20; border: 1px solid #353a3d; }
+    .outputs h3 { margin: 0 0 8px; font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: #9ba39f; }
+    .outputs ul { margin: 0; padding-left: 18px; color: #e2e8e1; font: 12px/1.7 ui-monospace, monospace; }
+    footer { padding: 20px 28px; border-top: 1px solid #353a3d; color: #737d78; font-size: 11px; }
+    @media (max-width: 760px) {
+      header { padding: 18px; }
+      main { padding: 26px 16px 40px; }
+      .loader { grid-template-columns: 1fr; }
+      .load-actions { flex-direction: row; align-items: center; flex-wrap: wrap; }
+      .summary { grid-template-columns: 1fr; }
+      .stats { gap: 24px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand"><span class="mark" aria-hidden="true"></span><span>TESSELLATUM / FOUNDRY</span></div>
+    <div class="eyebrow">Read-only graph projection · v0.1</div>
+  </header>
+  <main>
+    <div class="eyebrow">Recipe inspection</div>
+    <h1>See the computation graph.</h1>
+    <p class="intro">Load a canonical Foundry Recipe JSON document to inspect its nodes, directed dependencies and declared outputs. This viewer does not edit or execute the Recipe, and does not replace Foundry's schema or semantic validators.</p>
+
+    <section class="loader" aria-label="Load a Recipe">
+      <textarea id="recipe-json" spellcheck="false" aria-label="Recipe JSON" placeholder="Paste a canonical Recipe JSON document here…"></textarea>
+      <div class="load-actions">
+        <input id="recipe-file" type="file" accept=".json,application/json" aria-label="Choose Recipe JSON file">
+        <button id="render" type="button">Render graph →</button>
+      </div>
+    </section>
+    <div id="error" class="error" role="alert"></div>
+
+    <section id="summary" class="summary" aria-live="polite">
+      <div>
+        <div class="eyebrow" id="recipe-ref"></div>
+        <h2 id="recipe-title"></h2>
+        <div class="muted" id="recipe-id"></div>
+      </div>
+      <div class="stats">
+        <div><strong id="node-count">0</strong>Nodes</div>
+        <div><strong id="edge-count">0</strong>Edges</div>
+        <div><strong id="output-count">0</strong>Outputs</div>
+      </div>
+    </section>
+
+    <section id="graph-wrap" class="graph-wrap" aria-label="Recipe directed acyclic graph">
+      <svg id="graph" role="img" aria-label="Recipe graph"></svg>
+    </section>
+    <div class="legend"><span>Geo-Cell node</span><span>Directed dependency</span><span>Columns show dependency depth</span></div>
+    <section id="outputs" class="outputs" hidden>
+      <h3>Declared Recipe outputs</h3>
+      <ul id="output-list"></ul>
+    </section>
+  </main>
+  <footer>TESSELLATUM FOUNDRY · Contracts remain canonical · Viewer is read-only</footer>
+
+  <script>
+    "use strict";
+
+    const byId = (id) => document.getElementById(id);
+    const svgNs = "http://www.w3.org/2000/svg";
+
+    function element(name, attributes = {}, text = "") {
+      const node = document.createElementNS(svgNs, name);
+      for (const [key, value] of Object.entries(attributes)) node.setAttribute(key, String(value));
+      if (text) node.textContent = text;
+      return node;
+    }
+
+    function requireString(value, label) {
+      if (typeof value !== "string" || value.trim() === "") {
+        throw new Error(label + " must be a non-empty string.");
+      }
+      return value;
+    }
+
+    function layoutRecipe(recipe) {
+      if (!recipe || typeof recipe !== "object" || Array.isArray(recipe)) {
+        throw new Error("Recipe JSON must be an object.");
+      }
+      requireString(recipe.recipe_id, "recipe_id");
+      requireString(recipe.version, "version");
+      if (!Array.isArray(recipe.nodes) || recipe.nodes.length === 0) {
+        throw new Error("Recipe must contain at least one node.");
+      }
+      const nodes = recipe.nodes.map((node) => {
+        if (!node || typeof node !== "object" || Array.isArray(node)) {
+          throw new Error("Each node must be an object.");
+        }
+        requireString(node.node_id, "node_id");
+        if (!node.cell || typeof node.cell !== "object") {
+          throw new Error("Node " + node.node_id + " must reference a Cell.");
+        }
+        requireString(node.cell.cell_id, "cell.cell_id");
+        requireString(node.cell.version, "cell.version");
+        return node;
+      });
+      const ids = nodes.map((node) => node.node_id);
+      if (new Set(ids).size !== ids.length) throw new Error("Recipe node IDs must be unique.");
+
+      const nodeById = new Map(nodes.map((node) => [node.node_id, node]));
+      const adjacency = new Map(ids.map((id) => [id, []]));
+      const indegree = new Map(ids.map((id) => [id, 0]));
+      const rank = new Map(ids.map((id) => [id, 0]));
+      const edges = Array.isArray(recipe.edges) ? recipe.edges : [];
+
+      for (const edge of edges) {
+        const from = edge && edge.from;
+        const to = edge && edge.to;
+        const source = requireString(from && from.node_id, "edge.from.node_id");
+        const target = requireString(to && to.node_id, "edge.to.node_id");
+        requireString(from.output_port, "edge.from.output_port");
+        requireString(to.input_port, "edge.to.input_port");
+        if (!nodeById.has(source) || !nodeById.has(target)) {
+          throw new Error("An edge references a node that is not in this Recipe.");
+        }
+        adjacency.get(source).push(target);
+        indegree.set(target, indegree.get(target) + 1);
+      }
+
+      const queue = ids.filter((id) => indegree.get(id) === 0);
+      const order = [];
+      while (queue.length) {
+        const source = queue.shift();
+        order.push(source);
+        for (const target of adjacency.get(source)) {
+          rank.set(target, Math.max(rank.get(target), rank.get(source) + 1));
+          indegree.set(target, indegree.get(target) - 1);
+          if (indegree.get(target) === 0) queue.push(target);
+        }
+      }
+      if (order.length !== nodes.length) {
+        throw new Error("Recipe contains a dependency cycle; a DAG cannot be rendered.");
+      }
+
+      const layers = new Map();
+      for (const id of order) {
+        const depth = rank.get(id);
+        if (!layers.has(depth)) layers.set(depth, []);
+        layers.get(depth).push(id);
+      }
+
+      const nodeWidth = 236;
+      const nodeHeight = 88;
+      const columnGap = 124;
+      const rowGap = 34;
+      const padding = 42;
+      const maxDepth = Math.max(...layers.keys());
+      const maxRows = Math.max(...Array.from(layers.values(), (items) => items.length));
+      const width = padding * 2 + (maxDepth + 1) * nodeWidth + maxDepth * columnGap;
+      const height = padding * 2 + maxRows * nodeHeight + Math.max(0, maxRows - 1) * rowGap;
+      const positions = new Map();
+
+      for (const [depth, layer] of layers.entries()) {
+        layer.forEach((id, index) => {
+          positions.set(id, {
+            x: padding + depth * (nodeWidth + columnGap),
+            y: padding + index * (nodeHeight + rowGap),
+          });
+        });
+      }
+      return { nodes, edges, positions, nodeWidth, nodeHeight, width, height, order };
+    }
+
+    function renderRecipe(recipe) {
+      const layout = layoutRecipe(recipe);
+      const graph = byId("graph");
+      graph.replaceChildren();
+      graph.setAttribute("viewBox", "0 0 " + layout.width + " " + layout.height);
+      graph.setAttribute("width", layout.width);
+      graph.setAttribute("height", layout.height);
+
+      const defs = element("defs");
+      const marker = element("marker", {
+        id: "arrow", markerWidth: 8, markerHeight: 8, refX: 6, refY: 3,
+        orient: "auto", markerUnits: "strokeWidth"
+      });
+      marker.append(element("path", { d: "M0,0 L0,6 L7,3 z", fill: "#87928c" }));
+      defs.append(marker);
+      graph.append(defs);
+
+      const edgeLayer = element("g", { "aria-label": "Dependencies" });
+      for (const edge of layout.edges) {
+        const source = layout.positions.get(edge.from.node_id);
+        const target = layout.positions.get(edge.to.node_id);
+        const x1 = source.x + layout.nodeWidth;
+        const x2 = target.x;
+        const y1 = source.y + layout.nodeHeight / 2;
+        const y2 = target.y + layout.nodeHeight / 2;
+        const middle = x1 + Math.max(24, (x2 - x1) / 2);
+        const path = element("path", {
+          d: "M " + x1 + " " + y1 + " H " + middle + " V " + y2 + " H " + (x2 - 7),
+          class: "edge", "marker-end": "url(#arrow)"
+        });
+        const title = element("title", {}, edge.from.node_id + "." + edge.from.output_port + " → " + edge.to.node_id + "." + edge.to.input_port);
+        path.append(title);
+        edgeLayer.append(path);
+      }
+      graph.append(edgeLayer);
+
+      const nodeLayer = element("g", { "aria-label": "Geo-Cell nodes" });
+      for (const node of layout.nodes) {
+        const point = layout.positions.get(node.node_id);
+        const group = element("g", {
+          class: "node",
+          transform: "translate(" + point.x + " " + point.y + ")"
+        });
+        group.append(element("title", {}, node.node_id + " · " + node.cell.cell_id + "@" + node.cell.version));
+        group.append(element("rect", { width: layout.nodeWidth, height: layout.nodeHeight, rx: 2 }));
+        group.append(element("text", { x: 14, y: 22, class: "node-id" }, node.node_id));
+        group.append(element("text", { x: 14, y: 48, class: "cell-ref" }, node.cell.cell_id));
+        group.append(element("text", { x: 14, y: 69, class: "cell-version" }, "CELL VERSION / " + node.cell.version));
+        nodeLayer.append(group);
+      }
+      graph.append(nodeLayer);
+
+      const outputs = Array.isArray(recipe.declared_outputs) ? recipe.declared_outputs : [];
+      byId("recipe-ref").textContent = "RECIPE / " + recipe.recipe_id + "@" + recipe.version;
+      byId("recipe-title").textContent = typeof recipe.title === "string" ? recipe.title : recipe.recipe_id;
+      byId("recipe-id").textContent = "Canonical Recipe JSON · read-only projection";
+      byId("node-count").textContent = String(layout.nodes.length);
+      byId("edge-count").textContent = String(layout.edges.length);
+      byId("output-count").textContent = String(outputs.length);
+      byId("summary").style.display = "grid";
+      byId("graph-wrap").style.display = "block";
+      byId("outputs").hidden = outputs.length === 0;
+      byId("output-list").replaceChildren();
+      for (const output of outputs) {
+        const item = document.createElement("li");
+        item.textContent = output.name + " ← " + output.node_id + "." + output.output_port;
+        byId("output-list").append(item);
+      }
+      byId("error").style.display = "none";
+    }
+
+    byId("render").addEventListener("click", () => {
+      try {
+        const recipe = JSON.parse(byId("recipe-json").value);
+        renderRecipe(recipe);
+      } catch (error) {
+        byId("error").textContent = error instanceof Error ? error.message : "Unable to render this Recipe.";
+        byId("error").style.display = "block";
+      }
+    });
+
+    byId("recipe-file").addEventListener("change", async (event) => {
+      const file = event.target.files && event.target.files[0];
+      if (!file) return;
+      try {
+        byId("recipe-json").value = await file.text();
+        byId("render").click();
+      } catch {
+        byId("error").textContent = "Unable to read the selected file.";
+        byId("error").style.display = "block";
+      }
+    });
+  </script>
+</body>
+</html>
