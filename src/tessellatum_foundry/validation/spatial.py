@@ -378,7 +378,10 @@ def _validate_measurement_constraints(
         findings.append(
             ValidationFinding(
                 "spatial.measurement_crs_required",
-                "A declared measurement unit or buffer tolerance requires an explicit measurement CRS.",
+                (
+                    "A declared measurement unit or buffer tolerance requires "
+                    "an explicit measurement CRS."
+                ),
                 json_pointer=f"{pointer}/constraints/measurement_crs",
             )
         )
