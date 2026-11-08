@@ -11,6 +11,7 @@ def build_rights_provenance_report(
     *,
     run_id: str,
     input_artifact: dict[str, Any],
+    output_artifact: dict[str, Any],
 ) -> dict[str, Any]:
     """Record rights metadata presence without interpreting legal permissions.
 
@@ -79,6 +80,56 @@ def build_rights_provenance_report(
                 ),
             })
             overall_status = "requires_review"
+
+    output_metadata = output_artifact.get("metadata", {})
+    expected_source = {
+        "artifact_id": input_artifact["artifact_id"],
+        "version": input_artifact["version"],
+    }
+    expected_declaration_status = (
+        "declared_unverified" if rights is not None else "unknown"
+    )
+    inherited = (
+        output_artifact.get("rights") == rights
+        and isinstance(output_metadata, dict)
+        and output_metadata.get("rights_provenance", {}).get("source_artifact")
+        == expected_source
+        and output_metadata.get("rights_provenance", {}).get("declaration_status")
+        == expected_declaration_status
+    )
+    if inherited:
+        findings.append({
+            "code": "rights.declaration_inherited",
+            "severity": "info",
+            "status": "passed",
+            "message": "The output preserves the input rights declaration and source reference.",
+            "json_pointer": "/rights",
+            "evidence": [{
+                "kind": "artifact",
+                "reference": (
+                    f"{output_artifact['artifact_id']}@{output_artifact['version']}"
+                ),
+                "summary": "Output rights metadata and immediate source reference match the input.",
+            }],
+        })
+    else:
+        overall_status = "failed"
+        findings.append({
+            "code": "rights.declaration_inheritance_failed",
+            "severity": "error",
+            "status": "failed",
+            "message": "Output rights metadata or its source Artifact reference does not match the input.",
+            "json_pointer": "/rights",
+            "evidence": [{
+                "kind": "artifact",
+                "reference": (
+                    f"{output_artifact.get('artifact_id', 'unknown')}"
+                    f"@{output_artifact.get('version', 'unknown')}"
+                ),
+                "summary": "Output metadata failed the rights inheritance check.",
+            }],
+            "recommendation": "Preserve the exact input rights declaration and source Artifact reference.",
+        })
 
     findings.append({
         "code": "rights.permission_not_evaluated",
