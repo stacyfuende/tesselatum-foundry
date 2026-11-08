@@ -73,7 +73,7 @@ def test_point_buffer_has_expected_bounds_area_and_metadata(buffer_engine):
     )
     result = invoke(buffer_engine, data, distance=100, quad_segs=8)
     geometry = output_geometry(result)
-    expected_area = 2 * 32 * 100**2 * math.sin(math.pi / 32)
+    expected_area = 32 * 100**2 * math.sin(math.pi / 16) / 2
 
     assert geometry.geom_type == "Polygon"
     assert geometry.is_valid
