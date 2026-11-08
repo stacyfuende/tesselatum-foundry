@@ -253,3 +253,22 @@ def test_postgis_requires_unambiguous_epsg_identifier():
             distance=10,
             unit="metre",
         )
+
+
+def test_shared_contract_rejects_non_numeric_or_non_finite_coordinates(buffer_engine):
+    invalid_data = collection({"type": "Point", "coordinates": [0, "not-a-number"]})
+    with pytest.raises(ValueError, match="finite numeric coordinates"):
+        invoke(buffer_engine, invalid_data)
+
+    non_finite_data = collection({"type": "Point", "coordinates": [0, float("inf")]})
+    with pytest.raises(ValueError, match="finite numeric coordinates"):
+        invoke(buffer_engine, non_finite_data)
+
+
+def test_shared_contract_rejects_empty_properties_array(buffer_engine):
+    data = collection(
+        {"type": "Point", "coordinates": [0, 0]},
+        properties=[],
+    )
+    with pytest.raises(ValueError, match="properties must be an object"):
+        invoke(buffer_engine, data)
