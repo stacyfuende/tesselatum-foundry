@@ -293,6 +293,18 @@ class VectorBufferRunService:
                 "version": cell["version"],
             }:
                 raise ExecutionPreconditionError("A retry must use the same Geo-Cell version.")
+            if previous["capability"] != {
+                "capability_id": capability["capability_id"],
+                "version": capability["version"],
+            }:
+                raise ExecutionPreconditionError("A retry must use the same Capability version.")
+            if (
+                previous.get("recipe") != recipe_ref
+                or previous.get("recipe_execution_id") != recipe_execution_id
+            ):
+                raise ExecutionPreconditionError(
+                    "A retry must preserve the original Recipe execution context."
+                )
             if previous.get("input_snapshots") != [input_snapshot]:
                 raise ExecutionPreconditionError("A retry must use the same immutable inputs.")
             if previous.get("normalized_parameters") != parameters:
