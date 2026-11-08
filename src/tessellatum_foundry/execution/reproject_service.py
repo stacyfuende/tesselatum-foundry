@@ -41,6 +41,11 @@ from tessellatum_foundry.validation.output import inspect_vector_reproject_outpu
 class VectorReprojectRunService(VectorBufferRunService):
     """Execute one exact vector.reproject Cell and persist independently checked evidence."""
 
+    @staticmethod
+    def _expected_output_crs_finding() -> str:
+        """Reprojection cache evidence must prove the declared target CRS."""
+        return "output.crs_matches_contract"
+
     def __init__(
         self,
         *,
