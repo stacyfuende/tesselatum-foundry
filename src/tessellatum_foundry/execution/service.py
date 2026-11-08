@@ -794,7 +794,7 @@ class VectorBufferRunService:
             if not isinstance(finding, dict):
                 continue
             code = finding.get("code")
-            if code in _REQUIRED_OUTPUT_FINDINGS:
+            if isinstance(code, str) and code in _REQUIRED_OUTPUT_FINDINGS:
                 if code in finding_statuses:
                     return None
                 finding_statuses[code] = finding.get("status")
