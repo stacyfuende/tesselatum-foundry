@@ -1,0 +1,23 @@
+{
+  "recipe_id": "buildings-buffer-recipe",
+  "version": "1.0.0",
+  "title": "Buffer buildings",
+  "nodes": [
+    {
+      "node_id": "buffer",
+      "cell": {
+        "cell_id": "buffer-buildings",
+        "version": "1.0.0"
+      },
+      "label": "Buffer buildings"
+    }
+  ],
+  "edges": [],
+  "declared_outputs": [
+    {
+      "name": "buffered_buildings",
+      "node_id": "buffer",
+      "output_port": "result"
+    }
+  ]
+}
