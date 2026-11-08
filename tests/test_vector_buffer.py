@@ -107,3 +107,22 @@ def test_rejects_unsupported_geometry_type():
 def test_supports_explicit_buffer_style_parameters():
     result = run_buffer(quad_segs=4, cap_style="square", join_style="mitre")
     assert result.feature_collection["features"][0]["geometry"]["type"] == "Polygon"
+
+
+def test_rejects_non_object_feature_properties():
+    collection = {
+        "type": "FeatureCollection",
+        "features": [{
+            "type": "Feature",
+            "geometry": {"type": "Point", "coordinates": [320000, 9820000]},
+            "properties": ["not", "an", "object"],
+        }],
+    }
+    with pytest.raises(BufferContractError, match="properties must be an object"):
+        buffer_feature_collection(
+            collection,
+            input_crs=PROJECTED,
+            measurement_crs=PROJECTED,
+            distance=10,
+            unit="metre",
+        )
