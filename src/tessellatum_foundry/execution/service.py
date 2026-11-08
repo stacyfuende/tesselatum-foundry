@@ -159,7 +159,8 @@ class VectorBufferRunService:
                 or not isinstance(artifact_ref, dict)
             ):
                 raise ExecutionPreconditionError(
-                    "Resolved upstream input must identify its source Run, output port, and Artifact."
+                    "Resolved upstream input must identify its source Run, output port, "
+                    "and Artifact."
                 )
             source_run = self.run_repository.get_run(source_run_id)
             if source_run["status"] != "succeeded":
