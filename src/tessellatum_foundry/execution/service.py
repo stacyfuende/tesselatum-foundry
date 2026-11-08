@@ -210,6 +210,10 @@ class VectorBufferRunService:
                 parameters=parameters,
                 runtime_image_digest=image_digest,
             )
+            if result.runtime_image_digest != image_digest:
+                raise WorkerExecutionError(
+                    "Worker result image digest differs from the pinned execution image."
+                )
             inspection = inspect_vector_buffer_output(
                 input_feature_collection=input_feature_collection,
                 output_feature_collection=result.feature_collection,
@@ -280,10 +284,7 @@ class VectorBufferRunService:
                         }
                     ],
                     "validation_report_ids": [report["report_id"]],
-                    "resource_usage": {
-                        "duration_ms": result.duration_ms,
-                        "scratch_bytes": len(output_bytes),
-                    },
+                    "resource_usage": {"duration_ms": result.duration_ms},
                 },
                 event_type="run_succeeded",
             )
