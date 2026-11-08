@@ -10,7 +10,10 @@ from pathlib import Path
 from typing import Any, Literal
 
 from tessellatum_foundry.storage.artifacts import utc_timestamp
-from tessellatum_foundry.validation.contracts import ContractRegistry
+from tessellatum_foundry.validation.contracts import (
+    ContractRegistry,
+    ContractValidationError,
+)
 
 DefinitionKind = Literal["cell", "recipe"]
 
@@ -102,10 +105,15 @@ class VersionedDefinitionStore:
             raise FileNotFoundError(
                 f"{kind} {definition_id}@{version} was not found."
             )
-        record = json.loads(path.read_text(encoding="utf-8"))
-        self.contracts.validate("definition-record.schema.json", record)
-        schema_name = self._schema_name(kind)
-        self.contracts.validate(schema_name, record["definition"])
+        try:
+            record = json.loads(path.read_text(encoding="utf-8"))
+            self.contracts.validate("definition-record.schema.json", record)
+            schema_name = self._schema_name(kind)
+            self.contracts.validate(schema_name, record["definition"])
+        except (OSError, UnicodeDecodeError, json.JSONDecodeError, ContractValidationError) as error:
+            raise DefinitionIntegrityError(
+                f"Stored {kind} definition {definition_id}@{version} is unreadable or invalid."
+            ) from error
         _, actual_id = self._identity(kind, record["definition"])
         if (
             record["kind"] != kind
