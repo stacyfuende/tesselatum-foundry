@@ -150,6 +150,8 @@ def test_remote_worker_http_service_executes_vector_reproject(monkeypatch):
         )
         assert result.runtime_image_digest == digest
         assert result.crs == target_crs
+        assert result.coordinate_operation is not None
+        assert result.coordinate_operation["description"]
         coordinates = result.feature_collection["features"][0]["geometry"]["coordinates"]
         assert 240000 < coordinates[0] < 280000
         assert 9800000 < coordinates[1] < 9900000
