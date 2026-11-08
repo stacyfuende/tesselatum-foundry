@@ -1,0 +1,24 @@
+{
+  "implementation_id": "vector-buffer-shapely",
+  "capability_id": "vector.buffer",
+  "capability_version": "1.0.0",
+  "version": "1.0.0",
+  "engine": "Shapely",
+  "runtime": "Python 3.11",
+  "entrypoint": "foundry_buffer:run",
+  "runtime_image_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "supported_platforms": [
+    "linux/amd64"
+  ],
+  "resource_requirements": {
+    "cpu_millis": 500,
+    "memory_mib": 512,
+    "scratch_mib": 256,
+    "gpu_count": 0
+  },
+  "network_access": "none",
+  "conformance": {
+    "status": "not_run"
+  },
+  "determinism": "deterministic"
+}
