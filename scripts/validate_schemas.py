@@ -10,6 +10,7 @@ from referencing.jsonschema import DRAFT202012
 ROOT = Path(__file__).resolve().parents[1]
 SCHEMA_DIR = ROOT / "schema"
 FIXTURE_DIR = ROOT / "tests" / "fixtures" / "valid"
+CAPABILITY_DIR = ROOT / "capabilities"
 
 FIXTURES = {
     "artifact.schema.json": "artifact.valid.json",
@@ -49,7 +50,18 @@ def main() -> int:
         validator.validate(fixture)
         print(f"PASS {schema_name} <- {fixture_name}")
 
-    print(f"Validated {len(schemas)} schemas and {len(FIXTURES)} fixtures.")
+    capability_validator = Draft202012Validator(
+        schemas["capability.schema.json"], registry=registry, format_checker=FormatChecker()
+    )
+    capability_files = sorted(CAPABILITY_DIR.glob("**/*.json"))
+    for path in capability_files:
+        capability_validator.validate(json.loads(path.read_text(encoding="utf-8")))
+        print(f"PASS capability contract {path.relative_to(ROOT)}")
+
+    print(
+        f"Validated {len(schemas)} schemas, {len(FIXTURES)} fixtures, "
+        f"and {len(capability_files)} capability contracts."
+    )
     return 0
 
 
