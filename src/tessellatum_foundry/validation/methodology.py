@@ -194,13 +194,53 @@ def build_methodology_report(
             approximation_message = (
                 f"quad_segs={quad_segs} gives a maximum radial sagitta of "
                 f"{absolute_sagitta:.4f} {parameters.get('unit')} "
-                f"({relative_sagitta * 100:.4f}% of the requested radius). "
-                "Acceptability cannot be judged without a declared tolerance."
+                f"({relative_sagitta * 100:.4f}% of the requested radius)."
             )
         else:
+            absolute_sagitta = None
             approximation_message = (
                 "Arc approximation error could not be computed because the "
                 "distance or quad_segs parameter is invalid."
+            )
+        constraints = cell.get("constraints", {})
+        arc_tolerance = constraints.get("buffer_arc_tolerance")
+        tolerance_unit_matches = (
+            constraints.get("linear_unit") is not None
+            and _unit_name(str(constraints.get("linear_unit")))
+            == _unit_name(str(parameters.get("unit", "")))
+        )
+        if arc_tolerance is None:
+            tolerance_status = "not_assessed"
+            tolerance_message = (
+                "No buffer_arc_tolerance is declared; approximation acceptability "
+                "remains unassessed."
+            )
+        elif (
+            not isinstance(arc_tolerance, (int, float))
+            or isinstance(arc_tolerance, bool)
+            or not math.isfinite(arc_tolerance)
+            or arc_tolerance <= 0
+            or not tolerance_unit_matches
+        ):
+            tolerance_status = "failed"
+            tolerance_message = (
+                "buffer_arc_tolerance must be finite, positive, and expressed "
+                "in the same linear_unit as the buffer distance."
+            )
+        elif absolute_sagitta is None:
+            tolerance_status = "not_assessed"
+            tolerance_message = (
+                "The declared tolerance could not be evaluated because the "
+                "arc approximation parameters are invalid."
+            )
+        else:
+            tolerance_status = (
+                "passed" if absolute_sagitta <= arc_tolerance else "failed"
+            )
+            tolerance_message = (
+                f"Computed radial sagitta {absolute_sagitta:.4f} "
+                f"{parameters.get('unit')} versus declared tolerance "
+                f"{arc_tolerance:.4f} {constraints['linear_unit']}."
             )
         cap_style = parameters.get("cap_style", "round")
         join_style = parameters.get("join_style", "round")
@@ -234,7 +274,16 @@ def build_methodology_report(
                     "method.buffer_arc_approximation",
                     "not_assessed",
                     approximation_message,
-                    severity="warning",
+                    severity="info",
+                    evidence=evidence,
+                ),
+                _finding(
+                    "method.buffer_arc_tolerance",
+                    tolerance_status,
+                    tolerance_message,
+                    severity=(
+                        "error" if tolerance_status == "failed" else "warning"
+                    ),
                     evidence=evidence,
                 ),
                 _finding(
@@ -267,12 +316,16 @@ def build_methodology_report(
                 )
             )
         assessed_dimensions.extend(["measurement_crs_and_units", "planar_distance_model"])
+        assessed_dimensions.extend(["measurement_crs_and_units", "planar_distance_model"])
+        if tolerance_status == "passed" or tolerance_status == "failed":
+            assessed_dimensions.append("buffer_arc_approximation_acceptability")
+        else:
+            unassessed.append("buffer_arc_approximation_acceptability")
         unassessed.extend(
             [
                 "projection_scale_distortion_over_area_of_interest",
                 "distance_accuracy_for_intended_purpose",
                 "geodesic_distance_suitability",
-                "buffer_arc_approximation_acceptability",
             ]
         )
     elif capability_id == "vector.reproject":
