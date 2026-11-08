@@ -639,6 +639,7 @@ class VectorBufferRunService:
                 "crs",
                 "geometry_type",
                 "geometry_validity",
+                "coordinate_finiteness",
                 "dimensionality",
             ],
             "unassessed_dimensions": [
