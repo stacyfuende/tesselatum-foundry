@@ -14,9 +14,7 @@
       ],
       "spatial": {
         "crs_required": true,
-        "geometry_types": [
-          "Polygon"
-        ],
+        "geometry_types": [\n          "Point",\n          "MultiPoint",\n          "LineString",\n          "MultiLineString",\n          "Polygon",\n          "MultiPolygon"\n        ],
         "measurement_crs_policy": "must_match"
       }
     }
@@ -47,9 +45,7 @@
       ],
       "spatial": {
         "crs_required": true,
-        "geometry_types": [
-          "Polygon"
-        ],
+        "geometry_types": [\n          "Polygon",\n          "MultiPolygon"\n        ],
         "same_crs_as": "features"
       }
     }
