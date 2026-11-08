@@ -92,7 +92,7 @@ def buffer_feature_collection_postgis(
             )
         if output_srid != request.epsg_code:
             raise BufferContractError(
-                f"PostGIS output SRID {output_srid!r} does not match input SRID {request.epsg_code}."
+                "PostGIS output SRID does not match the input EPSG SRID."
             )
             raise BufferContractError(
                 f"PostGIS produced unsupported output type {geometry_type!r} "
