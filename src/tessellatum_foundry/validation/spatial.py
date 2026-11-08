@@ -392,13 +392,14 @@ def _validate_measurement_constraints(
     try:
         measurement_crs = _crs_from_contract(measurement_crs_value)
     except (CRSError, ValueError, TypeError) as error:
-        return [
+        findings.append(
             ValidationFinding(
                 "spatial.measurement_crs_invalid",
                 f"Measurement CRS cannot be resolved: {error}",
                 json_pointer=f"{pointer}/constraints/measurement_crs",
             )
-        ]
+        )
+        return findings
 
     if (linear_unit is not None or area_unit is not None) and not measurement_crs.is_projected:
         findings.append(
