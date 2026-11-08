@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import json
 import threading
+from http.server import ThreadingHTTPServer
+from types import SimpleNamespace
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
@@ -9,12 +11,11 @@ from tessellatum_foundry.execution.remote_worker import (
     RemoteVectorBufferWorker,
     RemoteVectorReprojectWorker,
 )
-from tessellatum_foundry.worker.http_server import WorkerHandler
-from http.server import ThreadingHTTPServer
-from types import SimpleNamespace
-
 from tessellatum_foundry.worker import http_server as worker_http_server
-from tessellatum_foundry.worker.http_server import BoundedThreadingHTTPServer
+from tessellatum_foundry.worker.http_server import (
+    BoundedThreadingHTTPServer,
+    WorkerHandler,
+)
 
 
 def test_remote_worker_http_service_authenticates_and_executes(monkeypatch):
