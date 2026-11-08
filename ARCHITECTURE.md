@@ -137,7 +137,7 @@ A cell definition may move through draft, validated, and ready. These describe d
 
 ### Run lifecycle
 
-A run may move through queued, waiting_for_resources, running, retrying, and terminal states succeeded, failed, cancelled, or timed_out.
+A run may move through queued, waiting_for_resources, and running, then reach a terminal state: succeeded, failed, cancelled, or timed_out. A retry creates a new Run with a new run ID, an incremented attempt number, and retry_of_run_id pointing to the previous attempt; retrying is not a status of the previous Run.
 
 Terminal runs are immutable. Retry policy creates a new attempt with an explicit relationship to the previous attempt. Run events provide an auditable transition history.
 
