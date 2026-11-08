@@ -1,0 +1,51 @@
+{
+  "capability_id": "vector.buffer",
+  "version": "1.0.0",
+  "name": "Vector buffer",
+  "description": "Construct buffers around input geometries.",
+  "category": "vector",
+  "input_ports": [
+    {
+      "port_id": "features",
+      "data_kind": "vector",
+      "required": true,
+      "accepted_media_types": [
+        "application/geo+json"
+      ]
+    }
+  ],
+  "parameter_schema": {
+    "type": "object",
+    "properties": {
+      "distance": {
+        "type": "number",
+        "exclusiveMinimum": 0
+      },
+      "unit": {
+        "type": "string"
+      }
+    },
+    "required": [
+      "distance",
+      "unit"
+    ],
+    "additionalProperties": false
+  },
+  "output_ports": [
+    {
+      "port_id": "result",
+      "data_kind": "vector",
+      "media_types": [
+        "application/geo+json"
+      ]
+    }
+  ],
+  "determinism": "deterministic",
+  "preconditions": [
+    "A valid measurement CRS must be selected for linear distance units."
+  ],
+  "validation_requirements": [
+    "Output geometry validity",
+    "Declared output CRS"
+  ]
+}
