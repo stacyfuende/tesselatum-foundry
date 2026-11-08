@@ -91,7 +91,7 @@ class VectorBufferRunService:
             raise ExecutionPreconditionError(
                 "Selected worker does not implement the exact supplied Capability version."
             )
-        self._validate_worker_descriptor()
+        self.validate_worker_configuration()
         if (recipe_ref is None) != (recipe_execution_id is None):
             raise ExecutionPreconditionError(
                 "Recipe reference and recipe_execution_id must be supplied together."
@@ -460,7 +460,7 @@ class VectorBufferRunService:
         )
         return ExecutionResult(failed, None, None)
 
-    def _validate_worker_descriptor(self) -> None:
+    def validate_worker_configuration(self) -> None:
         identifier_pattern = r"[A-Za-z0-9][A-Za-z0-9._:/-]{0,254}"
         version_pattern = r"[A-Za-z0-9][A-Za-z0-9._+-]{0,127}"
         identifiers = (
