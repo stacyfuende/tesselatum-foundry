@@ -177,7 +177,7 @@ class VectorBufferRunService:
             return ExecutionResult(failed, None, None)
 
         started_at = utc_timestamp()
-        run = self.run_repository.transition(
+        self.run_repository.transition(
             run_id,
             expected_status="queued",
             new_status="running",
