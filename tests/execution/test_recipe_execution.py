@@ -327,3 +327,29 @@ def test_invalid_recipe_graph_is_rejected_before_any_cell_run(tmp_path):
     assert not (runs.root / "runs").exists()
     assert worker.calls == 0
     assert worker.digest_calls == 0
+
+
+def test_recipe_preflight_rejects_modified_capability_before_first_node(tmp_path):
+    worker = SequenceWorker()
+    store, runs, recipes = make_runner(tmp_path, worker)
+    source = create_source_artifact(store)
+    cells = make_cell_chain(source)
+    recipe = make_recipe(cells)
+    capability = load_fixture("capability.valid.json")
+    capability["parameter_schema"]["properties"]["distance"]["maximum"] = 1000
+    cell_map = {(cell["cell_id"], cell["version"]): cell for cell in cells}
+    capability_map = {
+        (capability["capability_id"], capability["version"]): capability
+    }
+
+    with pytest.raises(RecipeExecutionPreconditionError, match="differs from its canonical"):
+        recipes.execute(
+            recipe=recipe,
+            cells=cell_map,
+            capabilities=capability_map,
+            actor_id="recipe-test",
+        )
+
+    assert not (runs.root / "runs").exists()
+    assert worker.calls == 0
+    assert worker.digest_calls == 0
