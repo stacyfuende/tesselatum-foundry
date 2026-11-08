@@ -20,6 +20,11 @@ class WorkerResult:
 class VectorBufferWorker(Protocol):
     """Execution contract required by the vector.buffer Run service."""
 
+    implementation_id: str
+    implementation_version: str
+    worker_id: str
+    worker_type: str
+
     def image_digest(self) -> str:
         """Return the immutable image identity that will execute the request."""
         ...
@@ -28,6 +33,7 @@ class VectorBufferWorker(Protocol):
         self,
         *,
         input_bytes: bytes,
+        capability_version: str,
         input_crs: dict[str, Any],
         measurement_crs: dict[str, Any],
         parameters: dict[str, Any],
