@@ -122,9 +122,41 @@
           },
           "checksum": {
             "$ref": "urn:tessellatum-foundry:schema:common:1.0.0#/$defs/sha256"
+          },
+          "source_run_id": {
+            "$ref": "urn:tessellatum-foundry:schema:common:1.0.0#/$defs/identifier"
+          },
+          "source_output_port": {
+            "$ref": "urn:tessellatum-foundry:schema:common:1.0.0#/$defs/identifier"
           }
         },
-        "additionalProperties": false
+        "additionalProperties": false,
+        "allOf": [
+          {
+            "if": {
+              "required": [
+                "source_run_id"
+              ]
+            },
+            "then": {
+              "required": [
+                "source_output_port"
+              ]
+            }
+          },
+          {
+            "if": {
+              "required": [
+                "source_output_port"
+              ]
+            },
+            "then": {
+              "required": [
+                "source_run_id"
+              ]
+            }
+          }
+        ]
       }
     },
     "normalized_parameters": {
@@ -232,6 +264,9 @@
     },
     "capability": {
       "$ref": "urn:tessellatum-foundry:schema:common:1.0.0#/$defs/capabilityRef"
+    },
+    "recipe_execution_id": {
+      "$ref": "urn:tessellatum-foundry:schema:common:1.0.0#/$defs/identifier"
     }
   },
   "allOf": [
@@ -310,6 +345,18 @@
         "required": [
           "outputs",
           "validation_report_ids"
+        ]
+      }
+    },
+    {
+      "if": {
+        "required": [
+          "recipe_execution_id"
+        ]
+      },
+      "then": {
+        "required": [
+          "recipe"
         ]
       }
     }
