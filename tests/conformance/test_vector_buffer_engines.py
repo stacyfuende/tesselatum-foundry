@@ -192,3 +192,35 @@ def test_engines_return_topologically_equivalent_geometry():
 
     assert difference.area <= 1e-7
     assert shapely_geometry.hausdorff_distance(postgis_geometry) <= 1e-8
+
+
+@pytest.mark.parametrize("join_style", ["round", "mitre", "bevel"])
+def test_line_join_styles_return_valid_polygonal_results(buffer_engine, join_style):
+    data = collection({
+        "type": "LineString",
+        "coordinates": [[0, 0], [10, 0], [10, 10]],
+    })
+    geometry = output_geometry(invoke(buffer_engine, data, join_style=join_style))
+    assert geometry.geom_type in {"Polygon", "MultiPolygon"}
+    assert geometry.is_valid
+
+
+def test_multiline_buffer_preserves_polygonal_components(buffer_engine):
+    data = collection({
+        "type": "MultiLineString",
+        "coordinates": [
+            [[0, 0], [10, 0]],
+            [[30, 0], [40, 0]],
+        ],
+    })
+    geometry = output_geometry(invoke(buffer_engine, data))
+    assert geometry.geom_type == "MultiPolygon"
+    assert len(geometry.geoms) == 2
+    assert geometry.is_valid
+
+
+def test_z_is_ignored_and_buffer_output_is_two_dimensional(buffer_engine):
+    data = collection({"type": "Point", "coordinates": [0, 0, 75]})
+    geometry = output_geometry(invoke(buffer_engine, data))
+    assert not geometry.has_z
+    assert geometry.is_valid
