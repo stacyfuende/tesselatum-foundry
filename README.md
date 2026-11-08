@@ -13,7 +13,7 @@ The repository follows a contracts-first implementation sequence. The first mile
 - [x] Initial JSON Schema validator and Recipe graph semantic validator implemented with CI tests.
 - [x] Initial spatial metadata and pre-execution CRS/unit validator implemented with tests.
 - [x] Engine-independent vector.buffer contract implemented.
-- [x] Independent Shapely and PostGIS vector.buffer adapters implemented on shared request validation.
+- [x] Independent Shapely and PostGIS vector.buffer adapters implemented on engine-neutral request validation, with native geometry checks in each engine.
 - [x] Versioned implementation manifests registered and schema-validated.
 - [x] Shared geometry conformance suite added, including topological comparison of both engine results.
 - [x] GitHub Actions configured with a real PostGIS service for conformance testing.
@@ -58,7 +58,7 @@ The Validation Report is a separate evidence object. Implementations are registe
 
 `vector.buffer@1.0.0` supports Point, MultiPoint, LineString, MultiLineString, Polygon and MultiPolygon inputs. It requires an explicit projected measurement CRS equal to the input CRS, rejects invalid input geometries rather than repairing them, and returns valid Polygon/MultiPolygon outputs while preserving feature IDs and properties. Its first two independent realizations are Shapely and PostGIS; both use the same semantic request validator. The PostGIS adapter requires an unambiguous EPSG CRS and checks the output SRID. Actual engine parity is assessed by shared geometry expectations and a topological comparison in PostGIS-backed CI.
 
-Implementation manifests are stored separately under `implementations/`; their conformance status remains `not_run` until the PostGIS-backed CI suite passes. Install the PostGIS adapter's driver with the `postgis` extra; development installs it automatically through `requirements-dev.txt`.
+Implementation manifests are stored separately under `implementations/`; their conformance status remains `not_run` until the PostGIS-backed CI suite passes. Install the Shapely backend with the `shapely` extra or the PostGIS backend with the `postgis` extra. The PostGIS adapter does not import or require Shapely. Development installs both extras through `requirements-dev.txt`.
 
 ## Scope boundary
 
