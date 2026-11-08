@@ -247,6 +247,27 @@
         "type": "string"
       },
       "uniqueItems": true
+    },
+    "measurement": {
+      "type": "object",
+      "description": "Declares how a normalized parameter expresses a linear or area measurement.",
+      "required": [
+        "unit_parameter",
+        "unit_kind"
+      ],
+      "properties": {
+        "unit_parameter": {
+          "$ref": "urn:tessellatum-foundry:schema:common:1.0.0#/$defs/identifier"
+        },
+        "unit_kind": {
+          "type": "string",
+          "enum": [
+            "linear",
+            "area"
+          ]
+        }
+      },
+      "additionalProperties": false
     }
   },
   "additionalProperties": false,
