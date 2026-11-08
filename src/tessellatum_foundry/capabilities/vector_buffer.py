@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import math
 from typing import Any, Mapping
 
 from pyproj import CRS
+from pyproj.exceptions import CRSError
 from shapely.geometry import mapping, shape
 from shapely.geometry.base import BaseGeometry
 
@@ -49,7 +51,7 @@ def _resolve_crs(value: Any, label: str) -> CRS:
                 return CRS.from_authority(str(value["authority"]), str(value["code"]))
             return CRS.from_user_input(value)
         return CRS.from_user_input(value)
-    except (TypeError, ValueError) as error:
+    except (CRSError, TypeError, ValueError) as error:
         raise BufferContractError(f"{label} is not a resolvable CRS: {error}") from error
 
 
@@ -119,7 +121,7 @@ def buffer_feature_collection(
     """
     if not isinstance(distance, (int, float)) or isinstance(distance, bool):
         raise BufferContractError("Distance must be a number.")
-    if distance <= 0:
+    if not math.isfinite(distance) or distance <= 0:
         raise BufferContractError("Distance must be greater than zero.")
     if not isinstance(quad_segs, int) or isinstance(quad_segs, bool) or not 1 <= quad_segs <= 64:
         raise BufferContractError("quad_segs must be an integer from 1 through 64.")
@@ -127,8 +129,10 @@ def buffer_feature_collection(
         raise BufferContractError("cap_style must be round, flat, or square.")
     if join_style not in {"round", "mitre", "bevel"}:
         raise BufferContractError("join_style must be round, mitre, or bevel.")
-    if mitre_limit <= 0:
+    if not isinstance(mitre_limit, (int, float)) or isinstance(mitre_limit, bool) or not math.isfinite(mitre_limit) or mitre_limit <= 0:
         raise BufferContractError("mitre_limit must be greater than zero.")
+    if not isinstance(unit, str) or not unit.strip():
+        raise BufferContractError("unit must be a non-empty string.")
     if not isinstance(single_sided, bool):
         raise BufferContractError("single_sided must be a boolean.")
     if feature_collection.get("type") != "FeatureCollection":
