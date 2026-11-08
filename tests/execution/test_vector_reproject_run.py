@@ -460,3 +460,39 @@ def test_reproject_cache_rejects_failed_target_crs_validation_evidence(
     assert second.run["status"] == "succeeded"
     assert second.run["cache"]["status"] == "miss"
     assert worker.calls == 2
+
+
+def test_reproject_cache_rejects_buffer_crs_finding_as_target_evidence(
+    tmp_path, monkeypatch
+):
+    worker = FakeReprojectWorker()
+    store, runs, service = make_service(tmp_path, worker)
+    artifact = make_input(store)
+    cell = make_cell(artifact)
+    capability = service.capabilities.get("vector.reproject", "1.0.0")
+    first = service.execute(
+        cell=cell,
+        capability=capability,
+        actor_id="test-operator",
+    )
+    assert first.run["status"] == "succeeded"
+
+    original_get_report = runs.get_validation_report
+
+    def replace_target_crs_with_input_crs(report_id):
+        report = deepcopy(original_get_report(report_id))
+        for finding in report["findings"]:
+            if finding["code"] == "output.crs_matches_contract":
+                finding["code"] = "output.crs_matches_input"
+        return report
+
+    monkeypatch.setattr(runs, "get_validation_report", replace_target_crs_with_input_crs)
+    second = service.execute(
+        cell=cell,
+        capability=capability,
+        actor_id="test-operator",
+    )
+
+    assert second.run["status"] == "succeeded"
+    assert second.run["cache"]["status"] == "miss"
+    assert worker.calls == 2
