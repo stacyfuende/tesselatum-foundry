@@ -39,8 +39,6 @@ class ExecutionResult:
 class VectorBufferRunService:
     """Execute one immutable Geo-Cell version and persist Run/output evidence."""
 
-    IMPLEMENTATION_ID = "vector-buffer-shapely"
-    IMPLEMENTATION_VERSION = "1.0.0"
     MEDIA_TYPE = "application/vnd.tessellatum.spatial-feature-collection+json"
 
     def __init__(
@@ -192,12 +190,12 @@ class VectorBufferRunService:
             fields={
                 "started_at": started_at,
                 "worker": {
-                    "worker_id": "local-docker-worker",
-                    "worker_type": "local_docker",
+                    "worker_id": self.worker.worker_id,
+                    "worker_type": self.worker.worker_type,
                 },
                 "implementation": {
-                    "implementation_id": self.IMPLEMENTATION_ID,
-                    "version": self.IMPLEMENTATION_VERSION,
+                    "implementation_id": self.worker.implementation_id,
+                    "version": self.worker.implementation_version,
                 },
                 "runtime_image_digest": image_digest,
             },
@@ -209,6 +207,7 @@ class VectorBufferRunService:
         try:
             result = self.worker.execute(
                 input_bytes=input_bytes,
+                capability_version=capability["version"],
                 input_crs=input_artifact["spatial"]["crs"],
                 measurement_crs=cell["constraints"]["measurement_crs"],
                 parameters=parameters,
