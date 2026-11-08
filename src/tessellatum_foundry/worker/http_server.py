@@ -156,7 +156,9 @@ class WorkerHandler(BaseHTTPRequestHandler):
                     output_crs = request["input_crs"]
                 elif capability == ("vector.reproject", "1.0.0"):
                     if parameters:
-                        raise ValueError("vector.reproject@1.0.0 accepts no extra worker parameters.")
+                        raise ValueError(
+                            "vector.reproject@1.0.0 accepts no extra worker parameters."
+                        )
                     result = reproject_feature_collection(
                         feature_collection,
                         input_crs=request["input_crs"],
