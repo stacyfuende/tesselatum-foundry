@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import threading
+from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
 from tessellatum_foundry.execution.remote_worker import (
@@ -155,6 +156,32 @@ def test_remote_worker_http_service_executes_vector_reproject(monkeypatch):
         assert result.feature_collection["features"][0]["properties"] == {
             "name": "Nairobi"
         }
+
+        mismatched_request = Request(
+            f"{base_url}/v1/execute",
+            data=json.dumps({
+                "request_version": "0.1.0",
+                "capability_id": "vector.buffer",
+                "capability_version": "1.0.0",
+                "input_feature_collection": {
+                    "type": "FeatureCollection",
+                    "features": [],
+                },
+                "input_crs": {"authority": "EPSG", "code": 4326},
+                "measurement_crs": {"authority": "EPSG", "code": 32737},
+                "parameters": {"distance": 1, "unit": "metre"},
+            }).encode(),
+            headers={
+                "Authorization": "Bearer test-secret",
+                "Content-Type": "application/json",
+            },
+            method="POST",
+        )
+        try:
+            urlopen(mismatched_request, timeout=2)
+            raise AssertionError("worker accepted a different capability identity")
+        except HTTPError as error:
+            assert error.code == 400
     finally:
         server.shutdown()
         server.server_close()
