@@ -214,3 +214,194 @@ def inspect_vector_buffer_output(
         "/features",
     )
     return VectorOutputInspection(tuple(sorted(output_types)), tuple(findings))
+
+
+def inspect_vector_reproject_output(
+    *,
+    input_feature_collection: Mapping[str, Any],
+    output_feature_collection: Any,
+    expected_output_crs: Any,
+    actual_output_crs: Any,
+    permitted_geometry_types: set[str],
+) -> VectorOutputInspection:
+    """Independently validate a reprojection result before Artifact registration."""
+    findings: list[OutputFinding] = []
+    output_types: set[str] = set()
+
+    def add(code: str, passed: bool, message: str, pointer: str) -> None:
+        findings.append(
+            OutputFinding(
+                code=code,
+                status="passed" if passed else "failed",
+                severity="info" if passed else "error",
+                message=message,
+                json_pointer=pointer,
+            )
+        )
+
+    try:
+        contract_crs = resolve_crs(expected_output_crs, "Expected output CRS")
+        result_crs = resolve_crs(actual_output_crs, "Worker output CRS")
+        crs_matches = contract_crs.equals(result_crs, ignore_axis_order=True)
+        crs_message = "Worker output CRS equals the Geo-Cell's declared target CRS."
+    except (BufferContractError, TypeError, ValueError) as error:
+        crs_matches = False
+        crs_message = f"Output CRS could not be resolved: {error}"
+    add("output.crs_matches_contract", crs_matches, crs_message, "/spatial/crs")
+
+    source_features = input_feature_collection.get("features")
+    source_list = source_features if isinstance(source_features, list) else []
+    result_features = (
+        output_feature_collection.get("features")
+        if isinstance(output_feature_collection, Mapping)
+        and output_feature_collection.get("type") == "FeatureCollection"
+        else None
+    )
+    valid_collection = (
+        isinstance(output_feature_collection, Mapping)
+        and output_feature_collection.get("type") == "FeatureCollection"
+        and isinstance(result_features, list)
+        and bool(result_features)
+    )
+    add(
+        "output.feature_collection",
+        valid_collection,
+        "Output is a non-empty FeatureCollection."
+        if valid_collection
+        else "Output must be a non-empty FeatureCollection.",
+        "/",
+    )
+    if not valid_collection:
+        return VectorOutputInspection((), tuple(findings))
+
+    count_matches = isinstance(source_features, list) and len(source_list) == len(result_features)
+    add(
+        "output.feature_count_preserved",
+        count_matches,
+        "Output feature count matches input."
+        if count_matches
+        else "Output feature count differs from input.",
+        "/features",
+    )
+
+    metadata_matches = count_matches
+    geometry_validity = True
+    dimensionality_preserved = True
+    coordinates_are_finite = True
+    geometry_types_preserved = True
+    output_types_supported = True
+
+    def finite_geometry(geometry: Any) -> bool:
+        if geometry.geom_type == "GeometryCollection":
+            return all(finite_geometry(part) for part in geometry.geoms)
+        try:
+            stack = [geometry.__geo_interface__["coordinates"]]
+            while stack:
+                value = stack.pop()
+                if isinstance(value, (list, tuple)):
+                    if value and all(isinstance(item, (int, float)) for item in value):
+                        if not all(isfinite(item) for item in value):
+                            return False
+                    else:
+                        stack.extend(value)
+            return True
+        except (KeyError, TypeError, ValueError):
+            return False
+
+    for index, output_feature in enumerate(result_features):
+        if not isinstance(output_feature, Mapping) or output_feature.get("type") != "Feature":
+            geometry_validity = False
+            metadata_matches = False
+            output_types_supported = False
+            continue
+        geometry_json = output_feature.get("geometry")
+        if not isinstance(geometry_json, Mapping):
+            geometry_validity = False
+            output_types_supported = False
+            continue
+        try:
+            geometry = shape(geometry_json)
+        except Exception:
+            geometry_validity = False
+            output_types_supported = False
+            continue
+        output_types.add(geometry.geom_type)
+        if geometry.is_empty or not geometry.is_valid:
+            geometry_validity = False
+        if not finite_geometry(geometry):
+            coordinates_are_finite = False
+        if geometry.geom_type not in permitted_geometry_types:
+            output_types_supported = False
+        if index < len(source_list):
+            source_feature = source_list[index]
+            if not isinstance(source_feature, Mapping):
+                metadata_matches = False
+                geometry_types_preserved = False
+                dimensionality_preserved = False
+                continue
+            if output_feature.get("properties") != source_feature.get("properties", {}):
+                metadata_matches = False
+            if ("id" in source_feature) != ("id" in output_feature):
+                metadata_matches = False
+            elif source_feature.get("id") != output_feature.get("id"):
+                metadata_matches = False
+            source_geometry_json = source_feature.get("geometry")
+            if isinstance(source_geometry_json, Mapping):
+                try:
+                    source_geometry = shape(source_geometry_json)
+                    geometry_types_preserved = (
+                        geometry_types_preserved
+                        and geometry.geom_type == source_geometry.geom_type
+                    )
+                    dimensionality_preserved = (
+                        dimensionality_preserved
+                        and geometry.has_z == source_geometry.has_z
+                    )
+                except Exception:
+                    geometry_types_preserved = False
+                    dimensionality_preserved = False
+            else:
+                geometry_types_preserved = False
+                dimensionality_preserved = False
+
+    add(
+        "output.geometry_validity",
+        geometry_validity,
+        "All output geometries are non-empty and valid."
+        if geometry_validity
+        else "At least one output geometry is unreadable, empty, or invalid.",
+        "/features",
+    )
+    add(
+        "output.geometry_types",
+        output_types_supported and geometry_types_preserved and bool(output_types),
+        "Output geometry types are preserved and satisfy the declared vector contract."
+        if output_types_supported and geometry_types_preserved and output_types
+        else "Output geometry types are unsupported or differ from their input features.",
+        "/features",
+    )
+    add(
+        "output.coordinate_finiteness",
+        coordinates_are_finite,
+        "All output coordinates are finite."
+        if coordinates_are_finite
+        else "Output contains non-finite or unreadable coordinates.",
+        "/features",
+    )
+    add(
+        "output.dimensionality",
+        dimensionality_preserved,
+        "Coordinate dimensionality is preserved."
+        if dimensionality_preserved
+        else "Output coordinate dimensionality differs from input.",
+        "/features",
+    )
+    add(
+        "output.feature_metadata",
+        metadata_matches,
+        "Feature IDs and properties are preserved."
+        if metadata_matches
+        else "Feature count, IDs, or properties differ from input.",
+        "/features",
+    )
+    return VectorOutputInspection(tuple(sorted(output_types)), tuple(findings))
