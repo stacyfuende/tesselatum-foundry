@@ -91,7 +91,7 @@ class DockerWorker:
                 check=False,
                 timeout=15,
             )
-        except (FileNotFoundError, subprocess.TimeoutExpired) as error:
+        except (OSError, subprocess.TimeoutExpired) as error:
             raise WorkerUnavailableError("Docker CLI is unavailable.") from error
         if result.returncode != 0:
             detail = result.stderr.strip()[-1000:]
@@ -192,7 +192,7 @@ class DockerWorker:
                 raise WorkerTimeoutError(
                     f"Worker exceeded its {self.timeout_seconds}-second timeout."
                 ) from error
-            except FileNotFoundError as error:
+            except OSError as error:
                 raise WorkerUnavailableError("Docker CLI is unavailable.") from error
             finally:
                 self._remove_container(container_name)
@@ -248,5 +248,5 @@ class DockerWorker:
                 check=False,
                 timeout=10,
             )
-        except (FileNotFoundError, subprocess.TimeoutExpired):
+        except (OSError, subprocess.TimeoutExpired):
             return
