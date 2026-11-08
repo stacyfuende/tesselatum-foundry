@@ -92,6 +92,32 @@ class LocalFoundry:
         """List per-cell Runs for one Recipe execution in node order."""
         return self.runs.list_runs_for_recipe_execution(recipe_execution_id)
 
+    def store_artifact(
+        self,
+        *,
+        artifact_id: str,
+        version: str,
+        content: bytes,
+        created_by: str,
+        media_type: str,
+        format_name: str,
+        spatial: dict[str, Any] | None = None,
+        rights: dict[str, Any] | None = None,
+        metadata: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        """Register an immutable Artifact version and its metadata."""
+        return self.artifacts.put_bytes(
+            artifact_id=artifact_id,
+            version=version,
+            content=content,
+            created_by=created_by,
+            media_type=media_type,
+            format_name=format_name,
+            spatial=spatial,
+            rights=rights,
+            metadata=metadata,
+        )
+
     def get_artifact(self, artifact_id: str, version: str) -> dict[str, Any]:
         """Retrieve immutable Artifact metadata."""
         return self.artifacts.get_artifact(artifact_id, version)
