@@ -37,6 +37,8 @@ class WorkerTimeoutError(TimeoutError):
 class DockerWorker:
     """Run the Shapely implementation in a network-isolated Docker container."""
 
+    capability_id = "vector.buffer"
+    capability_version = "1.0.0"
     implementation_id = "vector-buffer-shapely"
     implementation_version = "1.0.0"
     worker_id = "local-docker-worker"
