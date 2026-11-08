@@ -116,7 +116,7 @@ class DockerWorker:
         if len(input_bytes) > self.max_input_bytes:
             raise WorkerExecutionError("Input Artifact exceeds the worker byte limit.")
         image_digest = runtime_image_digest or self.image_digest()
-        if not _IMAGE_DIGEST.fullmatch(image_digest):
+        if not isinstance(image_digest, str) or not _IMAGE_DIGEST.fullmatch(image_digest):
             raise WorkerUnavailableError("Worker image digest is invalid.")
         request = {
             "request_version": "0.1.0",
