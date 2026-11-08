@@ -28,6 +28,7 @@ from tessellatum_foundry.execution.implementations import (
 from tessellatum_foundry.execution.protocol import VectorBufferWorker
 from tessellatum_foundry.execution.runs import RunRepository
 from tessellatum_foundry.storage.artifacts import (
+    ArtifactIntegrityError,
     FileSystemArtifactStore,
     utc_timestamp,
 )
@@ -200,9 +201,14 @@ class VectorBufferRunService:
             raise ExecutionPreconditionError(
                 "Resolved inputs contain ports not declared by this execution service."
             )
-        input_artifact = self.artifact_store.get_artifact(
-            artifact_ref["artifact_id"], artifact_ref["version"]
-        )
+        try:
+            input_artifact = self.artifact_store.get_artifact(
+                artifact_ref["artifact_id"], artifact_ref["version"]
+            )
+        except FileNotFoundError as error:
+            raise ExecutionPreconditionError(
+                "Resolved input Artifact is not registered."
+            ) from error
         accepted_media_types = input_port.get("accepted_media_types", [])
         if input_artifact["media_type"] not in accepted_media_types:
             raise ExecutionPreconditionError(
@@ -212,7 +218,12 @@ class VectorBufferRunService:
             raise ExecutionPreconditionError("Input Artifact must contain vector data.")
         if not input_artifact.get("spatial", {}).get("crs"):
             raise ExecutionPreconditionError("Input vector Artifact must declare its CRS.")
-        input_bytes = self.artifact_store.read_bytes(input_artifact)
+        try:
+            input_bytes = self.artifact_store.read_bytes(input_artifact)
+        except ArtifactIntegrityError as error:
+            raise ExecutionPreconditionError(
+                f"Input Artifact failed checksum verification: {error}"
+            ) from error
         try:
             input_feature_collection = json.loads(input_bytes)
         except (UnicodeDecodeError, json.JSONDecodeError) as error:
