@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 
 import pytest
-from jsonschema import Draft202012Validator, FormatChecker
+from jsonschema import Draft202012Validator, FormatChecker, ValidationError
 from referencing import Registry, Resource
 from referencing.jsonschema import DRAFT202012
 
@@ -73,7 +73,7 @@ def test_cell_requires_a_capability_reference(schema_context):
     validator = Draft202012Validator(
         schemas["cell.schema.json"], registry=registry, format_checker=FormatChecker()
     )
-    with pytest.raises(Exception):
+    with pytest.raises(ValidationError):
         validator.validate(instance)
 
 
