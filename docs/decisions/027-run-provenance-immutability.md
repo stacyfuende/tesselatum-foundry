@@ -14,7 +14,7 @@ That would make the final record describe different work from the work originall
 1. Treat Run identity and declared execution provenance as immutable from creation: Run ID, attempt, exact Cell and Capability references, creation time, input snapshots, normalized parameters, retry reference, and Recipe correlation fields.
 2. Treat worker identity, implementation identity (including manifest checksum), runtime image digest, and start time as set-once fields. They may be added when the queued Run starts but cannot be replaced later.
 3. Continue to allow lifecycle transitions to append events and add terminal outcome evidence such as finish time, outputs, validation report references, resource usage, or error details.
-4. Reject any transition that attempts to change an immutable or already-set execution identity field. Validate the resulting record against the canonical Run schema before persisting it.
+4. Define an allowlist of mutable fields for each lifecycle edge (for example, worker identity may be added on `queued -> running`, while output references may be added only on `running -> succeeded`). Reject fields that are not valid for the requested transition, as well as changes to immutable or already-set execution identity fields. Validate the resulting record against the canonical Run schema before persisting it.
 5. Keep terminal Runs immutable as already established by the Run lifecycle contract.
 
 ## Consequences
