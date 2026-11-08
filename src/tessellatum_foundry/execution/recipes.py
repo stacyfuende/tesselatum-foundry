@@ -8,9 +8,11 @@ from dataclasses import dataclass
 from typing import Any
 
 from tessellatum_foundry.execution.service import (
+    ExecutionPreconditionError,
     ExecutionResult,
     VectorBufferRunService,
 )
+from tessellatum_foundry.execution.implementations import ImplementationRegistryError
 from tessellatum_foundry.storage.artifacts import FileSystemArtifactStore
 from tessellatum_foundry.validation.contracts import ContractRegistry
 from tessellatum_foundry.validation.graph import validate_recipe_graph
@@ -105,6 +107,30 @@ class RecipeExecutionService:
             raise RecipeExecutionPreconditionError(
                 f"Recipe spatial preconditions failed: {detail}"
             )
+
+        for node in recipe["nodes"]:
+            cell_ref = node["cell"]
+            cell = cells[(cell_ref["cell_id"], cell_ref["version"])]
+            capability_ref = cell["capability"]
+            capability = capabilities[
+                (capability_ref["capability_id"], capability_ref["version"])
+            ]
+            if (
+                capability["capability_id"] != self.cell_runner.worker.capability_id
+                or capability["version"] != self.cell_runner.worker.capability_version
+            ):
+                raise RecipeExecutionPreconditionError(
+                    "The local Recipe runner does not support every exact Capability version."
+                )
+            try:
+                self.cell_runner.implementations.require_conformant(
+                    implementation_id=self.cell_runner.worker.implementation_id,
+                    version=self.cell_runner.worker.implementation_version,
+                    capability_id=capability["capability_id"],
+                    capability_version=capability["version"],
+                )
+            except ImplementationRegistryError as error:
+                raise RecipeExecutionPreconditionError(str(error)) from error
 
         node_order = self._topological_order(recipe)
         node_by_cell = {
