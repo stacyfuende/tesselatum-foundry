@@ -34,3 +34,12 @@ def test_registry_rejects_unregistered_capability_version():
 
     with pytest.raises(CapabilityRegistryError, match="is not registered"):
         registry.require_exact(candidate)
+
+
+def test_registry_compares_json_number_types_exactly():
+    registry = CapabilityRegistry()
+    candidate = registry.get("vector.buffer", "1.0.0")
+    candidate["parameter_schema"]["properties"]["quad_segs"]["default"] = 8.0
+
+    with pytest.raises(CapabilityRegistryError, match="differs from its canonical"):
+        registry.require_exact(candidate)
