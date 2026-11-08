@@ -52,7 +52,6 @@ def test_docker_worker_applies_isolation_limits_and_pins_image(monkeypatch):
                     "features": [],
                 },
                 "crs": {"authority": "EPSG", "code": 32737},
-                "geometry_types": [],
             }
             output = output_dir / "result.json"
             output.write_text(json.dumps(payload), encoding="utf-8")
