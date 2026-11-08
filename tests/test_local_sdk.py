@@ -60,3 +60,11 @@ def test_local_sdk_exposes_persisted_artifact_store(tmp_path):
 
     assert retrieved == artifact
     assert json.loads(foundry.read_artifact(retrieved)) == content
+
+
+def test_local_sdk_retrieves_persisted_validation_reports(tmp_path):
+    foundry = LocalFoundry(tmp_path)
+    report = load_fixture("validation-report.valid.json")
+    stored = foundry.runs.save_validation_report(report)
+
+    assert foundry.get_validation_report(report["report_id"]) == stored
