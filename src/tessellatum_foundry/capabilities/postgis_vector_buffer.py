@@ -94,13 +94,18 @@ def buffer_feature_collection_postgis(
             raise BufferContractError(
                 "PostGIS output SRID does not match the input EPSG SRID."
             )
+        if geometry_type not in {"POLYGON", "MULTIPOLYGON"}:
             raise BufferContractError(
                 f"PostGIS produced unsupported output type {geometry_type!r} "
                 f"at feature {index}."
             )
         output_geometry = json.loads(geometry_text)
         parsed_output = shape(output_geometry)
-        if parsed_output.is_empty or not parsed_output.is_valid:
+        if (
+            parsed_output.geom_type not in {"Polygon", "MultiPolygon"}
+            or parsed_output.is_empty
+            or not parsed_output.is_valid
+        ):
             raise BufferContractError(
                 f"PostGIS output geometry at feature {index} failed local validation."
             )
