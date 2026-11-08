@@ -454,7 +454,10 @@ def build_methodology_report(
                     (
                         f"PROJ selected operation: {operation_description}."
                         if operation_valid
-                        else "The worker omitted or malformed selected coordinate-operation evidence."
+                        else (
+                            "The worker omitted or malformed selected "
+                            "coordinate-operation evidence."
+                        )
                     ),
                     severity="error" if not operation_valid else "info",
                     evidence=evidence,
@@ -470,7 +473,10 @@ def build_methodology_report(
                         f"PROJ reports coordinate-operation accuracy of "
                         f"{operation_accuracy} m."
                         if operation_accuracy is not None
-                        else "PROJ did not report a known accuracy value for the selected operation."
+                        else (
+                            "PROJ did not report a known accuracy value for "
+                            "the selected operation."
+                        )
                     ),
                     severity="info",
                     evidence=evidence,
