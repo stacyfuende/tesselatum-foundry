@@ -29,7 +29,7 @@ class RemoteVectorBufferWorker:
 
     capability_id = "vector.buffer"
     capability_version = "1.0.0"
-    worker_type = "remote_http"
+    worker_type = "remote"
 
     def __init__(
         self,
