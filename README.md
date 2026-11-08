@@ -17,7 +17,7 @@ The repository follows a contracts-first implementation sequence. The first mile
 - [x] Versioned implementation manifests registered and schema-validated.
 - [x] Shared geometry conformance suite added, including topological comparison of both engine results.
 - [x] GitHub Actions configured with a real PostGIS service for conformance testing.
-- [ ] PostGIS-backed CI conformance run verified green.
+- [x] PostGIS-backed CI conformance run verified green (91 tests passed).
 - [ ] Methodological, rights, and execution/output validators implemented.
 - [ ] Deterministic local execution path implemented.
 - [ ] Remote worker path implemented and conformance-tested.
@@ -56,7 +56,7 @@ The Validation Report is a separate evidence object. Implementations are registe
 
 ## First capability: vector.buffer
 
-`vector.buffer@1.0.0` supports Point, MultiPoint, LineString, MultiLineString, Polygon and MultiPolygon inputs. It requires an explicit projected measurement CRS equal to the input CRS, rejects invalid input geometries rather than repairing them, and returns valid Polygon/MultiPolygon outputs while preserving feature IDs and properties. Its first two independent realizations are Shapely and PostGIS; both use the same semantic request validator. The PostGIS adapter requires an unambiguous EPSG CRS and checks the output SRID. Actual engine parity is assessed by shared geometry expectations and a topological comparison in PostGIS-backed CI.
+`vector.buffer@1.0.0` supports Point, MultiPoint, LineString, MultiLineString, Polygon and MultiPolygon inputs. It requires an explicit projected measurement CRS equal to the input CRS, rejects invalid input geometries rather than repairing them, and returns valid Polygon/MultiPolygon outputs while preserving feature IDs and properties. Its first two independent realizations are Shapely and PostGIS; both use the same semantic request validator. The PostGIS adapter requires an unambiguous EPSG CRS and checks the output SRID. Both implementations passed the shared geometry conformance suite in [CI run 173](https://github.com/stacyfuende/tesselatum-foundry/actions/runs/42486888151): Ruff passed, 8 schemas, 7 fixtures, 1 capability contract and 2 implementation manifests validated, and 91 tests passed. The conformance manifests record suite version 0.1.0 as passed. The claim is limited to the declared contract and tested conformance cases/tolerances; it does not imply byte-identical geometry encodings.
 
 Implementation manifests are stored separately under `implementations/`; their conformance status remains `not_run` until the PostGIS-backed CI suite passes. Install the Shapely backend with the `shapely` extra or the PostGIS backend with the `postgis` extra. The PostGIS adapter does not import or require Shapely. Development installs both extras through `requirements-dev.txt`.
 
