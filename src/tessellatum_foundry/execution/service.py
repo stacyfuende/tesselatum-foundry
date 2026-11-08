@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 import uuid
 from dataclasses import dataclass
 from typing import Any
@@ -73,6 +74,7 @@ class VectorBufferRunService:
             raise ExecutionPreconditionError(
                 "Selected worker does not implement the exact supplied Capability version."
             )
+        self._validate_worker_descriptor()
         if cell["capability"] != {
             "capability_id": capability["capability_id"],
             "version": capability["version"],
@@ -172,6 +174,10 @@ class VectorBufferRunService:
 
         try:
             image_digest = self.worker.image_digest()
+            if not re.fullmatch(r"sha256:[a-fA-F0-9]{64}", image_digest):
+                raise WorkerUnavailableError(
+                    "Worker returned an invalid immutable runtime image digest."
+                )
         except WorkerUnavailableError as error:
             failed = self.run_repository.transition(
                 run_id,
@@ -330,6 +336,31 @@ class VectorBufferRunService:
             event_type=terminal_status,
         )
         return ExecutionResult(failed, None, None)
+
+    def _validate_worker_descriptor(self) -> None:
+        identifier_pattern = r"[A-Za-z0-9][A-Za-z0-9._:/-]{0,254}"
+        version_pattern = r"[A-Za-z0-9][A-Za-z0-9._+-]{0,127}"
+        identifiers = (
+            self.worker.worker_id,
+            self.worker.implementation_id,
+        )
+        versions = (self.worker.implementation_version,)
+        if any(
+            not isinstance(value, str) or not re.fullmatch(identifier_pattern, value)
+            for value in identifiers
+        ):
+            raise ExecutionPreconditionError(
+                "Worker and implementation identities must be valid identifiers."
+            )
+        if any(
+            not isinstance(value, str) or not re.fullmatch(version_pattern, value)
+            for value in versions
+        ):
+            raise ExecutionPreconditionError(
+                "Worker implementation version must be a valid version identifier."
+            )
+        if self.worker.worker_type not in {"local_docker", "remote"}:
+            raise ExecutionPreconditionError("Worker type is not supported by the Run contract.")
 
     @staticmethod
     def _required_port(ports: list[dict[str, Any]], port_id: str) -> dict[str, Any]:
