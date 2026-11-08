@@ -294,6 +294,7 @@ def test_two_node_recipe_executes_upstream_artifact_chain(tmp_path):
     first_run = result.node_results["first"].run
     second_run = result.node_results["second"].run
     assert first_run["status"] == second_run["status"] == "succeeded"
+    assert first_run["runtime_image_digest"] == second_run["runtime_image_digest"]
     assert second_run["input_snapshots"][0]["source_run_id"] == first_run["run_id"]
     assert second_run["input_snapshots"][0]["artifact"] == first_run["outputs"][0]["artifact"]
     assert second["inputs"]["features"]["source"] == "cell_output"
