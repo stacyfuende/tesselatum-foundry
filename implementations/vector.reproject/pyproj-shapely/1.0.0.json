@@ -1,0 +1,15 @@
+{
+  "implementation_id": "vector-reproject-pyproj-shapely",
+  "capability_id": "vector.reproject",
+  "capability_version": "1.0.0",
+  "version": "1.0.0",
+  "engine": "Shapely 2.x / pyproj 3.7+ / PROJ",
+  "runtime": "Python 3.11 or later; pyproj 3.7 or later; Shapely 2.x",
+  "entrypoint": "tessellatum_foundry.capabilities.vector_reproject:reproject_feature_collection",
+  "network_access": "none",
+  "conformance": {
+    "status": "not_run",
+    "suite_version": "0.1.0"
+  },
+  "determinism": "deterministic"
+}
