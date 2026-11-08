@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 import math
+from dataclasses import dataclass
 from typing import Any, Mapping
 
 from pyproj import CRS
@@ -86,7 +86,9 @@ def _feature_geometry(feature: Mapping[str, Any], index: int) -> BaseGeometry:
     try:
         geometry = shape(feature["geometry"])
     except (TypeError, ValueError) as error:
-        raise BufferContractError(\n            f"Feature at index {index} has invalid geometry: {error}"\n        ) from error
+        raise BufferContractError(
+            f"Feature at index {index} has invalid geometry: {error}"
+        ) from error
     if geometry.geom_type not in _SUPPORTED_INPUT_TYPES:
         raise BufferContractError(
             f"Feature at index {index} has unsupported geometry type {geometry.geom_type!r}."
@@ -113,30 +115,40 @@ def buffer_feature_collection(
     mitre_limit: float = 5.0,
     single_sided: bool = False,
 ) -> BufferOutput:
-    """Buffer each feature without reprojection, repair, or implicit unit conversion.
+    """Buffer features without reprojection, repair, or implicit unit conversion.
 
-    Distance is expressed in the native horizontal coordinate unit of the projected
-    CRS. Output feature properties and IDs are preserved. Geometry output is always
-    Polygon or MultiPolygon.
+    Distance uses the projected CRS's native horizontal unit. Feature properties and
+    IDs are preserved. Output geometry is Polygon or MultiPolygon. The feature
+    payload is GeoJSON-compatible; CRS is separate Foundry metadata, not an RFC 7946
+    CRS member.
     """
     if not isinstance(distance, (int, float)) or isinstance(distance, bool):
         raise BufferContractError("Distance must be a number.")
     if not math.isfinite(distance) or distance <= 0:
         raise BufferContractError("Distance must be greater than zero.")
-    if not isinstance(quad_segs, int) or isinstance(quad_segs, bool) or not 1 <= quad_segs <= 64:
+    if (
+        not isinstance(quad_segs, int)
+        or isinstance(quad_segs, bool)
+        or not 1 <= quad_segs <= 64
+    ):
         raise BufferContractError("quad_segs must be an integer from 1 through 64.")
     if cap_style not in {"round", "flat", "square"}:
         raise BufferContractError("cap_style must be round, flat, or square.")
     if join_style not in {"round", "mitre", "bevel"}:
         raise BufferContractError("join_style must be round, mitre, or bevel.")
-    if not isinstance(mitre_limit, (int, float)) or isinstance(mitre_limit, bool) or not math.isfinite(mitre_limit) or mitre_limit <= 0:
+    if (
+        not isinstance(mitre_limit, (int, float))
+        or isinstance(mitre_limit, bool)
+        or not math.isfinite(mitre_limit)
+        or mitre_limit <= 0
+    ):
         raise BufferContractError("mitre_limit must be greater than zero.")
     if not isinstance(unit, str) or not unit.strip():
         raise BufferContractError("unit must be a non-empty string.")
     if not isinstance(single_sided, bool):
         raise BufferContractError("single_sided must be a boolean.")
     if feature_collection.get("type") != "FeatureCollection":
-        raise BufferContractError("Input must be a GeoJSON FeatureCollection.")
+        raise BufferContractError("Input must be a FeatureCollection.")
     features = feature_collection.get("features")
     if not isinstance(features, list) or not features:
         raise BufferContractError("FeatureCollection must contain at least one feature.")
