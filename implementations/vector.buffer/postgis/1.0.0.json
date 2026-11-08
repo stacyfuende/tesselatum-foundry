@@ -4,7 +4,7 @@
   "capability_version": "1.0.0",
   "version": "1.0.0",
   "engine": "PostGIS ST_Buffer / GEOS",
-  "runtime": "Python 3.11 or later; psycopg 3.2 or later; PostGIS 3.4 or later",
+  "runtime": "Python 3.11 or later; psycopg 3.2 or later; PostGIS 3.7",
   "entrypoint": "tessellatum_foundry.capabilities.postgis_vector_buffer:buffer_feature_collection_postgis",
   "network_access": "restricted",
   "conformance": {
