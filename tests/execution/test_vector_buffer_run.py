@@ -111,7 +111,7 @@ def test_vector_buffer_runs_in_isolated_docker_and_registers_artifact(tmp_path):
     assert output["type"] == "FeatureCollection"
     assert output["features"][0]["geometry"]["type"] == "Polygon"
     assert result.output_artifact["spatial"]["crs"] == PROJECTED
-    assert result.output_artifact["rights"] is None or "rights" not in result.output_artifact
+    assert "rights" not in result.output_artifact
 
     with pytest.raises(RunStateError, match="immutable"):
         runs.transition(
@@ -218,5 +218,5 @@ def test_output_critic_fails_run_without_registering_invalid_output(tmp_path):
     assert result.output_artifact is None
     assert result.validation_report is not None
     assert result.validation_report["overall_status"] == "failed"
-    assert "report_id" in result.run["validation_report_ids"]
+    assert result.validation_report["report_id"] in result.run["validation_report_ids"]
     assert result.run["error"]["code"] == "output.validation_failed"
