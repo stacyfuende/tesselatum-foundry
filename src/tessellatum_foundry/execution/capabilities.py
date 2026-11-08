@@ -49,7 +49,18 @@ class CapabilityRegistry:
     def require_exact(self, candidate: dict[str, Any]) -> dict[str, Any]:
         """Fail closed unless the supplied object exactly matches its registered version."""
         capability = self.get(candidate["capability_id"], candidate["version"])
-        if candidate != capability:
+        try:
+            candidate_json = json.dumps(
+                candidate, sort_keys=True, separators=(",", ":"), allow_nan=False
+            )
+            canonical_json = json.dumps(
+                capability, sort_keys=True, separators=(",", ":"), allow_nan=False
+            )
+        except (TypeError, ValueError) as error:
+            raise CapabilityRegistryError(
+                "Supplied Capability contract is not canonical JSON data."
+            ) from error
+        if candidate_json != canonical_json:
             raise CapabilityRegistryError(
                 "Supplied Capability contract differs from its canonical registered version."
             )
