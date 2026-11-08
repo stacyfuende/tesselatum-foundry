@@ -46,7 +46,12 @@ class WorkerHandler(BaseHTTPRequestHandler):
             return False
         return hmac.compare_digest(supplied, f"Bearer {expected}")
 
-    def _send_json(self, status: int, payload: dict[str, Any]) -> None:
+    def _send_json(
+        self,
+        status: int,
+        payload: dict[str, Any],
+        extra_headers: dict[str, str] | None = None,
+    ) -> None:
         body = _json_bytes(payload)
         maximum = int(os.environ.get("FOUNDRY_MAX_OUTPUT_BYTES", str(128 * 1024 * 1024)))
         if len(body) > maximum:
@@ -57,6 +62,8 @@ class WorkerHandler(BaseHTTPRequestHandler):
         self.send_header("Content-Length", str(len(body)))
         self.send_header("Cache-Control", "no-store")
         self.send_header("X-Content-Type-Options", "nosniff")
+        for name, value in (extra_headers or {}).items():
+            self.send_header(name, value)
         self.end_headers()
         self.wfile.write(body)
 
@@ -130,27 +137,37 @@ class WorkerHandler(BaseHTTPRequestHandler):
             parameters = request["parameters"]
             if not isinstance(feature_collection, dict) or not isinstance(parameters, dict):
                 raise ValueError("invalid feature collection or parameters")
-            started = time.monotonic()
-            if capability == ("vector.buffer", "1.0.0"):
-                result = buffer_feature_collection(
-                    feature_collection,
-                    input_crs=request["input_crs"],
-                    measurement_crs=request["measurement_crs"],
-                    **parameters,
+            if not self.server._execution_slots.acquire(blocking=False):
+                self._send_json(
+                    503,
+                    {"error": "worker_busy"},
+                    extra_headers={"Retry-After": "2"},
                 )
-                output_crs = request["input_crs"]
-            elif capability == ("vector.reproject", "1.0.0"):
-                if parameters:
-                    raise ValueError("vector.reproject@1.0.0 accepts no extra worker parameters.")
-                result = reproject_feature_collection(
-                    feature_collection,
-                    input_crs=request["input_crs"],
-                    target_crs=request["target_crs"],
-                )
-                output_crs = request["target_crs"]
-            else:
-                self._send_json(400, {"error": "unsupported_capability_version"})
                 return
+            try:
+                started = time.monotonic()
+                if capability == ("vector.buffer", "1.0.0"):
+                    result = buffer_feature_collection(
+                        feature_collection,
+                        input_crs=request["input_crs"],
+                        measurement_crs=request["measurement_crs"],
+                        **parameters,
+                    )
+                    output_crs = request["input_crs"]
+                elif capability == ("vector.reproject", "1.0.0"):
+                    if parameters:
+                        raise ValueError("vector.reproject@1.0.0 accepts no extra worker parameters.")
+                    result = reproject_feature_collection(
+                        feature_collection,
+                        input_crs=request["input_crs"],
+                        target_crs=request["target_crs"],
+                    )
+                    output_crs = request["target_crs"]
+                else:
+                    self._send_json(400, {"error": "unsupported_capability_version"})
+                    return
+            finally:
+                self.server._execution_slots.release()
             duration_ms = max(0, int((time.monotonic() - started) * 1000))
             digest = os.environ.get("FOUNDRY_WORKER_IMAGE_DIGEST", "")
             if not digest.startswith("sha256:"):
@@ -175,7 +192,7 @@ class WorkerHandler(BaseHTTPRequestHandler):
 
 
 class BoundedThreadingHTTPServer(ThreadingHTTPServer):
-    """Threaded HTTP server with a hard cap on concurrent request handlers."""
+    """Threaded HTTP server with a hard cap on active capability executions."""
 
     request_queue_size = 16
     daemon_threads = True
@@ -185,37 +202,12 @@ class BoundedThreadingHTTPServer(ThreadingHTTPServer):
         server_address,
         RequestHandlerClass,
         *,
-        max_concurrent_requests: int = 2,
+        max_concurrent_executions: int = 2,
     ):
-        if not 1 <= max_concurrent_requests <= 64:
-            raise ValueError("max_concurrent_requests must be between 1 and 64.")
-        self._request_slots = threading.BoundedSemaphore(max_concurrent_requests)
+        if not 1 <= max_concurrent_executions <= 64:
+            raise ValueError("max_concurrent_executions must be between 1 and 64.")
+        self._execution_slots = threading.BoundedSemaphore(max_concurrent_executions)
         super().__init__(server_address, RequestHandlerClass)
-
-    def process_request(self, request, client_address):
-        if not self._request_slots.acquire(blocking=False):
-            try:
-                request.sendall(
-                    b"HTTP/1.1 503 Service Unavailable\r\n"
-                    b"Content-Length: 0\r\n"
-                    b"Connection: close\r\n"
-                    b"Retry-After: 2\r\n\r\n"
-                )
-            except OSError:
-                pass
-            self.shutdown_request(request)
-            return
-        try:
-            super().process_request(request, client_address)
-        except Exception:
-            self._request_slots.release()
-            raise
-
-    def process_request_thread(self, request, client_address):
-        try:
-            super().process_request_thread(request, client_address)
-        finally:
-            self._request_slots.release()
 
 
 def main() -> None:
@@ -235,15 +227,15 @@ def main() -> None:
     bind = os.environ.get("FOUNDRY_REMOTE_BIND", "0.0.0.0")
     port = int(os.environ.get("FOUNDRY_REMOTE_PORT", "8080"))
     try:
-        max_concurrent_requests = int(
-            os.environ.get("FOUNDRY_MAX_CONCURRENT_REQUESTS", "2")
+        max_concurrent_executions = int(
+            os.environ.get("FOUNDRY_MAX_CONCURRENT_EXECUTIONS", "2")
         )
     except ValueError as error:
-        raise SystemExit("FOUNDRY_MAX_CONCURRENT_REQUESTS must be an integer.") from error
+        raise SystemExit("FOUNDRY_MAX_CONCURRENT_EXECUTIONS must be an integer.") from error
     server = BoundedThreadingHTTPServer(
         (bind, port),
         WorkerHandler,
-        max_concurrent_requests=max_concurrent_requests,
+        max_concurrent_executions=max_concurrent_executions,
     )
     server.serve_forever()
 
