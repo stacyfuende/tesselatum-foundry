@@ -102,7 +102,7 @@ def test_docker_worker_rejects_input_over_limit_before_launching(monkeypatch):
     )
     worker = _worker(max_input_bytes=1)
 
-    with pytest.raises(WorkerExecutionError, match="input byte limit"):
+    with pytest.raises(WorkerExecutionError, match="worker byte limit"):
         worker.execute(
             input_bytes=b"too large",
             capability_version="1.0.0",
