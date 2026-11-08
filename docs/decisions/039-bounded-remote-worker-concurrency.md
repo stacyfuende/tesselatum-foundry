@@ -1,29 +1,32 @@
-# ADR-039: Bound concurrent remote worker requests
+# ADR-039: Bound concurrent remote capability executions
 
 - **Status:** Accepted
 - **Date:** 2026-11-09
 
 ## Context
 
-The authenticated remote worker uses `ThreadingHTTPServer`. Each accepted request creates a handler thread, and a handler can execute a CPU- and memory-intensive geospatial operation. Authentication, request-size limits and a client timeout do not bound the number of concurrent server threads. A valid but misbehaving client, leaked bearer token or accidental burst could exhaust the worker container before its CPU and memory limits provide a predictable response.
+The authenticated remote worker executes CPU- and memory-intensive geospatial operations. A burst of valid requests could start many simultaneous Shapely/PyProj operations and exhaust the worker container. A process-level bound is required even when ingress also provides connection and rate limits.
+
+The HTTP service uses `ThreadingHTTPServer`, so it must parse a request before returning a well-formed overload response. A hard semaphore at socket acceptance would close connections while clients are still sending bodies and can produce broken-pipe errors instead of a valid HTTP response.
 
 ## Decision
 
-1. Replace the unbounded threaded server with a bounded threaded HTTP server.
-2. Limit all concurrent request handlers using a process-local bounded semaphore. The default is two concurrent requests.
-3. Configure the limit through `FOUNDRY_MAX_CONCURRENT_REQUESTS`; accept values from 1 through 64 and fail startup for invalid values.
-4. When capacity is exhausted, reject the connection with HTTP 503 and `Retry-After: 2`; do not queue arbitrary work in memory.
-5. Keep a bounded listen backlog of 16 connections.
-6. Continue to require ingress-level rate limiting, private networking, TLS termination, and container CPU/memory/process limits. The in-process semaphore is an additional guard, not a replacement for deployment isolation.
-7. Do not automatically retry a rejected execution in the same Run. A retry remains a new Run attempt under ADR-014.
+1. Bound active capability executions with a process-local `threading.BoundedSemaphore`.
+2. Default to two concurrent executions.
+3. Configure the limit through `FOUNDRY_MAX_CONCURRENT_EXECUTIONS`; accept values from 1 through 64 and fail startup for invalid values.
+4. Parse and validate the incoming request before attempting to acquire an execution slot.
+5. When capacity is exhausted, return HTTP 503 with `Retry-After: 2`; do not queue arbitrary work in memory and do not begin another capability operation.
+6. Keep the listen backlog bounded at 16 connections.
+7. Continue to require ingress-level connection/rate limits, private networking, TLS termination, and container CPU/memory/process/network policies. The execution semaphore is an additional guard, not a replacement for those controls.
+8. Do not automatically retry a rejected execution in the same Run. A retry remains a new Run attempt under ADR-014.
 
 ## Consequences
 
-- Concurrent request threads and capability executions are bounded by a configured process-level limit.
-- Overload is explicit and observable rather than silently accumulating threads.
-- The control plane can treat HTTP 503 as temporary worker unavailability.
-- The default limit is intentionally conservative for geospatial workloads; operators may raise it only after measuring memory and CPU under representative data sizes.
+- The number of active geospatial capability operations is bounded by a configured process-level limit.
+- Overload is represented as a valid HTTP response instead of abruptly closing an in-flight request.
+- The server may still create lightweight request-handler threads to parse and reject requests; ingress connection limits remain necessary.
+- The default is intentionally conservative for geospatial workloads. Operators should raise it only after measuring CPU and memory under representative data sizes.
 
 ## Known limitation
 
-This decision does not yet impose a hard per-execution wall-clock limit inside the remote worker process. The client timeout bounds how long the control plane waits, but a timed-out server-side operation may continue until it finishes or the container is terminated. Process-level execution timeout and graceful shutdown remain separate hardening work.
+This decision bounds active operations, not the total number of lightweight HTTP handler threads under a connection flood. Ingress connection/rate limits are still required. Per-execution wall-clock termination is addressed separately by ADR-040.
