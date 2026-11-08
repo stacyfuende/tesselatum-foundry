@@ -115,7 +115,7 @@ JSON Schema cannot establish cross-object or data-dependent truths. Those rules 
 
 ### Spatial metadata and pre-execution validation
 
-Spatial Artifact metadata for vector, raster, point-cloud, and mesh data MUST declare a resolvable CRS. Raster artifacts MUST also declare grid dimensions. Capability input and output ports MAY declare machine-readable spatial constraints: required CRS, CRS kind, accepted geometry types, and equality with another named input port's CRS.
+Spatial Artifact metadata for vector, raster, point-cloud, and mesh data MUST declare a resolvable CRS. Vector Artifacts MUST also declare at least one observed geometry type; the vector.buffer preflight compares this declaration with the actual feature data. Raster artifacts MUST also declare grid dimensions. Capability input and output ports MAY declare machine-readable spatial constraints: required CRS, CRS kind, accepted geometry types, and equality with another named input port's CRS.
 
 Foundry interprets extents in GIS x/y order, independent of the authority axis order recorded by a CRS: a 2D extent is [min_x, min_y, max_x, max_y]; a 3D extent is [min_x, min_y, min_z, max_x, max_y, max_z]. Extents MUST be finite and ordered. For geographic CRSs, x/y bounds are checked against the longitude/latitude domain after accounting for the CRS angular units. Antimeridian-crossing extents must be split or represented by a future explicit wrap-aware extent type; a reversed min/max extent is not a wrap encoding.
 
