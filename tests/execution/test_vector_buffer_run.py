@@ -270,3 +270,26 @@ def test_run_service_rejects_worker_for_a_different_capability_version(tmp_path)
         )
 
     assert not (runs.root / "runs").exists()
+
+
+def test_invalid_worker_runtime_digest_fails_the_run_cleanly(tmp_path):
+    class InvalidDigestWorker(WrongCrsWorker):
+        def image_digest(self) -> str:
+            return "not-an-image-id"
+
+    store, runs, service = make_service(tmp_path, InvalidDigestWorker())
+    input_artifact = make_input(store)
+    cell = bind_cell_to_input(input_artifact)
+    capability = load_fixture("capability.valid.json")
+
+    result = service.execute(
+        cell=cell,
+        capability=capability,
+        actor_id="test-operator",
+    )
+
+    assert result.run["status"] == "failed"
+    assert result.run["error"]["code"] == "worker.unavailable"
+    assert result.run["error"]["retryable"] is True
+    assert result.output_artifact is None
+    assert runs.get_run(result.run["run_id"])["status"] == "failed"
