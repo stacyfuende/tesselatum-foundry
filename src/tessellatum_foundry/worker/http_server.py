@@ -62,8 +62,26 @@ def _execute_isolated(
         for key, value in request.items()
         if key != "input_feature_collection"
     }
-    child_env = os.environ.copy()
-    child_env.setdefault("FOUNDRY_MAX_OUTPUT_BYTES", str(max_output_bytes))
+    child_environment_keys = (
+        "PATH",
+        "PYTHONPATH",
+        "PYTHONHOME",
+        "VIRTUAL_ENV",
+        "LD_LIBRARY_PATH",
+        "PROJ_LIB",
+        "PROJ_DATA",
+        "GDAL_DATA",
+        "LANG",
+        "LC_ALL",
+        "TMPDIR",
+    )
+    child_env = {
+        key: os.environ[key]
+        for key in child_environment_keys
+        if key in os.environ
+    }
+    child_env["FOUNDRY_MAX_OUTPUT_BYTES"] = str(max_output_bytes)
+    child_env["PYTHONNOUSERSITE"] = "1"
 
     with tempfile.TemporaryDirectory(prefix="foundry-remote-worker-") as directory:
         root = Path(directory)
