@@ -780,24 +780,35 @@ class VectorBufferRunService:
 
         # A successful report from an older or incomplete validator is not
         # sufficient evidence for reuse under the current output contract.
-        validator = source_report.get("validator", {})
-        if (
+        validator = source_report.get("validator")
+        if not isinstance(validator, dict) or (
             validator.get("name") != _OUTPUT_VALIDATOR_NAME
             or validator.get("version") != _OUTPUT_VALIDATOR_VERSION
         ):
             return None
-        findings = source_report.get("findings", [])
-        finding_statuses = {
-            finding.get("code"): finding.get("status")
-            for finding in findings
-            if isinstance(finding, dict)
-        }
+        findings = source_report.get("findings")
+        if not isinstance(findings, list):
+            return None
+        finding_statuses: dict[str, str] = {}
+        for finding in findings:
+            if not isinstance(finding, dict):
+                continue
+            code = finding.get("code")
+            if code in _REQUIRED_OUTPUT_FINDINGS:
+                if code in finding_statuses:
+                    return None
+                finding_statuses[code] = finding.get("status")
         if any(
             finding_statuses.get(code) != "passed"
             for code in _REQUIRED_OUTPUT_FINDINGS
         ):
             return None
-        assessed_dimensions = set(source_report.get("assessed_dimensions", []))
+        assessed = source_report.get("assessed_dimensions")
+        if not isinstance(assessed, list) or any(
+            not isinstance(dimension, str) for dimension in assessed
+        ):
+            return None
+        assessed_dimensions = set(assessed)
         if not _REQUIRED_OUTPUT_DIMENSIONS.issubset(assessed_dimensions):
             return None
 
