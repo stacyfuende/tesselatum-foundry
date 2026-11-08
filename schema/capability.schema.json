@@ -70,13 +70,6 @@
               "type": "string"
             },
             "uniqueItems": true
-          },
-          "cardinality": {
-            "type": "string",
-            "enum": [
-              "one",
-              "many"
-            ]
           }
         },
         "additionalProperties": false
