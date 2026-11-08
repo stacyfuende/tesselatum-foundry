@@ -14,7 +14,7 @@ ADR-003 establishes the API/SDK and serialized contracts as canonical. The first
 1. Expose a `LocalFoundry` composition root from the top-level Python package.
 2. Require an explicit persistent root directory. Store Artifacts, Run records, and immutable definitions in separate subdirectories beneath it.
 3. Construct one shared ContractRegistry and inject it into the local stores and registries.
-4. Expose concise operations to register exact Cell and Recipe versions, execute an exact registered Recipe version, retrieve Runs, list Runs correlated to a Recipe execution, and retrieve/read checksum-verified Artifacts.
+4. Expose concise operations to register exact Cell and Recipe versions, register immutable Artifacts, execute an exact registered Recipe version, retrieve Runs, list Runs correlated to a Recipe execution, and retrieve/read checksum-verified Artifacts.
 5. Permit injection of a worker adapter for tests and controlled local integrations; default to the isolated Docker Shapely worker. The public package exposes the facade through a lazy import so importing a backend adapter does not eagerly load optional geometry engines. The local execution/output-validation path requires the Shapely extra on the control-plane host.
 6. Keep the facade explicitly local. It is not a network API, authentication boundary, tenant boundary, distributed scheduler, or production multi-instance service.
 7. Keep the underlying stores and services accessible as named attributes for advanced SDK consumers, while treating the facade methods as the stable convenience surface.
