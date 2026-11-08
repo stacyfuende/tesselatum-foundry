@@ -27,6 +27,6 @@ This register records decisions that constrain Foundry's architecture. Each deci
 | [021](021-package-canonical-runtime-data.md) | Package canonical schemas and runtime manifests | Accepted |
 | [022](022-sequential-recipe-execution.md) | Sequential Recipe execution as correlated cell Runs | Accepted |
 | [023](023-canonical-capability-registry.md) | Resolve execution against canonical Capability contracts | Accepted |
-| [024](024-versioned-definition-storage.md) | Immutable versioned Cell and Recipe storage | Accepted |
+| [024](024-versioned-definition-storage.md) | Immutable versioned Cell and Recipe storage | Accepted |\n| [025](025-local-python-sdk.md) | Small local Python SDK composition root | Accepted |
 
 A decision may be superseded only by a new decision record that explains the change. Do not silently edit an accepted decision to reverse its meaning.
