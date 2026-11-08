@@ -12,14 +12,14 @@
   ],
   "properties": {
     "run_id": {
-      "$ref": "./_common.schema.json#/$defs/identifier"
+      "$ref": "urn:tessellatum-foundry:schema:common:1.0.0#/$defs/identifier"
     },
     "attempt": {
       "type": "integer",
       "minimum": 1
     },
     "cell": {
-      "$ref": "./_common.schema.json#/$defs/cellRef"
+      "$ref": "urn:tessellatum-foundry:schema:common:1.0.0#/$defs/cellRef"
     },
     "recipe": {
       "type": "object",
@@ -29,10 +29,10 @@
       ],
       "properties": {
         "recipe_id": {
-          "$ref": "./_common.schema.json#/$defs/identifier"
+          "$ref": "urn:tessellatum-foundry:schema:common:1.0.0#/$defs/identifier"
         },
         "version": {
-          "$ref": "./_common.schema.json#/$defs/version"
+          "$ref": "urn:tessellatum-foundry:schema:common:1.0.0#/$defs/version"
         }
       },
       "additionalProperties": false
@@ -51,16 +51,16 @@
       ]
     },
     "created_at": {
-      "$ref": "./_common.schema.json#/$defs/timestamp"
+      "$ref": "urn:tessellatum-foundry:schema:common:1.0.0#/$defs/timestamp"
     },
     "started_at": {
-      "$ref": "./_common.schema.json#/$defs/timestamp"
+      "$ref": "urn:tessellatum-foundry:schema:common:1.0.0#/$defs/timestamp"
     },
     "finished_at": {
-      "$ref": "./_common.schema.json#/$defs/timestamp"
+      "$ref": "urn:tessellatum-foundry:schema:common:1.0.0#/$defs/timestamp"
     },
     "retry_of_run_id": {
-      "$ref": "./_common.schema.json#/$defs/identifier"
+      "$ref": "urn:tessellatum-foundry:schema:common:1.0.0#/$defs/identifier"
     },
     "worker": {
       "type": "object",
@@ -70,7 +70,7 @@
       ],
       "properties": {
         "worker_id": {
-          "$ref": "./_common.schema.json#/$defs/identifier"
+          "$ref": "urn:tessellatum-foundry:schema:common:1.0.0#/$defs/identifier"
         },
         "worker_type": {
           "type": "string",
@@ -93,10 +93,10 @@
       ],
       "properties": {
         "implementation_id": {
-          "$ref": "./_common.schema.json#/$defs/identifier"
+          "$ref": "urn:tessellatum-foundry:schema:common:1.0.0#/$defs/identifier"
         },
         "version": {
-          "$ref": "./_common.schema.json#/$defs/version"
+          "$ref": "urn:tessellatum-foundry:schema:common:1.0.0#/$defs/version"
         }
       },
       "additionalProperties": false
@@ -112,13 +112,13 @@
         ],
         "properties": {
           "input_port": {
-            "$ref": "./_common.schema.json#/$defs/identifier"
+            "$ref": "urn:tessellatum-foundry:schema:common:1.0.0#/$defs/identifier"
           },
           "artifact": {
-            "$ref": "./_common.schema.json#/$defs/artifactRef"
+            "$ref": "urn:tessellatum-foundry:schema:common:1.0.0#/$defs/artifactRef"
           },
           "checksum": {
-            "$ref": "./_common.schema.json#/$defs/sha256"
+            "$ref": "urn:tessellatum-foundry:schema:common:1.0.0#/$defs/sha256"
           }
         },
         "additionalProperties": false
@@ -164,10 +164,10 @@
         ],
         "properties": {
           "output_port": {
-            "$ref": "./_common.schema.json#/$defs/identifier"
+            "$ref": "urn:tessellatum-foundry:schema:common:1.0.0#/$defs/identifier"
           },
           "artifact": {
-            "$ref": "./_common.schema.json#/$defs/artifactRef"
+            "$ref": "urn:tessellatum-foundry:schema:common:1.0.0#/$defs/artifactRef"
           }
         },
         "additionalProperties": false
@@ -176,7 +176,7 @@
     "validation_report_ids": {
       "type": "array",
       "items": {
-        "$ref": "./_common.schema.json#/$defs/identifier"
+        "$ref": "urn:tessellatum-foundry:schema:common:1.0.0#/$defs/identifier"
       },
       "uniqueItems": true
     },
@@ -213,7 +213,7 @@
         ],
         "properties": {
           "timestamp": {
-            "$ref": "./_common.schema.json#/$defs/timestamp"
+            "$ref": "urn:tessellatum-foundry:schema:common:1.0.0#/$defs/timestamp"
           },
           "event_type": {
             "type": "string"
@@ -251,5 +251,6 @@
       }
     }
   ],
-  "additionalProperties": false
+  "additionalProperties": false,
+  "$id": "urn:tessellatum-foundry:schema:run:1.0.0"
 }
