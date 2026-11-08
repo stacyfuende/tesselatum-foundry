@@ -43,7 +43,6 @@
         "queued",
         "waiting_for_resources",
         "running",
-        "retrying",
         "succeeded",
         "failed",
         "cancelled",
@@ -247,6 +246,44 @@
       "then": {
         "required": [
           "finished_at"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "running"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "then": {
+        "required": [
+          "started_at",
+          "worker",
+          "implementation"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "succeeded"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "then": {
+        "required": [
+          "started_at",
+          "worker",
+          "implementation"
         ]
       }
     }
