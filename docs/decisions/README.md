@@ -18,6 +18,7 @@ This register records decisions that constrain Foundry's architecture. Each deci
 | [012](012-unique-cell-version-per-recipe.md) | Each Recipe contains a cell version at most once | Accepted |
 | [013](013-single-binding-per-input-port-v0.1.md) | One binding per named input port in v0.1 | Accepted |
 | [014](014-retries-create-new-run-attempts.md) | Retry creates a new Run; prior attempt stays terminal | Accepted |
-| [015](015-spatial-metadata-validation.md) | Spatial metadata and pre-execution CRS/unit validation | Accepted |\n| [016](016-first-executable-capability-vector-buffer.md) | First executable capability and explicit planar buffer semantics | Accepted |
+| [015](015-spatial-metadata-validation.md) | Spatial metadata and pre-execution CRS/unit validation | Accepted |
+| [016](016-first-executable-capability-vector-buffer.md) | First executable capability and explicit planar buffer semantics | Accepted |
 
 A decision may be superseded only by a new decision record that explains the change. Do not silently edit an accepted decision to reverse its meaning.
