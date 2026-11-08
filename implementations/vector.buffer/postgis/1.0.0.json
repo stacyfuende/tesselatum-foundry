@@ -8,8 +8,10 @@
   "entrypoint": "tessellatum_foundry.capabilities.postgis_vector_buffer:buffer_feature_collection_postgis",
   "network_access": "restricted",
   "conformance": {
-    "status": "not_run",
-    "suite_version": "0.1.0"
+    "status": "passed",
+    "suite_version": "0.1.0",
+    "last_run_at": "2026-11-08T13:51:33Z",
+    "report_uri": "https://github.com/stacyfuende/tesselatum-foundry/actions/runs/42486888151"
   },
   "determinism": "deterministic"
 }
