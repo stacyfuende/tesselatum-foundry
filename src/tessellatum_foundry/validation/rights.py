@@ -25,7 +25,6 @@ def build_rights_provenance_report(
     rights = input_artifact.get("rights")
     findings: list[dict[str, Any]] = []
     if rights is None:
-        declaration_status = "unknown"
         overall_status = "requires_review"
         findings.append({
             "code": "rights.declaration_missing",
@@ -44,7 +43,6 @@ def build_rights_provenance_report(
             ),
         })
     else:
-        declaration_status = "declared_unverified"
         license_id = rights.get("license_id")
         if isinstance(license_id, str) and license_id.strip():
             findings.append({
