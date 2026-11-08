@@ -163,6 +163,13 @@ class VectorBufferRunService:
             source_run = self.run_repository.get_run(source_run_id)
             if source_run["status"] != "succeeded":
                 raise ExecutionPreconditionError("Upstream Run must have succeeded.")
+            if (
+                source_run.get("recipe_execution_id") != recipe_execution_id
+                or source_run.get("recipe") != recipe_ref
+            ):
+                raise ExecutionPreconditionError(
+                    "Upstream Run must belong to this exact Recipe execution."
+                )
             if source_run["cell"] != {
                 "cell_id": binding["cell_id"],
                 "version": binding["cell_version"],
