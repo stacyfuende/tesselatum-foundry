@@ -264,7 +264,6 @@ def validate_recipe_graph(
 
         source_cell = cells_by_node.get(source["node_id"])
         target_cell = cells_by_node.get(target["node_id"])
-        source_capability = capability_by_node.get(source["node_id"])
         target_capability = capability_by_node.get(target["node_id"])
         if source_cell is None or target_cell is None:
             findings.append(
