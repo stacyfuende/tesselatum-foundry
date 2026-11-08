@@ -131,6 +131,9 @@ class DockerWorker:
         elif self.capability_id == "vector.reproject":
             if target_crs is None:
                 raise WorkerExecutionError("vector.reproject requires an explicit target CRS.")
+            request["parameters"] = {
+                key: value for key, value in parameters.items() if key != "target_crs"
+            }
             request["target_crs"] = target_crs
         else:
             raise WorkerExecutionError(
