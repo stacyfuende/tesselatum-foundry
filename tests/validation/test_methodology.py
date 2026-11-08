@@ -147,6 +147,7 @@ def test_reproject_report_records_non_ballpark_contract_and_unassessed_accuracy(
     assert findings["method.coordinate_operation_accuracy_reported"]["status"] == "passed"
     assert findings["method.coordinate_operation_pipeline_recorded"]["status"] == "passed"
     assert findings["method.coordinate_operation_area_of_use_reported"]["status"] == "passed"
+    assert findings["method.input_extent_within_operation_area_of_use"]["status"] == "not_assessed"
 
 
 def test_reproject_report_fails_when_output_crs_differs_from_target():
