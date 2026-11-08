@@ -123,6 +123,11 @@ The initial spatial validator uses PROJ through pyproj to resolve CRS definition
 
 Validation is evidence-producing. Validators MUST report what they assessed, what they did not assess, and the evidence supporting each finding. The Spatial Critic is logically independent from the planner and must not silently repair a graph or rewrite a result.
 
+
+### First executable capability: vector.buffer
+
+The first executable operation is `vector.buffer@1.0.0`, with its engine-independent contract registered under `capabilities/` and an initial Shapely realization in `src/tessellatum_foundry/capabilities/vector_buffer.py`. The operation is planar and requires the input CRS to equal an explicitly declared projected measurement CRS. Distance is expressed in the CRS's native horizontal unit; no implicit reprojection, unit conversion, or geometry repair occurs. Input geometries must be non-empty and valid. Output geometries must be valid Polygon or MultiPolygon values, and feature IDs and properties are preserved. These guarantees are tested at the geometry-operation boundary, but the implementation is not yet connected to the Run lifecycle or artifact persistence.
+
 ## 6. Control plane and compute plane
 
 ### Control plane
