@@ -16,10 +16,10 @@
   ],
   "properties": {
     "capability_id": {
-      "$ref": "./_common.schema.json#/$defs/identifier"
+      "$ref": "urn:tessellatum-foundry:schema:common:1.0.0#/$defs/identifier"
     },
     "version": {
-      "$ref": "./_common.schema.json#/$defs/semver"
+      "$ref": "urn:tessellatum-foundry:schema:common:1.0.0#/$defs/semver"
     },
     "name": {
       "type": "string",
@@ -44,7 +44,7 @@
         ],
         "properties": {
           "port_id": {
-            "$ref": "./_common.schema.json#/$defs/identifier"
+            "$ref": "urn:tessellatum-foundry:schema:common:1.0.0#/$defs/identifier"
           },
           "description": {
             "type": "string"
@@ -121,7 +121,7 @@
         ],
         "properties": {
           "port_id": {
-            "$ref": "./_common.schema.json#/$defs/identifier"
+            "$ref": "urn:tessellatum-foundry:schema:common:1.0.0#/$defs/identifier"
           },
           "description": {
             "type": "string"
@@ -186,5 +186,6 @@
       "uniqueItems": true
     }
   },
-  "additionalProperties": false
+  "additionalProperties": false,
+  "$id": "urn:tessellatum-foundry:schema:capability:1.0.0"
 }
