@@ -16,6 +16,10 @@ from tessellatum_foundry.execution.service import (
 from tessellatum_foundry.execution.capabilities import CapabilityRegistryError
 from tessellatum_foundry.execution.implementations import ImplementationRegistryError
 from tessellatum_foundry.storage.artifacts import FileSystemArtifactStore
+from tessellatum_foundry.storage.definitions import (
+    DefinitionIntegrityError,
+    VersionedDefinitionStore,
+)
 from tessellatum_foundry.validation.contracts import ContractRegistry
 from tessellatum_foundry.validation.graph import validate_recipe_graph
 from tessellatum_foundry.validation.spatial import validate_recipe_spatial
@@ -47,10 +51,12 @@ class RecipeExecutionService:
         cell_runner: VectorBufferRunService,
         artifact_store: FileSystemArtifactStore,
         contracts: ContractRegistry | None = None,
+        definitions: VersionedDefinitionStore | None = None,
     ) -> None:
         self.cell_runner = cell_runner
         self.artifact_store = artifact_store
         self.contracts = contracts or ContractRegistry()
+        self.definitions = definitions
 
     def execute(
         self,
@@ -283,6 +289,48 @@ class RecipeExecutionService:
             status="succeeded",
             node_results=node_results,
             outputs=declared_outputs,
+        )
+
+    def execute_registered(
+        self,
+        *,
+        recipe_id: str,
+        version: str,
+        actor_id: str,
+    ) -> RecipeExecutionResult:
+        """Resolve an immutable registered Recipe and execute its exact dependencies."""
+        if self.definitions is None:
+            raise RecipeExecutionPreconditionError(
+                "No versioned definition store is configured."
+            )
+        try:
+            recipe = self.definitions.get_recipe(recipe_id, version)
+            cells: dict[tuple[str, str], dict[str, Any]] = {}
+            capabilities: dict[tuple[str, str], dict[str, Any]] = {}
+            for node in recipe["nodes"]:
+                cell_ref = node["cell"]
+                cell = self.definitions.get_cell(
+                    cell_ref["cell_id"], cell_ref["version"]
+                )
+                cell_key = (cell["cell_id"], cell["version"])
+                cells[cell_key] = cell
+                capability_ref = cell["capability"]
+                capability = self.cell_runner.capabilities.get(
+                    capability_ref["capability_id"], capability_ref["version"]
+                )
+                capability_key = (
+                    capability["capability_id"],
+                    capability["version"],
+                )
+                capabilities[capability_key] = capability
+        except (FileNotFoundError, DefinitionIntegrityError, CapabilityRegistryError) as error:
+            raise RecipeExecutionPreconditionError(str(error)) from error
+
+        return self.execute(
+            recipe=recipe,
+            cells=cells,
+            capabilities=capabilities,
+            actor_id=actor_id,
         )
 
     @staticmethod
