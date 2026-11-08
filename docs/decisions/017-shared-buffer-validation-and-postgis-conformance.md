@@ -13,9 +13,10 @@ The first Shapely implementation demonstrated the operation boundary, but an eng
 2. Implement PostGIS through parameterized SQL using `ST_GeomFromGeoJSON`, `ST_SetSRID` and geometry `ST_Buffer`. Do not use `ST_Transform` or cast to geography; all operations remain planar in the explicitly declared CRS units.
 3. The PostGIS adapter requires an unambiguous EPSG identifier because it maps the input CRS to the integer SRID assigned to the PostGIS geometry. The returned geometry SRID MUST equal the input SRID.
 4. Translate buffer style values using PostGIS's documented `quad_segs`, `endcap`, `join`, `mitre_limit`, and `side` options. For a single-sided request, only LineString inputs are accepted; positive distance means the left side and end caps are flat in both engines.
-5. Keep the Shapely implementation as an independently callable backend. PostGIS is not a wrapper around Shapely.
-6. Maintain one backend-parameterized conformance suite. It checks output geometry types, bounds, areas, validity, CRS, identifiers, properties, and shared rejection rules. A separate test compares the two engine outputs topologically within explicit floating-point tolerances.
-7. Run PostGIS conformance in CI against an actual PostGIS service container. Environments without the service may run the Shapely tests while the PostGIS-specific tests are skipped; that is not evidence of two-engine conformance.
+5. Both engines ignore Z coordinates during planar buffering and emit 2D polygonal outputs. This is declared capability behaviour, not an accidental implementation detail.
+6. Keep the Shapely implementation as an independently callable backend. PostGIS is not a wrapper around Shapely.
+7. Maintain one backend-parameterized conformance suite. It checks output geometry types, bounds, areas, validity, CRS, identifiers, properties, and shared rejection rules. A separate test compares the two engine outputs topologically within explicit floating-point tolerances.
+8. Run PostGIS conformance in CI against an actual PostGIS service container. Environments without the service may run the Shapely tests while the PostGIS-specific tests are skipped; that is not evidence of two-engine conformance.
 
 ## Consequences
 
