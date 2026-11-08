@@ -37,5 +37,7 @@ This register records decisions that constrain Foundry's architecture. Each deci
 | [031](031-stable-run-creation-order.md) | Preserve Run creation order independently of timestamp precision | Accepted |
 | [032](032-authenticated-remote-worker-transport.md) | Authenticated HTTP transport for remote vector.buffer workers | Accepted |
 | [033](033-vector-reproject-crs-semantics.md) | Explicit CRS transformation semantics for vector.reproject | Accepted |
+| [034](034-shared-spatial-worker-identity.md) | Shared spatial worker identity with capability-specific execution contracts | Accepted |
+| [035](035-vector-reproject-run-integration.md) | Integrate vector.reproject into immutable Run and Recipe lifecycle | Accepted |
 
 A decision may be superseded only by a new decision record that explains the change. Do not silently edit an accepted decision to reverse its meaning.
