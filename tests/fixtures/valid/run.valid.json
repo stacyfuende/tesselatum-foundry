@@ -15,7 +15,8 @@
   },
   "implementation": {
     "implementation_id": "vector-buffer-shapely",
-    "version": "1.0.0"
+    "version": "1.0.0",
+    "manifest_checksum": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
   },
   "input_snapshots": [
     {
