@@ -28,6 +28,7 @@ jobs:
           --health-retries 10
     env:
       FOUNDRY_POSTGIS_DSN: postgresql://postgres:postgres@localhost:5432/foundry
+      FOUNDRY_VECTOR_BUFFER_IMAGE: tessellatum-foundry/vector-buffer-shapely:ci
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -43,5 +44,7 @@ jobs:
         run: python scripts/validate_schemas.py
       - name: Enable PostGIS extension
         run: psql "$FOUNDRY_POSTGIS_DSN" -c "CREATE EXTENSION IF NOT EXISTS postgis;"
-      - name: Run tests, including PostGIS conformance
+      - name: Build isolated Shapely worker image
+        run: docker build --file workers/vector_buffer/Dockerfile --tag "$FOUNDRY_VECTOR_BUFFER_IMAGE" .
+      - name: Run tests, including Docker and PostGIS execution
         run: python -m pytest
