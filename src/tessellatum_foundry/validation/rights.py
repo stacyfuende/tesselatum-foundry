@@ -122,7 +122,10 @@ def build_rights_provenance_report(
             "code": "rights.declaration_inheritance_failed",
             "severity": "error",
             "status": "failed",
-            "message": "Output rights metadata or its source Artifact reference does not match the input.",
+            "message": (
+                "Output rights metadata or its source Artifact reference "
+                "does not match the input."
+            ),
             "json_pointer": "/rights",
             "evidence": [{
                 "kind": "artifact",
@@ -132,7 +135,10 @@ def build_rights_provenance_report(
                 ),
                 "summary": "Output metadata failed the rights inheritance check.",
             }],
-            "recommendation": "Preserve the exact input rights declaration and source Artifact reference.",
+            "recommendation": (
+                "Preserve the exact input rights declaration and source "
+                "Artifact reference."
+            ),
         })
 
     findings.append({
