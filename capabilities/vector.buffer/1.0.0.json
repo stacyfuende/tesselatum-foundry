@@ -8,7 +8,7 @@
     "port_id": "features",
     "data_kind": "vector",
     "required": true,
-    "accepted_media_types": ["application/geo+json"],
+    "accepted_media_types": ["application/vnd.tessellatum.spatial-feature-collection+json"],
     "spatial": {
       "crs_required": true,
       "geometry_types": ["Point", "MultiPoint", "LineString", "MultiLineString", "Polygon", "MultiPolygon"],
@@ -32,7 +32,7 @@
   "output_ports": [{
     "port_id": "result",
     "data_kind": "vector",
-    "media_types": ["application/geo+json"],
+    "media_types": ["application/vnd.tessellatum.spatial-feature-collection+json"],
     "spatial": {
       "crs_required": true,
       "geometry_types": ["Polygon", "MultiPolygon"],
