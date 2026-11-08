@@ -108,5 +108,5 @@
     "Feature count, IDs, properties, geometry types, and coordinate dimensionality are preserved.",
     "Every output geometry is non-empty, valid, and finite."
   ],
-  "cache_policy": "disabled"
+  "cache_policy": "allowed"
 }
