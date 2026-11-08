@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Foundry Run",
-  "description": "One immutable execution attempt for an exact Geo-Cell version.",
+  "description": "One immutable execution attempt for exact Geo-Cell and Capability versions.",
   "type": "object",
   "required": [
     "run_id",
@@ -9,7 +9,10 @@
     "cell",
     "capability",
     "status",
-    "created_at"
+    "created_at",
+    "input_snapshots",
+    "normalized_parameters",
+    "events"
   ],
   "properties": {
     "run_id": {
@@ -224,7 +227,8 @@
           }
         },
         "additionalProperties": false
-      }
+      },
+      "minItems": 1
     },
     "capability": {
       "$ref": "urn:tessellatum-foundry:schema:common:1.0.0#/$defs/capabilityRef"
@@ -288,6 +292,24 @@
           "started_at",
           "worker",
           "implementation"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "succeeded"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "then": {
+        "required": [
+          "outputs",
+          "validation_report_ids"
         ]
       }
     }
