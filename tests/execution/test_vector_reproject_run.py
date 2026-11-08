@@ -223,3 +223,121 @@ def test_vector_reproject_executes_in_isolated_docker_worker(tmp_path):
     assert result.run["worker"]["worker_type"] == "local_docker"
     assert result.output_artifact["spatial"]["crs"] == TARGET_CRS
     assert result.validation_report["overall_status"] == "passed"
+
+
+@pytest.mark.skipif(
+    not os.getenv("FOUNDRY_VECTOR_BUFFER_IMAGE"),
+    reason="Docker worker image is built and configured only in the container CI job.",
+)
+def test_recipe_dispatches_reproject_then_buffer_across_two_capability_runners(tmp_path):
+    from tessellatum_foundry.execution.docker_worker import DockerWorker
+    from tessellatum_foundry.execution.recipes import RecipeExecutionService
+    from tessellatum_foundry.execution.service import VectorBufferRunService
+
+    store = FileSystemArtifactStore(tmp_path / "artifacts")
+    runs = RunRepository(tmp_path / "control")
+    input_artifact = make_input(store)
+    reproject_cell = make_cell(input_artifact)
+    buffer_cell = {
+        "cell_id": "buffer-projected-sites",
+        "version": "1.0.0",
+        "capability": {"capability_id": "vector.buffer", "version": "1.0.0"},
+        "inputs": {
+            "features": {
+                "source": "cell_output",
+                "cell_id": reproject_cell["cell_id"],
+                "cell_version": reproject_cell["version"],
+                "output_port": "result",
+            }
+        },
+        "parameters": {"distance": 10, "unit": "metre"},
+        "output_contracts": {
+            "result": {
+                "data_kind": "vector",
+                "media_types": [MEDIA_TYPE],
+                "crs": TARGET_CRS,
+                "geometry_types": ["Polygon", "MultiPolygon"],
+            }
+        },
+        "constraints": {
+            "measurement_crs": TARGET_CRS,
+            "linear_unit": "metre",
+            "required_geometry_validity": True,
+        },
+    }
+    recipe = {
+        "recipe_id": "reproject-and-buffer-sites",
+        "version": "1.0.0",
+        "title": "Reproject and buffer sites",
+        "nodes": [
+            {
+                "node_id": "reproject",
+                "cell": {
+                    "cell_id": reproject_cell["cell_id"],
+                    "version": reproject_cell["version"],
+                },
+            },
+            {
+                "node_id": "buffer",
+                "cell": {
+                    "cell_id": buffer_cell["cell_id"],
+                    "version": buffer_cell["version"],
+                },
+            },
+        ],
+        "edges": [
+            {
+                "from": {"node_id": "reproject", "output_port": "result"},
+                "to": {"node_id": "buffer", "input_port": "features"},
+            }
+        ],
+        "declared_outputs": [
+            {"name": "buffered_sites", "node_id": "buffer", "output_port": "result"}
+        ],
+    }
+    reproject_service = VectorReprojectRunService(
+        artifact_store=store,
+        run_repository=runs,
+        worker=DockerVectorReprojectWorker(timeout_seconds=90),
+    )
+    buffer_service = VectorBufferRunService(
+        artifact_store=store,
+        run_repository=runs,
+        worker=DockerWorker(timeout_seconds=90),
+    )
+    recipe_service = RecipeExecutionService(
+        artifact_store=store,
+        cell_runners={
+            ("vector.reproject", "1.0.0"): reproject_service,
+            ("vector.buffer", "1.0.0"): buffer_service,
+        },
+    )
+    capabilities = {
+        ("vector.reproject", "1.0.0"): reproject_service.capabilities.get(
+            "vector.reproject", "1.0.0"
+        ),
+        ("vector.buffer", "1.0.0"): buffer_service.capabilities.get(
+            "vector.buffer", "1.0.0"
+        ),
+    }
+
+    result = recipe_service.execute(
+        recipe=recipe,
+        cells={
+            (reproject_cell["cell_id"], reproject_cell["version"]): reproject_cell,
+            (buffer_cell["cell_id"], buffer_cell["version"]): buffer_cell,
+        },
+        capabilities=capabilities,
+        actor_id="test-operator",
+    )
+
+    assert result.status == "succeeded", result.error
+    assert result.node_results["reproject"].run["status"] == "succeeded"
+    assert result.node_results["buffer"].run["status"] == "succeeded"
+    buffer_run = result.node_results["buffer"].run
+    assert buffer_run["input_snapshots"][0]["source_run_id"] == (
+        result.node_results["reproject"].run["run_id"]
+    )
+    buffered = result.outputs["buffered_sites"]
+    assert buffered["spatial"]["crs"] == TARGET_CRS
+    assert buffered["spatial"]["geometry_types"] == ["Polygon"]
