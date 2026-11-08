@@ -172,3 +172,59 @@ def reproject_feature_collection(
         feature_collection={"type": "FeatureCollection", "features": output_features},
         crs=target,
     )
+
+
+def validate_reproject_request(
+    feature_collection: Mapping[str, Any],
+    *,
+    input_crs: Any,
+    target_crs: Any,
+) -> tuple[CRS, CRS]:
+    """Validate reprojection inputs and coordinate-operation availability without transforming."""
+    if not isinstance(feature_collection, Mapping) or feature_collection.get(
+        "type"
+    ) != "FeatureCollection":
+        raise ReprojectContractError("Input must be a GeoJSON FeatureCollection object.")
+    features = feature_collection.get("features")
+    if not isinstance(features, list) or not features:
+        raise ReprojectContractError("FeatureCollection must contain at least one feature.")
+    source = _resolve_crs(input_crs, "input_crs")
+    target = _resolve_crs(target_crs, "target_crs")
+    try:
+        Transformer.from_crs(
+            source,
+            target,
+            always_xy=True,
+            allow_ballpark=False,
+            only_best=True,
+        )
+    except ProjError as error:
+        raise ReprojectContractError(
+            f"No permitted coordinate operation is available: {error}"
+        ) from error
+    for index, feature in enumerate(features):
+        if not isinstance(feature, Mapping) or feature.get("type") != "Feature":
+            raise ReprojectContractError(f"Feature at index {index} is not a GeoJSON Feature.")
+        geometry_json = feature.get("geometry")
+        if not isinstance(geometry_json, Mapping):
+            raise ReprojectContractError(f"Feature at index {index} has no geometry object.")
+        try:
+            geometry = shape(geometry_json)
+        except (AttributeError, TypeError, ValueError) as error:
+            raise ReprojectContractError(
+                f"Feature at index {index} has unreadable geometry: {error}"
+            ) from error
+        if geometry.geom_type not in _SUPPORTED_GEOMETRIES:
+            raise ReprojectContractError(
+                f"Feature at index {index} uses unsupported geometry type {geometry.geom_type!r}."
+            )
+        if geometry.is_empty or not geometry.is_valid or not _coordinates_are_finite(geometry):
+            raise ReprojectContractError(
+                f"Feature at index {index} geometry must be non-empty, valid, and finite."
+            )
+        properties = feature.get("properties", {})
+        if properties is not None and not isinstance(properties, Mapping):
+            raise ReprojectContractError(
+                f"Feature at index {index} properties must be an object or null."
+            )
+    return source, target
