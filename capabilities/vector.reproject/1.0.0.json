@@ -1,0 +1,112 @@
+{
+  "capability_id": "vector.reproject",
+  "version": "1.0.0",
+  "name": "Vector reproject",
+  "description": "Transform vector feature coordinates from an explicitly declared source CRS to an explicitly declared target CRS.",
+  "category": "vector",
+  "input_ports": [
+    {
+      "port_id": "features",
+      "data_kind": "vector",
+      "required": true,
+      "accepted_media_types": [
+        "application/vnd.tessellatum.spatial-feature-collection+json"
+      ],
+      "spatial": {
+        "crs_required": true,
+        "geometry_types": [
+          "Point",
+          "MultiPoint",
+          "LineString",
+          "MultiLineString",
+          "Polygon",
+          "MultiPolygon",
+          "GeometryCollection"
+        ],
+        "measurement_crs_policy": "not_applicable"
+      }
+    }
+  ],
+  "parameter_schema": {
+    "type": "object",
+    "properties": {
+      "target_crs": {
+        "type": "object",
+        "description": "Target CRS as an authority/code pair or a WKT2 declaration.",
+        "properties": {
+          "authority": {
+            "type": "string",
+            "minLength": 1
+          },
+          "code": {
+            "type": [
+              "string",
+              "integer"
+            ]
+          },
+          "wkt2": {
+            "type": "string",
+            "minLength": 1
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "anyOf": [
+          {
+            "required": [
+              "authority",
+              "code"
+            ]
+          },
+          {
+            "required": [
+              "wkt2"
+            ]
+          }
+        ],
+        "additionalProperties": false
+      }
+    },
+    "required": [
+      "target_crs"
+    ],
+    "additionalProperties": false
+  },
+  "output_ports": [
+    {
+      "port_id": "result",
+      "data_kind": "vector",
+      "media_types": [
+        "application/vnd.tessellatum.spatial-feature-collection+json"
+      ],
+      "spatial": {
+        "crs_required": true,
+        "geometry_types": [
+          "Point",
+          "MultiPoint",
+          "LineString",
+          "MultiLineString",
+          "Polygon",
+          "MultiPolygon",
+          "GeometryCollection"
+        ]
+      }
+    }
+  ],
+  "determinism": "deterministic",
+  "preconditions": [
+    "Input Artifact declares a resolvable source CRS.",
+    "Target CRS is an explicit authority/code or WKT2 declaration.",
+    "A non-ballpark coordinate operation must be available in the installed PROJ database.",
+    "Every input geometry is non-empty, valid, finite, and one of the declared vector geometry types.",
+    "Input axis order is interpreted as x/y regardless of authority axis metadata.",
+    "The operation does not repair geometries, densify segments, clip extents, or split antimeridian crossings."
+  ],
+  "validation_requirements": [
+    "Output CRS equals the requested target CRS.",
+    "Feature count, IDs, properties, geometry types, and coordinate dimensionality are preserved.",
+    "Every output geometry is non-empty, valid, and finite."
+  ],
+  "cache_policy": "disabled"
+}

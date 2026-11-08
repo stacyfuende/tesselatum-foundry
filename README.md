@@ -19,7 +19,7 @@ The repository follows a contracts-first implementation sequence. The first mile
 - [x] Installed distribution packages schemas, Capability contracts, and implementation manifests.
 - [x] Minimal local Python SDK composes canonical registries, immutable stores, and sequential Recipe execution.
 - [~] Execution/output validation is implemented for vector.buffer; methodological and rights/security policy validators remain outstanding.
-- [~] Recipe orchestration dispatches through exact capability-version runner registrations; the only concrete Run service remains vector.buffer@1.0.0, and parallel scheduling remains outstanding.
+- [~] Recipe orchestration dispatches through exact capability-version runner registrations; vector.buffer@1.0.0 is the only concrete Run service, while vector.reproject@1.0.0 now has its independent contract and transformation kernel. Reprojection Run integration and parallel scheduling remain outstanding.
 - [~] Authenticated HTTPS remote worker adapter and HTTP execution service implemented; deployment hardening and end-to-end remote Run conformance remain outstanding.
 - [ ] Initial raster capabilities implemented.
 - [x] Dependency-free read-only Recipe DAG viewer implemented.
@@ -85,6 +85,10 @@ The Validation Report is a separate evidence object. Implementations are registe
 - Capability implementations must pass conformance tests before being treated as interchangeable.
 - The planner is optional and never required by the execution core.
 - Security, provenance, licensing, and cost visibility are architectural concerns.
+
+## Vector capabilities
+
+`vector.reproject@1.0.0` is the second registered vector operation. Its Shapely/pyproj kernel accepts an explicit source CRS from Artifact metadata and an explicit target CRS parameter, uses x/y axis order, rejects ballpark coordinate operations, preserves feature IDs/properties and geometry types, and fails closed on invalid or non-finite geometries. It deliberately does not repair geometry, densify edges, clip, or split antimeridian crossings. Its contract and kernel pass the registered conformance suite in [CI run 496](https://github.com/stacyfuende/tesselatum-foundry/actions/runs/42508093519); Foundry Run/Recipe integration is still outstanding. See [ADR-033](docs/decisions/033-vector-reproject-crs-semantics.md).
 
 ## First capability: vector.buffer
 
