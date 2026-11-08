@@ -110,7 +110,12 @@ class VersionedDefinitionStore:
             self.contracts.validate("definition-record.schema.json", record)
             schema_name = self._schema_name(kind)
             self.contracts.validate(schema_name, record["definition"])
-        except (OSError, UnicodeDecodeError, json.JSONDecodeError, ContractValidationError) as error:
+        except (
+            OSError,
+            UnicodeDecodeError,
+            json.JSONDecodeError,
+            ContractValidationError,
+        ) as error:
             raise DefinitionIntegrityError(
                 f"Stored {kind} definition {definition_id}@{version} is unreadable or invalid."
             ) from error
