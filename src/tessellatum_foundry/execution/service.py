@@ -42,6 +42,7 @@ from tessellatum_foundry.validation.contracts import (
     ContractValidationError,
 )
 from tessellatum_foundry.validation.output import inspect_vector_buffer_output
+from tessellatum_foundry.validation.rights import build_rights_provenance_report
 from tessellatum_foundry.validation.spatial import validate_recipe_spatial
 
 
@@ -486,6 +487,11 @@ class VectorBufferRunService:
                 artifact=cache_reuse["artifact"],
             )
             self.run_repository.save_validation_report(report)
+            rights_report = build_rights_provenance_report(
+                run_id=run_id,
+                input_artifact=input_artifact,
+            )
+            self.run_repository.save_validation_report(rights_report)
             finished = self.run_repository.transition(
                 run_id,
                 expected_status="running",
@@ -501,7 +507,7 @@ class VectorBufferRunService:
                             },
                         }
                     ],
-                    "validation_report_ids": [report["report_id"]],
+                    "validation_report_ids": [report["report_id"], rights_report["report_id"]],
                     "resource_usage": {"duration_ms": 0},
                 },
                 event_type="run_succeeded_from_cache",
@@ -575,8 +581,24 @@ class VectorBufferRunService:
                 metadata={
                     "producer_run_id": run_id,
                     "output_port": "result",
+                    "rights_provenance": {
+                        "source_artifact": {
+                            "artifact_id": input_artifact["artifact_id"],
+                            "version": input_artifact["version"],
+                        },
+                        "declaration_status": (
+                            "declared_unverified"
+                            if input_artifact.get("rights") is not None
+                            else "unknown"
+                        ),
+                    },
                 },
             )
+            rights_report = build_rights_provenance_report(
+                run_id=run_id,
+                input_artifact=input_artifact,
+            )
+            self.run_repository.save_validation_report(rights_report)
             finished = self.run_repository.transition(
                 run_id,
                 expected_status="running",
