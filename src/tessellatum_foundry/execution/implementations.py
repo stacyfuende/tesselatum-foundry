@@ -7,6 +7,7 @@ from copy import deepcopy
 from pathlib import Path
 from typing import Any
 
+from tessellatum_foundry.data import foundry_data_dir
 from tessellatum_foundry.validation.contracts import ContractRegistry
 
 
@@ -22,8 +23,8 @@ class ImplementationRegistry:
         implementation_dir: Path | None = None,
         contracts: ContractRegistry | None = None,
     ) -> None:
-        self.implementation_dir = implementation_dir or (
-            Path(__file__).resolve().parents[3] / "implementations"
+        self.implementation_dir = implementation_dir or foundry_data_dir(
+            "implementations"
         )
         self.contracts = contracts or ContractRegistry()
         self._manifests: dict[tuple[str, str], dict[str, Any]] = {}
