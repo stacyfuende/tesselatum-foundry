@@ -1,0 +1,232 @@
+"""Sequential execution of validated Recipe DAGs through immutable cell Runs."""
+
+from __future__ import annotations
+
+import uuid
+from collections import defaultdict, deque
+from dataclasses import dataclass
+from typing import Any
+
+from tessellatum_foundry.execution.service import (
+    ExecutionResult,
+    VectorBufferRunService,
+)
+from tessellatum_foundry.storage.artifacts import FileSystemArtifactStore
+from tessellatum_foundry.validation.contracts import ContractRegistry
+from tessellatum_foundry.validation.graph import validate_recipe_graph
+from tessellatum_foundry.validation.spatial import validate_recipe_spatial
+
+
+class RecipeExecutionPreconditionError(ValueError):
+    """Raised when a Recipe cannot be safely scheduled for local execution."""
+
+
+@dataclass(frozen=True)
+class RecipeExecutionResult:
+    """Aggregate view of a sequential Recipe execution and its per-cell Runs."""
+
+    execution_id: str
+    recipe: dict[str, str]
+    status: str
+    node_results: dict[str, ExecutionResult]
+    outputs: dict[str, dict[str, Any]]
+    failed_node_id: str | None = None
+
+
+class RecipeExecutionService:
+    """Execute Recipe nodes sequentially while preserving their original declarations."""
+
+    def __init__(
+        self,
+        *,
+        cell_runner: VectorBufferRunService,
+        artifact_store: FileSystemArtifactStore,
+        contracts: ContractRegistry | None = None,
+    ) -> None:
+        self.cell_runner = cell_runner
+        self.artifact_store = artifact_store
+        self.contracts = contracts or ContractRegistry()
+
+    def execute(
+        self,
+        *,
+        recipe: dict[str, Any],
+        cells: dict[tuple[str, str], dict[str, Any]],
+        capabilities: dict[tuple[str, str], dict[str, Any]],
+        actor_id: str,
+    ) -> RecipeExecutionResult:
+        self.contracts.validate("recipe.schema.json", recipe)
+        for cell in cells.values():
+            self.contracts.validate("cell.schema.json", cell)
+        for capability in capabilities.values():
+            self.contracts.validate("capability.schema.json", capability)
+
+        artifacts: dict[tuple[str, str], dict[str, Any]] = {}
+        artifact_keys: set[tuple[str, str]] = set()
+        for cell in cells.values():
+            for binding in cell.get("inputs", {}).values():
+                if binding["source"] != "artifact":
+                    continue
+                reference = binding["artifact"]
+                key = (reference["artifact_id"], reference["version"])
+                if key not in artifacts:
+                    try:
+                        artifacts[key] = self.artifact_store.get_artifact(*key)
+                    except FileNotFoundError as error:
+                        raise RecipeExecutionPreconditionError(
+                            f"External Artifact {key[0]}@{key[1]} is not registered."
+                        ) from error
+                    artifact_keys.add(key)
+
+        graph_findings = validate_recipe_graph(
+            recipe,
+            cells=cells,
+            capabilities=capabilities,
+            artifacts=artifact_keys,
+        )
+        if graph_findings:
+            detail = "; ".join(
+                f"{finding.code}: {finding.message}" for finding in graph_findings
+            )
+            raise RecipeExecutionPreconditionError(
+                f"Recipe graph preconditions failed: {detail}"
+            )
+
+        spatial_findings = validate_recipe_spatial(
+            recipe,
+            cells=cells,
+            capabilities=capabilities,
+            artifacts=artifacts,
+        )
+        if spatial_findings:
+            detail = "; ".join(
+                f"{finding.code}: {finding.message}" for finding in spatial_findings
+            )
+            raise RecipeExecutionPreconditionError(
+                f"Recipe spatial preconditions failed: {detail}"
+            )
+
+        node_order = self._topological_order(recipe)
+        node_by_cell = {
+            (node["cell"]["cell_id"], node["cell"]["version"]): node["node_id"]
+            for node in recipe["nodes"]
+        }
+        node_results: dict[str, ExecutionResult] = {}
+        execution_id = f"recipe-execution:{uuid.uuid4().hex}"
+        recipe_ref = {
+            "recipe_id": recipe["recipe_id"],
+            "version": recipe["version"],
+        }
+
+        for node_id in node_order:
+            node = next(item for item in recipe["nodes"] if item["node_id"] == node_id)
+            cell_ref = node["cell"]
+            cell = cells[(cell_ref["cell_id"], cell_ref["version"])]
+            capability_ref = cell["capability"]
+            capability = capabilities[
+                (capability_ref["capability_id"], capability_ref["version"])
+            ]
+            resolved_inputs: dict[str, dict[str, Any]] = {}
+            for port_id, binding in cell.get("inputs", {}).items():
+                if binding["source"] != "cell_output":
+                    continue
+                source_key = (binding["cell_id"], binding["cell_version"])
+                source_node_id = node_by_cell[source_key]
+                source_result = node_results[source_node_id]
+                if source_result.run["status"] != "succeeded":
+                    raise RecipeExecutionPreconditionError(
+                        f"Upstream node {source_node_id!r} did not succeed."
+                    )
+                source_output = next(
+                    (
+                        output
+                        for output in source_result.run.get("outputs", [])
+                        if output["output_port"] == binding["output_port"]
+                    ),
+                    None,
+                )
+                if source_output is None:
+                    raise RecipeExecutionPreconditionError(
+                        f"Upstream node {source_node_id!r} did not produce "
+                        f"output port {binding['output_port']!r}."
+                    )
+                resolved_inputs[port_id] = {
+                    "source_run_id": source_result.run["run_id"],
+                    "source_output_port": binding["output_port"],
+                    "artifact": source_output["artifact"],
+                }
+
+            result = self.cell_runner.execute(
+                cell=cell,
+                capability=capability,
+                actor_id=actor_id,
+                recipe_ref=recipe_ref,
+                recipe_execution_id=execution_id,
+                resolved_inputs=resolved_inputs,
+            )
+            node_results[node_id] = result
+            if result.run["status"] != "succeeded":
+                return RecipeExecutionResult(
+                    execution_id=execution_id,
+                    recipe=recipe_ref,
+                    status="failed",
+                    node_results=node_results,
+                    outputs={},
+                    failed_node_id=node_id,
+                )
+
+        declared_outputs: dict[str, dict[str, Any]] = {}
+        for declaration in recipe.get("declared_outputs", []):
+            node_result = node_results[declaration["node_id"]]
+            output = next(
+                (
+                    item
+                    for item in node_result.run.get("outputs", [])
+                    if item["output_port"] == declaration["output_port"]
+                ),
+                None,
+            )
+            if output is None:
+                raise RecipeExecutionPreconditionError(
+                    f"Declared Recipe output {declaration['name']!r} was not produced."
+                )
+            artifact_ref = output["artifact"]
+            declared_outputs[declaration["name"]] = self.artifact_store.get_artifact(
+                artifact_ref["artifact_id"], artifact_ref["version"]
+            )
+
+        return RecipeExecutionResult(
+            execution_id=execution_id,
+            recipe=recipe_ref,
+            status="succeeded",
+            node_results=node_results,
+            outputs=declared_outputs,
+        )
+
+    @staticmethod
+    def _topological_order(recipe: dict[str, Any]) -> list[str]:
+        node_ids = [node["node_id"] for node in recipe["nodes"]]
+        adjacency: dict[str, set[str]] = defaultdict(set)
+        indegree = dict.fromkeys(node_ids, 0)
+        for edge in recipe.get("edges", []):
+            source = edge["from"]["node_id"]
+            target = edge["to"]["node_id"]
+            if target not in adjacency[source]:
+                adjacency[source].add(target)
+                indegree[target] += 1
+
+        ready = deque(node_id for node_id in node_ids if indegree[node_id] == 0)
+        ordered: list[str] = []
+        while ready:
+            node_id = ready.popleft()
+            ordered.append(node_id)
+            for downstream in sorted(adjacency[node_id]):
+                indegree[downstream] -= 1
+                if indegree[downstream] == 0:
+                    ready.append(downstream)
+
+        if len(ordered) != len(node_ids):
+            raise RecipeExecutionPreconditionError(
+                "Recipe dependencies contain a directed cycle."
+            )
+        return ordered
