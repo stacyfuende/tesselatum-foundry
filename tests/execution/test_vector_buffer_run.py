@@ -246,7 +246,6 @@ def test_output_critic_fails_run_without_registering_invalid_output(tmp_path):
     assert result.run["error"]["code"] == "output.validation_failed"
 
 
-
 def test_run_service_rejects_worker_for_a_different_capability_version(tmp_path):
     class IncompatibleWorker(WrongCrsWorker):
         capability_version = "2.0.0"
