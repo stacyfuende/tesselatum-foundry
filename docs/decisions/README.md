@@ -21,6 +21,10 @@ This register records decisions that constrain Foundry's architecture. Each deci
 | [015](015-spatial-metadata-validation.md) | Spatial metadata and pre-execution CRS/unit validation | Accepted |
 | [016](016-first-executable-capability-vector-buffer.md) | First executable capability and explicit planar buffer semantics | Accepted |
 | [017](017-shared-buffer-validation-and-postgis-conformance.md) | Shared request validation and independent PostGIS conformance | Accepted |
-| [017](017-shared-buffer-validation-and-postgis-conformance.md) | Shared request validation and independent PostGIS conformance | Accepted |
+| [018](018-first-local-run-and-isolated-worker.md) | First local Run path and isolated worker | Accepted |
+| [019](019-vector-buffer-worker-protocol.md) | Separate worker protocol from Docker adapter | Accepted |
+| [020](020-implementation-conformance-gate.md) | Gate execution on registered implementation conformance | Accepted |
+| [021](021-versioned-cell-and-recipe-definition-storage.md) | Immutable versioned Cell and Recipe storage | Accepted |
+| [022](022-sequential-recipe-execution.md) | Sequential Recipe execution as correlated cell Runs | Accepted |
 
 A decision may be superseded only by a new decision record that explains the change. Do not silently edit an accepted decision to reverse its meaning.
