@@ -25,7 +25,7 @@ _SUPPORTED_INPUT_TYPES = {
     "Polygon",
     "MultiPolygon",
 }
-_LINE_TYPES = {"LineString", "MultiLineString"}
+_LINE_TYPES = {"LineString"}
 _UNIT_ALIASES = {
     "m": "metre",
     "meter": "metre",
@@ -185,7 +185,7 @@ def prepare_buffer_request(
             )
         if single_sided and geometry.geom_type not in _LINE_TYPES:
             raise BufferContractError(
-                "single_sided buffering is supported only for LineString and MultiLineString."
+                "single_sided buffering is supported only for LineString."
             )
         properties = feature.get("properties") or {}
         if not isinstance(properties, Mapping):
