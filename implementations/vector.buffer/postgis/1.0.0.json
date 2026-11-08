@@ -10,7 +10,7 @@
   "conformance": {
     "status": "passed",
     "suite_version": "0.1.0",
-    "last_run_at": "2026-11-08T13:51:33Z",
+    "last_run_at": "2026-11-08T13:51:31Z",
     "report_uri": "https://github.com/stacyfuende/tesselatum-foundry/actions/runs/42486888151"
   },
   "determinism": "deterministic"
