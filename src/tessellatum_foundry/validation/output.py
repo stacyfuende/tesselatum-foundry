@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
+from math import isfinite
 from dataclasses import dataclass
 from typing import Any
 
@@ -76,6 +77,7 @@ def inspect_vector_buffer_output(
     )
 
     source_features = input_feature_collection.get("features")
+    source_feature_list = source_features if isinstance(source_features, list) else []
     result_features = (
         output_feature_collection.get("features")
         if isinstance(output_feature_collection, Mapping)
@@ -100,7 +102,8 @@ def inspect_vector_buffer_output(
         return VectorOutputInspection((), tuple(findings))
 
     count_matches = (
-        isinstance(source_features, list) and len(source_features) == len(result_features)
+        len(source_feature_list) == len(result_features)
+        and isinstance(source_features, list)
     )
     add(
         "output.feature_count_preserved",
@@ -114,6 +117,7 @@ def inspect_vector_buffer_output(
     metadata_matches = count_matches
     geometry_validity = True
     dimensionality_is_2d = True
+    coordinates_are_finite = True
     output_types_supported = True
     for index, output_feature in enumerate(result_features):
         if not isinstance(output_feature, Mapping) or output_feature.get("type") != "Feature":
@@ -137,12 +141,26 @@ def inspect_vector_buffer_output(
             geometry_validity = False
         if geometry.has_z:
             dimensionality_is_2d = False
+        try:
+            coordinates = geometry.__geo_interface__["coordinates"]
+            stack = [coordinates]
+            while stack:
+                value = stack.pop()
+                if isinstance(value, (list, tuple)):
+                    if value and all(isinstance(item, (int, float)) for item in value):
+                        coordinates_are_finite = coordinates_are_finite and all(
+                            isfinite(item) for item in value
+                        )
+                    else:
+                        stack.extend(value)
+        except (KeyError, TypeError, ValueError):
+            coordinates_are_finite = False
         if geometry.geom_type not in {"Polygon", "MultiPolygon"}:
             output_types_supported = False
         if geometry.geom_type not in permitted_geometry_types:
             output_types_supported = False
-        if index < len(source_features):
-            source_feature = source_features[index]
+        if index < len(source_feature_list):
+            source_feature = source_feature_list[index]
             if not isinstance(source_feature, Mapping):
                 metadata_matches = False
                 continue
@@ -169,6 +187,14 @@ def inspect_vector_buffer_output(
         if output_types_supported and output_types
         else "Output geometry types violate the declared polygonal contract: "
         f"{sorted(output_types)}.",
+        "/features",
+    )
+    add(
+        "output.coordinate_finiteness",
+        coordinates_are_finite,
+        "All output coordinates are finite."
+        if coordinates_are_finite
+        else "Output contains non-finite or unreadable coordinates.",
         "/features",
     )
     add(
