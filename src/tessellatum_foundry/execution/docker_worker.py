@@ -163,6 +163,8 @@ class DockerWorker:
                 f"--memory-swap={self.memory_mib}m",
                 f"--cpus={self.cpu_count:g}",
                 "--user=10001:10001",
+                "--ulimit=core=0",
+                f"--env=FOUNDRY_MAX_OUTPUT_BYTES={self.max_output_bytes}",
                 "--tmpfs=/tmp:rw,noexec,nosuid,size=64m",
                 "--mount",
                 f"type=bind,src={input_path},dst=/run/input/feature-collection.json,readonly",
