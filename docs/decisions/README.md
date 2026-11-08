@@ -43,5 +43,6 @@ This register records decisions that constrain Foundry's architecture. Each deci
 | [037](037-reprojection-cache-evidence.md) | Shared output-critic evidence enables reprojection cache reuse | Accepted |
 | [038](038-rights-provenance-evidence.md) | Preserve rights declarations and lineage without inferring permission | Accepted |
 | [039](039-methodological-evidence.md) | Produce operation-specific methodological evidence without a generic quality score | Accepted |
+| [039](039-methodological-evidence.md) | Produce operation-specific methodological evidence without a generic quality score | Accepted |
 
 A decision may be superseded only by a new decision record that explains the change. Do not silently edit an accepted decision to reverse its meaning.
