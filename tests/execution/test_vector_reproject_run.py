@@ -81,9 +81,16 @@ class FakeReprojectWorker:
     worker_id = "test-reproject-worker"
     worker_type = "local_docker"
 
-    def __init__(self, *, wrong_crs: bool = False, mutate_properties: bool = False):
+    def __init__(
+        self,
+        *,
+        wrong_crs: bool = False,
+        mutate_properties: bool = False,
+        omit_operation_evidence: bool = False,
+    ):
         self.wrong_crs = wrong_crs
         self.mutate_properties = mutate_properties
+        self.omit_operation_evidence = omit_operation_evidence
         self.calls = 0
 
     def image_digest(self) -> str:
@@ -118,6 +125,11 @@ class FakeReprojectWorker:
             ),
             duration_ms=4,
             runtime_image_digest=runtime_image_digest or self.image_digest(),
+            coordinate_operation=(
+                None
+                if self.omit_operation_evidence
+                else result.coordinate_operation
+            ),
         )
 
 
@@ -160,6 +172,7 @@ def test_reproject_run_persists_output_artifact_and_validation_evidence(tmp_path
     assert result.output_artifact is not None
     assert result.output_artifact["spatial"]["crs"] == TARGET_CRS
     assert result.output_artifact["spatial"]["geometry_types"] == ["Point"]
+    assert result.output_artifact["metadata"]["coordinate_operation"]["description"]
     assert result.validation_report["overall_status"] == "passed"
     assert result.validation_report["validator"] == {
         "name": "foundry-spatial-output-critic",
@@ -183,6 +196,22 @@ def test_reproject_run_fails_closed_when_worker_reports_wrong_crs(tmp_path):
     assert result.run["error"]["code"] == "output.validation_failed"
     assert result.output_artifact is None
     assert result.validation_report["overall_status"] == "failed"
+
+
+def test_reproject_run_fails_closed_when_worker_omits_operation_evidence(tmp_path):
+    store, _, service = make_service(
+        tmp_path, FakeReprojectWorker(omit_operation_evidence=True)
+    )
+    artifact = make_input(store)
+    result = service.execute(
+        cell=make_cell(artifact),
+        capability=service.capabilities.get("vector.reproject", "1.0.0"),
+        actor_id="test-operator",
+    )
+
+    assert result.run["status"] == "failed"
+    assert result.run["error"]["code"] == "worker.execution_failed"
+    assert result.output_artifact is None
 
 
 def test_reproject_run_fails_closed_when_worker_changes_feature_metadata(tmp_path):
@@ -433,6 +462,40 @@ def test_reproject_cache_reuses_only_output_critic_validated_artifacts(tmp_path)
     assert methodology_report["overall_status"] == "requires_review"
     assert worker.calls == 1
     assert runs.get_run(second.run["run_id"])["cache"]["status"] == "hit"
+
+
+def test_reproject_cache_rejects_artifacts_without_operation_evidence(
+    tmp_path, monkeypatch
+):
+    worker = FakeReprojectWorker()
+    store, _, service = make_service(tmp_path, worker)
+    artifact = make_input(store)
+    cell = make_cell(artifact)
+    capability = service.capabilities.get("vector.reproject", "1.0.0")
+    first = service.execute(
+        cell=cell,
+        capability=capability,
+        actor_id="test-operator",
+    )
+    assert first.run["status"] == "succeeded"
+
+    original_get_artifact = store.get_artifact
+
+    def remove_operation_evidence(artifact_id, version):
+        output = deepcopy(original_get_artifact(artifact_id, version))
+        output.setdefault("metadata", {}).pop("coordinate_operation", None)
+        return output
+
+    monkeypatch.setattr(store, "get_artifact", remove_operation_evidence)
+    second = service.execute(
+        cell=cell,
+        capability=capability,
+        actor_id="test-operator",
+    )
+
+    assert second.run["status"] == "succeeded"
+    assert second.run["cache"]["status"] == "miss"
+    assert worker.calls == 2
 
 
 def test_reproject_cache_rejects_failed_target_crs_validation_evidence(

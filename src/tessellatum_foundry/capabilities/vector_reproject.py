@@ -23,6 +23,7 @@ class ReprojectOutput:
 
     feature_collection: dict[str, Any]
     crs: CRS
+    coordinate_operation: dict[str, Any] | None = None
 
 
 _SUPPORTED_GEOMETRIES = {
@@ -76,6 +77,49 @@ def _coordinates_are_finite(geometry: Any) -> bool:
         return True
     except (KeyError, TypeError, ValueError):
         return False
+
+
+def _coordinate_operation_evidence(
+    transformer: Transformer,
+) -> dict[str, Any]:
+    """Capture the operation selected by PROJ after coordinate transformation."""
+    description = transformer.description
+    definition = transformer.definition
+    if (
+        not isinstance(definition, str)
+        or not definition.strip()
+        or definition.lower().startswith("unavailable")
+        or len(definition) > 8192
+    ):
+        definition = None
+    accuracy = transformer.accuracy
+    accuracy_m = (
+        float(accuracy)
+        if isinstance(accuracy, (int, float))
+        and math.isfinite(accuracy)
+        and accuracy >= 0
+        else None
+    )
+    area = transformer.area_of_use
+    area_of_use = None
+    if area is not None:
+        bounds = {
+            "west": float(area.west),
+            "south": float(area.south),
+            "east": float(area.east),
+            "north": float(area.north),
+        }
+        if all(math.isfinite(value) for value in bounds.values()):
+            area_of_use = {
+                **bounds,
+                "name": str(area.name) if area.name else None,
+            }
+    return {
+        "description": str(description) if description else None,
+        "definition": definition,
+        "accuracy_m": accuracy_m,
+        "area_of_use": area_of_use,
+    }
 
 
 def reproject_feature_collection(
@@ -171,6 +215,7 @@ def reproject_feature_collection(
     return ReprojectOutput(
         feature_collection={"type": "FeatureCollection", "features": output_features},
         crs=target,
+        coordinate_operation=_coordinate_operation_evidence(transformer),
     )
 
 

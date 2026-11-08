@@ -245,6 +245,7 @@ class DockerWorker:
             crs=output_crs,
             duration_ms=duration_ms,
             runtime_image_digest=image_digest,
+            coordinate_operation=payload.get("coordinate_operation"),
         )
 
     def _remove_container(self, container_name: str) -> None:

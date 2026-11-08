@@ -37,7 +37,10 @@ from tessellatum_foundry.storage.artifacts import (
 from tessellatum_foundry.validation.contracts import ContractRegistry
 from tessellatum_foundry.validation.output import inspect_vector_reproject_output
 from tessellatum_foundry.validation.rights import build_rights_provenance_report
-from tessellatum_foundry.validation.methodology import build_methodology_report
+from tessellatum_foundry.validation.methodology import (
+    build_methodology_report,
+    coordinate_operation_evidence_valid,
+)
 
 
 class VectorReprojectRunService(VectorBufferRunService):
@@ -517,6 +520,10 @@ class VectorReprojectRunService(VectorBufferRunService):
                 raise WorkerExecutionError(
                     "Worker result image digest differs from the pinned execution image."
                 )
+            if not coordinate_operation_evidence_valid(result.coordinate_operation):
+                raise WorkerExecutionError(
+                    "Worker returned missing or invalid coordinate-operation evidence."
+                )
             inspection = inspect_vector_reproject_output(
                 input_feature_collection=input_feature_collection,
                 output_feature_collection=result.feature_collection,
@@ -572,6 +579,7 @@ class VectorReprojectRunService(VectorBufferRunService):
                 metadata={
                     "producer_run_id": run_id,
                     "output_port": "result",
+                    "coordinate_operation": result.coordinate_operation,
                     "rights_provenance": {
                         "source_artifact": {
                             "artifact_id": input_artifact["artifact_id"],

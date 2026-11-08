@@ -151,6 +151,7 @@ class WorkerHandler(BaseHTTPRequestHandler):
                 self._send_json(400, {"error": "unsupported_capability_version"})
                 return
             duration_ms = max(0, int((time.monotonic() - started) * 1000))
+            coordinate_operation = getattr(result, "coordinate_operation", None)
             digest = os.environ.get("FOUNDRY_WORKER_IMAGE_DIGEST", "")
             if not digest.startswith("sha256:"):
                 raise RuntimeError("worker image digest is not configured")
@@ -161,6 +162,11 @@ class WorkerHandler(BaseHTTPRequestHandler):
                     "crs": output_crs,
                     "duration_ms": duration_ms,
                     "runtime_image_digest": digest,
+                    **(
+                        {"coordinate_operation": coordinate_operation}
+                        if coordinate_operation is not None
+                        else {}
+                    ),
                 },
             )
         except (KeyError, TypeError, ValueError, UnicodeDecodeError, json.JSONDecodeError):

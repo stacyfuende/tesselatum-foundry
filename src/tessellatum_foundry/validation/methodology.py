@@ -60,6 +60,63 @@ def _finding(
     return finding
 
 
+def _finite_number(value: Any) -> bool:
+    if not isinstance(value, (int, float)) or isinstance(value, bool):
+        return False
+    try:
+        return math.isfinite(value)
+    except OverflowError:
+        return False
+
+
+def coordinate_operation_evidence_valid(value: Any) -> bool:
+    """Validate the bounded metadata envelope returned by the reprojection worker."""
+    if not isinstance(value, dict):
+        return False
+    description = value.get("description")
+    if not isinstance(description, str) or not description.strip():
+        return False
+    if len(description) > 2048:
+        return False
+    definition = value.get("definition")
+    if definition is not None and (
+        not isinstance(definition, str)
+        or not definition.strip()
+        or len(definition) > 8192
+    ):
+        return False
+    accuracy = value.get("accuracy_m")
+    if accuracy is not None:
+        if (
+            not _finite_number(accuracy)
+            or accuracy < 0
+        ):
+            return False
+    area = value.get("area_of_use")
+    if area is not None:
+        if not isinstance(area, dict):
+            return False
+        bounds = [area.get(key) for key in ("west", "south", "east", "north")]
+        if any(
+            not _finite_number(bound)
+            for bound in bounds
+        ):
+            return False
+        west, south, east, north = bounds
+        if (
+            west < -180
+            or east > 180
+            or south < -90
+            or north > 90
+            or south > north
+        ):
+            return False
+        name = area.get("name")
+        if name is not None and not isinstance(name, str):
+            return False
+    return True
+
+
 def build_methodology_report(
     *,
     run_id: str,
@@ -365,6 +422,24 @@ def build_methodology_report(
             "does not" in item and "split antimeridian" in item
             for item in preconditions
         )
+        output_metadata = output_artifact.get("metadata", {})
+        coordinate_operation = (
+            output_metadata.get("coordinate_operation")
+            if isinstance(output_metadata, dict)
+            else None
+        )
+        operation_valid = coordinate_operation_evidence_valid(
+            coordinate_operation
+        )
+        if operation_valid:
+            operation_accuracy = coordinate_operation.get("accuracy_m")
+            operation_area = coordinate_operation.get("area_of_use")
+            operation_description = coordinate_operation["description"]
+            operation_definition = coordinate_operation.get("definition")
+        else:
+            operation_accuracy = operation_area = None
+            operation_description = operation_definition = None
+
         findings.extend(
             [
                 _finding(
@@ -379,6 +454,69 @@ def build_methodology_report(
                     "passed" if target_matches_output else "failed",
                     "The explicit target CRS matches the output Artifact CRS.",
                     severity="error" if not target_matches_output else "info",
+                    evidence=evidence,
+                ),
+                _finding(
+                    "method.coordinate_operation_identity_recorded",
+                    "passed" if operation_valid else "failed",
+                    (
+                        f"Worker reports PROJ selected operation: {operation_description}."
+                        if operation_valid
+                        else (
+                            "The worker omitted or malformed selected "
+                            "coordinate-operation evidence."
+                        )
+                    ),
+                    severity="error" if not operation_valid else "info",
+                    evidence=evidence,
+                ),
+                _finding(
+                    "method.coordinate_operation_pipeline_recorded",
+                    (
+                        "passed"
+                        if operation_valid and operation_definition is not None
+                        else "not_assessed"
+                    ),
+                    (
+                        "The worker recorded the selected PROJ pipeline definition."
+                        if operation_definition is not None
+                        else "The worker did not expose an exact PROJ pipeline definition."
+                    ),
+                    severity="info",
+                    evidence=evidence,
+                ),
+                _finding(
+                    "method.coordinate_operation_accuracy_reported",
+                    (
+                        "passed"
+                        if operation_valid and operation_accuracy is not None
+                        else "not_assessed"
+                    ),
+                    (
+                        f"Worker reports PROJ coordinate-operation accuracy of "
+                        f"{operation_accuracy} m."
+                        if operation_accuracy is not None
+                        else (
+                            "PROJ did not report a known accuracy value for "
+                            "the selected operation."
+                        )
+                    ),
+                    severity="info",
+                    evidence=evidence,
+                ),
+                _finding(
+                    "method.coordinate_operation_area_of_use_reported",
+                    (
+                        "passed"
+                        if operation_valid and operation_area is not None
+                        else "not_assessed"
+                    ),
+                    (
+                        f"Worker reports PROJ area of use: {operation_area}."
+                        if operation_area is not None
+                        else "The selected operation has no reported area-of-use metadata."
+                    ),
+                    severity="info",
                     evidence=evidence,
                 ),
                 _finding(
@@ -413,10 +551,12 @@ def build_methodology_report(
             ]
         )
         assessed_dimensions.extend(["source_and_target_crs", "transformation_limitations"])
+        if operation_definition is None:
+            unassessed.append("exact_coordinate_operation_pipeline")
         unassessed.extend(
             [
-                "coordinate_operation_accuracy",
-                "coordinate_operation_area_of_use",
+                "coordinate_operation_accuracy_suitability",
+                "coordinate_operation_area_of_use_coverage",
                 "segment_shape_error_without_densification",
                 "antimeridian_crossing_suitability",
             ]

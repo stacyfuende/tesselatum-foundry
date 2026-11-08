@@ -3,12 +3,15 @@ from __future__ import annotations
 from tessellatum_foundry.validation.methodology import build_methodology_report
 
 
-def artifact(artifact_id, crs, geometry_types):
-    return {
+def artifact(artifact_id, crs, geometry_types, metadata=None):
+    record = {
         "artifact_id": artifact_id,
         "version": "1.0.0",
         "spatial": {"kind": "vector", "crs": crs, "geometry_types": geometry_types},
     }
+    if metadata is not None:
+        record["metadata"] = metadata
+    return record
 
 
 def findings_by_code(report):
@@ -112,14 +115,35 @@ def test_reproject_report_records_non_ballpark_contract_and_unassessed_accuracy(
         },
         parameters={"target_crs": target},
         input_artifact=artifact("source.points", source, ["Point"]),
-        output_artifact=artifact("projected.points", target, ["Point"]),
+        output_artifact=artifact(
+            "projected.points",
+            target,
+            ["Point"],
+            metadata={
+                "coordinate_operation": {
+                    "description": "Popular Visualisation Pseudo-Mercator",
+                    "definition": "+proj=pipeline +step +proj=unitconvert +xy_in=deg +xy_out=rad",
+                    "accuracy_m": 0.0,
+                    "area_of_use": {
+                        "west": -180.0,
+                        "south": -85.0,
+                        "east": 180.0,
+                        "north": 85.0,
+                        "name": "World",
+                    },
+                }
+            },
+        ),
     )
 
     findings = findings_by_code(report)
     assert report["overall_status"] == "requires_review"
     assert findings["method.target_crs_explicit_and_matches_output"]["status"] == "passed"
     assert findings["method.ballpark_transformations_disallowed"]["status"] == "passed"
-    assert "coordinate_operation_accuracy" in report["unassessed_dimensions"]
+    assert "coordinate_operation_accuracy_suitability" in report["unassessed_dimensions"]
+    assert findings["method.coordinate_operation_accuracy_reported"]["status"] == "passed"
+    assert findings["method.coordinate_operation_pipeline_recorded"]["status"] == "passed"
+    assert findings["method.coordinate_operation_area_of_use_reported"]["status"] == "passed"
 
 
 def test_reproject_report_fails_when_output_crs_differs_from_target():
@@ -132,7 +156,23 @@ def test_reproject_report_fails_when_output_crs_differs_from_target():
             "source.points", {"authority": "EPSG", "code": 4326}, ["Point"]
         ),
         output_artifact=artifact(
-            "wrong.points", {"authority": "EPSG", "code": 3857}, ["Point"]
+            "wrong.points",
+            {"authority": "EPSG", "code": 3857},
+            ["Point"],
+            metadata={
+                "coordinate_operation": {
+                    "description": "Popular Visualisation Pseudo-Mercator",
+                    "definition": "+proj=pipeline +step +proj=unitconvert +xy_in=deg +xy_out=rad",
+                    "accuracy_m": 0.0,
+                    "area_of_use": {
+                        "west": -180.0,
+                        "south": -85.0,
+                        "east": 180.0,
+                        "north": 85.0,
+                        "name": "World",
+                    },
+                }
+            },
         ),
     )
 
@@ -191,3 +231,70 @@ def test_buffer_arc_tolerance_fails_when_computed_error_exceeds_limit():
     findings = findings_by_code(report)
     assert report["overall_status"] == "failed"
     assert findings["method.buffer_arc_tolerance"]["status"] == "failed"
+
+
+
+def test_reproject_method_report_requires_actual_operation_evidence():
+    report = build_methodology_report(
+        run_id="run:missing-operation",
+        cell={},
+        capability={"capability_id": "vector.reproject"},
+        parameters={"target_crs": {"authority": "EPSG", "code": 32737}},
+        input_artifact=artifact(
+            "source.points", {"authority": "EPSG", "code": 4326}, ["Point"]
+        ),
+        output_artifact=artifact(
+            "projected.points", {"authority": "EPSG", "code": 32737}, ["Point"]
+        ),
+    )
+
+    findings = findings_by_code(report)
+    assert report["overall_status"] == "failed"
+    assert findings["method.coordinate_operation_identity_recorded"]["status"] == "failed"
+
+
+
+def test_coordinate_operation_evidence_accepts_antimeridian_wrapping_area():
+    from tessellatum_foundry.validation.methodology import (
+        coordinate_operation_evidence_valid,
+    )
+
+    assert coordinate_operation_evidence_valid(
+        {
+            "description": "Pacific operation",
+            "accuracy_m": None,
+            "area_of_use": {
+                "west": 170.0,
+                "south": -30.0,
+                "east": -170.0,
+                "north": 30.0,
+                "name": "Dateline region",
+            },
+        }
+    )
+
+
+def test_coordinate_operation_evidence_rejects_invalid_accuracy_and_bounds():
+    from tessellatum_foundry.validation.methodology import (
+        coordinate_operation_evidence_valid,
+    )
+
+    assert not coordinate_operation_evidence_valid(
+        {
+            "description": "Invalid operation",
+            "accuracy_m": -1.0,
+            "area_of_use": None,
+        }
+    )
+    assert not coordinate_operation_evidence_valid(
+        {
+            "description": "Invalid operation",
+            "accuracy_m": 1.0,
+            "area_of_use": {
+                "west": -200.0,
+                "south": -10.0,
+                "east": 100.0,
+                "north": 10.0,
+            },
+        }
+    )

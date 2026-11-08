@@ -45,6 +45,7 @@ This register records decisions that constrain Foundry's architecture. Each deci
 | [039](039-methodological-evidence.md) | Produce operation-specific methodological evidence without a generic quality score | Accepted |
 | [040](040-buffer-arc-approximation.md) | Quantify buffer arc approximation and record shape semantics | Accepted |
 | [041](041-buffer-arc-tolerance.md) | Declare a purpose-specific buffer arc approximation tolerance | Accepted |
+| [042](042-reprojection-operation-evidence.md) | Capture the actual PROJ operation selected by the worker | Accepted |
 | [039](039-methodological-evidence.md) | Produce operation-specific methodological evidence without a generic quality score | Accepted |
 
 A decision may be superseded only by a new decision record that explains the change. Do not silently edit an accepted decision to reverse its meaning.

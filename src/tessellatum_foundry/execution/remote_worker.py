@@ -322,9 +322,15 @@ class RemoteVectorReprojectWorker(RemoteVectorBufferWorker):
             raise WorkerExecutionError(
                 "Remote worker returned an invalid execution duration."
             )
+        coordinate_operation = payload.get("coordinate_operation")
+        if not isinstance(coordinate_operation, dict):
+            raise WorkerExecutionError(
+                "Remote reproject worker omitted coordinate-operation evidence."
+            )
         return WorkerResult(
             feature_collection=payload["feature_collection"],
             crs=payload["crs"],
             duration_ms=reported_duration,
             runtime_image_digest=pinned_digest,
+            coordinate_operation=coordinate_operation,
         )
