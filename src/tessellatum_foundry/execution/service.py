@@ -174,7 +174,9 @@ class VectorBufferRunService:
 
         try:
             image_digest = self.worker.image_digest()
-            if not re.fullmatch(r"sha256:[a-fA-F0-9]{64}", image_digest):
+            if not isinstance(image_digest, str) or not re.fullmatch(
+                r"sha256:[a-fA-F0-9]{64}", image_digest
+            ):
                 raise WorkerUnavailableError(
                     "Worker returned an invalid immutable runtime image digest."
                 )
