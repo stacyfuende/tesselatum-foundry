@@ -1,0 +1,125 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Foundry Recipe",
+  "description": "Versioned DAG composing immutable Geo-Cell versions.",
+  "type": "object",
+  "required": [
+    "recipe_id",
+    "version",
+    "title",
+    "nodes",
+    "edges"
+  ],
+  "properties": {
+    "recipe_id": {
+      "$ref": "./_common.schema.json#/$defs/identifier"
+    },
+    "version": {
+      "$ref": "./_common.schema.json#/$defs/version"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1
+    },
+    "description": {
+      "type": "string"
+    },
+    "nodes": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "node_id",
+          "cell"
+        ],
+        "properties": {
+          "node_id": {
+            "$ref": "./_common.schema.json#/$defs/identifier"
+          },
+          "cell": {
+            "$ref": "./_common.schema.json#/$defs/cellRef"
+          },
+          "label": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "edges": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "from",
+          "to"
+        ],
+        "properties": {
+          "from": {
+            "type": "object",
+            "required": [
+              "node_id",
+              "output_port"
+            ],
+            "properties": {
+              "node_id": {
+                "$ref": "./_common.schema.json#/$defs/identifier"
+              },
+              "output_port": {
+                "$ref": "./_common.schema.json#/$defs/identifier"
+              }
+            },
+            "additionalProperties": false
+          },
+          "to": {
+            "type": "object",
+            "required": [
+              "node_id",
+              "input_port"
+            ],
+            "properties": {
+              "node_id": {
+                "$ref": "./_common.schema.json#/$defs/identifier"
+              },
+              "input_port": {
+                "$ref": "./_common.schema.json#/$defs/identifier"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "declared_outputs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "name",
+          "node_id",
+          "output_port"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "node_id": {
+            "$ref": "./_common.schema.json#/$defs/identifier"
+          },
+          "output_port": {
+            "$ref": "./_common.schema.json#/$defs/identifier"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": false
+}
