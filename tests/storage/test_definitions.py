@@ -35,11 +35,21 @@ def test_cell_and_recipe_definitions_are_stored_as_immutable_versions(tmp_path):
     assert len(store.list_records("recipe")) == 1
 
 
-def test_same_definition_version_is_idempotent_only_for_same_content_and_creator(tmp_path):
+def test_same_definition_version_is_idempotent_only_for_same_content_and_creator(
+    tmp_path, monkeypatch
+):
     store = VersionedDefinitionStore(tmp_path)
     cell = load_fixture("cell.valid.json")
 
+    monkeypatch.setattr(
+        "tessellatum_foundry.storage.definitions.utc_timestamp",
+        lambda: "2026-11-08T10:00:00Z",
+    )
     first = store.put_cell(cell, created_by="definition-author")
+    monkeypatch.setattr(
+        "tessellatum_foundry.storage.definitions.utc_timestamp",
+        lambda: "2026-11-08T10:01:00Z",
+    )
     repeated = store.put_cell(cell, created_by="definition-author")
 
     assert repeated == first
@@ -65,7 +75,6 @@ def test_definition_store_detects_checksum_tampering(tmp_path):
 
     with pytest.raises(DefinitionIntegrityError, match="checksum verification"):
         store.get_cell(cell["cell_id"], cell["version"])
-
 
 
 def test_definition_store_checksum_covers_creator_provenance(tmp_path):
