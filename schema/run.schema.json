@@ -359,6 +359,10 @@
           }
         }
       ]
+    },
+    "creation_sequence": {
+      "type": "integer",
+      "minimum": 1
     }
   },
   "allOf": [
