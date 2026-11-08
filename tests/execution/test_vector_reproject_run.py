@@ -483,7 +483,7 @@ def test_reproject_cache_rejects_artifacts_without_operation_evidence(
 
     def remove_operation_evidence(artifact_id, version):
         output = deepcopy(original_get_artifact(artifact_id, version))
-        output["metadata"].pop("coordinate_operation", None)
+        output.setdefault("metadata", {}).pop("coordinate_operation", None)
         return output
 
     monkeypatch.setattr(store, "get_artifact", remove_operation_evidence)
