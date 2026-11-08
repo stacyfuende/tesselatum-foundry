@@ -1,5 +1,29 @@
+[build-system]
+requires = ["setuptools>=75"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tessellatum-foundry"
+version = "0.1.0"
+description = "Contracts and deterministic spatial computation infrastructure for Tessellatum Foundry."
+requires-python = ">=3.11"
+dependencies = [
+  "jsonschema>=4.26,<5",
+  "referencing>=0.36,<1",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.3,<9",
+  "ruff>=0.9,<1",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = ["src"]
 addopts = "-ra"
 
 [tool.ruff]
