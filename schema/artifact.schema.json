@@ -100,7 +100,8 @@
           "items": {
             "type": "string"
           },
-          "uniqueItems": true
+          "uniqueItems": true,
+          "minItems": 1
         },
         "raster": {
           "type": "object",
@@ -199,6 +200,23 @@
           "then": {
             "required": [
               "raster"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "vector"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
+          "then": {
+            "required": [
+              "geometry_types"
             ]
           }
         }
