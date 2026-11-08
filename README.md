@@ -2,7 +2,7 @@
 
 Tessellatum Foundry is being developed as infrastructure for describing, composing, executing, validating, and reproducing spatial computations across compatible engines and execution environments.
 
-The repository is intentionally being established from architectural contracts before implementation. The first milestone is a dependable, auditable spatial computation system—not a general-purpose GIS application and not an AI demo.
+The repository follows a contracts-first implementation sequence. The first milestone is a dependable, auditable spatial computation system—not a general-purpose GIS application and not an AI demo.
 
 ## Current status
 
