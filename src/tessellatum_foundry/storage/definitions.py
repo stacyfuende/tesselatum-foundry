@@ -78,7 +78,7 @@ class VersionedDefinitionStore:
         except FileExistsError:
             existing = self.get(kind, definition_id, definition["version"])
             if (
-                existing["checksum"] != record["checksum"]
+                existing["definition"] != definition
                 or existing["created_by"] != created_by
             ):
                 raise ImmutableDefinitionError(
