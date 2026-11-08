@@ -88,7 +88,7 @@ The Validation Report is a separate evidence object. Implementations are registe
 
 ## Vector capabilities
 
-`vector.reproject@1.0.0` is the second registered vector operation. Its Shapely/pyproj kernel accepts an explicit source CRS from Artifact metadata and an explicit target CRS parameter, uses x/y axis order, rejects ballpark coordinate operations, preserves feature IDs/properties and geometry types, and fails closed on invalid or non-finite geometries. It deliberately does not repair geometry, densify edges, clip, or split antimeridian crossings. Its contract and kernel are implemented, but its conformance gate and Foundry Run/Recipe integration are not yet complete. See [ADR-033](docs/decisions/033-vector-reproject-crs-semantics.md).
+`vector.reproject@1.0.0` is the second registered vector operation. Its Shapely/pyproj kernel accepts an explicit source CRS from Artifact metadata and an explicit target CRS parameter, uses x/y axis order, rejects ballpark coordinate operations, preserves feature IDs/properties and geometry types, and fails closed on invalid or non-finite geometries. It deliberately does not repair geometry, densify edges, clip, or split antimeridian crossings. Its contract and kernel pass the registered conformance suite in [CI run 496](https://github.com/stacyfuende/tesselatum-foundry/actions/runs/42508093519); Foundry Run/Recipe integration is still outstanding. See [ADR-033](docs/decisions/033-vector-reproject-crs-semantics.md).
 
 ## First capability: vector.buffer
 
