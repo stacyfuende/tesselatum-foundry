@@ -92,7 +92,8 @@
       "type": "object",
       "required": [
         "implementation_id",
-        "version"
+        "version",
+        "manifest_checksum"
       ],
       "properties": {
         "implementation_id": {
@@ -100,6 +101,9 @@
         },
         "version": {
           "$ref": "urn:tessellatum-foundry:schema:common:1.0.0#/$defs/version"
+        },
+        "manifest_checksum": {
+          "$ref": "urn:tessellatum-foundry:schema:common:1.0.0#/$defs/sha256"
         }
       },
       "additionalProperties": false
