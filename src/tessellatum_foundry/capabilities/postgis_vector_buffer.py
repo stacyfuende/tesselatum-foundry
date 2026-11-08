@@ -17,7 +17,8 @@ SELECT
     ST_AsGeoJSON(buffered.geom, 15, 0),
     ST_IsValid(buffered.geom),
     ST_IsEmpty(buffered.geom),
-    GeometryType(buffered.geom)
+    GeometryType(buffered.geom),
+    ST_SRID(buffered.geom)
 FROM (
     SELECT ST_Buffer(
         ST_SetSRID(ST_GeomFromGeoJSON(%s), %s),
@@ -84,12 +85,12 @@ def buffer_feature_collection_postgis(
         row = cursor.fetchone()
         if row is None:
             raise RuntimeError(f"PostGIS returned no buffer result for feature {index}.")
-        geometry_text, is_valid, is_empty, geometry_type = row
+        geometry_text, is_valid, is_empty, geometry_type, output_srid = row
         if geometry_text is None or is_empty or not is_valid:
             raise BufferContractError(
                 f"PostGIS produced an empty or invalid buffer result at feature {index}."
             )
-        if geometry_type not in {"POLYGON", "MULTIPOLYGON"}:
+        if output_srid != request.epsg_code:\n            raise BufferContractError(\n                f"PostGIS output SRID {output_srid!r} does not match input SRID {request.epsg_code}."\n            )\n        if geometry_type not in {"POLYGON", "MULTIPOLYGON"}:
             raise BufferContractError(
                 f"PostGIS produced unsupported output type {geometry_type!r} "
                 f"at feature {index}."
