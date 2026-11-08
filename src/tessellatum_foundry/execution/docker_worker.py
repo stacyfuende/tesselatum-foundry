@@ -220,12 +220,9 @@ class DockerWorker:
             raise WorkerExecutionError("Worker result must be a JSON object.")
         feature_collection = payload.get("feature_collection")
         output_crs = payload.get("crs")
-        geometry_types = payload.get("geometry_types")
         if (
             not isinstance(feature_collection, dict)
             or not isinstance(output_crs, dict)
-            or not isinstance(geometry_types, list)
-            or not all(isinstance(value, str) for value in geometry_types)
         ):
             raise WorkerExecutionError("Worker result does not match the transport contract.")
         if not _IMAGE_DIGEST.fullmatch(image_digest):
@@ -233,7 +230,6 @@ class DockerWorker:
         return WorkerResult(
             feature_collection=feature_collection,
             crs=output_crs,
-            geometry_types=tuple(geometry_types),
             duration_ms=duration_ms,
             runtime_image_digest=image_digest,
         )
