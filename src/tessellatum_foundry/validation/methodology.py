@@ -215,33 +215,37 @@ def build_methodology_report(
                 "No buffer_arc_tolerance is declared; approximation acceptability "
                 "remains unassessed."
             )
-        elif (
-            not isinstance(arc_tolerance, (int, float))
-            or isinstance(arc_tolerance, bool)
-            or not math.isfinite(arc_tolerance)
-            or arc_tolerance <= 0
-            or not tolerance_unit_matches
-        ):
-            tolerance_status = "failed"
-            tolerance_message = (
-                "buffer_arc_tolerance must be finite, positive, and expressed "
-                "in the same linear_unit as the buffer distance."
-            )
-        elif absolute_sagitta is None:
-            tolerance_status = "not_assessed"
-            tolerance_message = (
-                "The declared tolerance could not be evaluated because the "
-                "arc approximation parameters are invalid."
-            )
         else:
-            tolerance_status = (
-                "passed" if absolute_sagitta <= arc_tolerance else "failed"
-            )
-            tolerance_message = (
-                f"Computed radial sagitta {absolute_sagitta:.4f} "
-                f"{parameters.get('unit')} versus declared tolerance "
-                f"{arc_tolerance:.4f} {constraints['linear_unit']}."
-            )
+            try:
+                tolerance_valid = (
+                    isinstance(arc_tolerance, (int, float))
+                    and not isinstance(arc_tolerance, bool)
+                    and math.isfinite(arc_tolerance)
+                    and arc_tolerance > 0
+                )
+            except OverflowError:
+                tolerance_valid = False
+            if not tolerance_valid or not tolerance_unit_matches:
+                tolerance_status = "failed"
+                tolerance_message = (
+                    "buffer_arc_tolerance must be finite, positive, and expressed "
+                    "in the same linear_unit as the buffer distance."
+                )
+            elif absolute_sagitta is None:
+                tolerance_status = "not_assessed"
+                tolerance_message = (
+                    "The declared tolerance could not be evaluated because the "
+                    "arc approximation parameters are invalid."
+                )
+            else:
+                tolerance_status = (
+                    "passed" if absolute_sagitta <= arc_tolerance else "failed"
+                )
+                tolerance_message = (
+                    f"Computed radial sagitta {absolute_sagitta:.4f} "
+                    f"{parameters.get('unit')} versus declared tolerance "
+                    f"{arc_tolerance:.4f} {constraints['linear_unit']}."
+                )
         cap_style = parameters.get("cap_style", "round")
         join_style = parameters.get("join_style", "round")
         mitre_limit = parameters.get("mitre_limit", 5.0)
@@ -272,7 +276,7 @@ def build_methodology_report(
                 ),
                 _finding(
                     "method.buffer_arc_approximation",
-                    "not_assessed",
+                    "passed" if absolute_sagitta is not None else "not_assessed",
                     approximation_message,
                     severity="info",
                     evidence=evidence,
@@ -316,7 +320,12 @@ def build_methodology_report(
                 )
             )
         assessed_dimensions.extend(["measurement_crs_and_units", "planar_distance_model"])
-        assessed_dimensions.extend(["measurement_crs_and_units", "planar_distance_model"])
+        assessed_dimensions.extend([
+            "measurement_crs_and_units",
+            "planar_distance_model",
+        ])
+        if absolute_sagitta is not None:
+            assessed_dimensions.append("buffer_arc_approximation_metric")
         if tolerance_status == "passed" or tolerance_status == "failed":
             assessed_dimensions.append("buffer_arc_approximation_acceptability")
         else:
