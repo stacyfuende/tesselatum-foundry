@@ -408,6 +408,10 @@ class VectorBufferRunService:
                 "implementation": {
                     "implementation_id": implementation_manifest["implementation_id"],
                     "version": implementation_manifest["version"],
+                    "manifest_checksum": self.implementations.manifest_checksum(
+                        implementation_manifest["implementation_id"],
+                        implementation_manifest["version"],
+                    ),
                 },
                 "runtime_image_digest": image_digest,
             },
