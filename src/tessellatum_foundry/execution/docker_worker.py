@@ -10,9 +10,9 @@ import tempfile
 import time
 import uuid
 from pathlib import Path
+from typing import Any
 
 from .protocol import WorkerResult
-from typing import Any
 
 
 _IMAGE_DIGEST = re.compile(r"^sha256:[a-fA-F0-9]{64}$")
