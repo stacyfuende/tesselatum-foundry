@@ -140,3 +140,32 @@ def test_vector_reproject_contract_is_canonical_and_implementation_is_registered
     assert manifest["capability_id"] == "vector.reproject"
     assert manifest["capability_version"] == "1.0.0"
     assert manifest["conformance"]["status"] == "not_run"
+
+
+def test_reproject_preserves_null_properties_and_geometry_collections():
+    collection = {
+        "type": "FeatureCollection",
+        "features": [
+            {
+                "type": "Feature",
+                "id": "mixed",
+                "geometry": {
+                    "type": "GeometryCollection",
+                    "geometries": [
+                        {"type": "Point", "coordinates": [36.8, -1.3]},
+                        {"type": "LineString", "coordinates": [[36.8, -1.3], [36.9, -1.2]]},
+                    ],
+                },
+                "properties": None,
+            }
+        ],
+    }
+    result = reproject_feature_collection(
+        collection,
+        input_crs={"authority": "EPSG", "code": 4326},
+        target_crs={"authority": "EPSG", "code": 32737},
+    )
+    feature = result.feature_collection["features"][0]
+    assert feature["geometry"]["type"] == "GeometryCollection"
+    assert feature["properties"] is None
+    assert feature["id"] == "mixed"
