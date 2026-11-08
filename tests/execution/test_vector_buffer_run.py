@@ -9,9 +9,9 @@ import pytest
 
 from tessellatum_foundry.execution.docker_worker import (
     DockerWorker,
-    WorkerResult,
     WorkerUnavailableError,
 )
+from tessellatum_foundry.execution.protocol import WorkerResult
 from tessellatum_foundry.execution.runs import RunRepository, RunStateError
 from tessellatum_foundry.execution.service import VectorBufferRunService
 from tessellatum_foundry.storage.artifacts import (
@@ -74,7 +74,7 @@ def bind_cell_to_input(input_artifact: dict[str, Any]) -> dict[str, Any]:
     return cell
 
 
-def make_service(tmp_path: Path, worker: DockerWorker):
+def make_service(tmp_path: Path, worker):
     store = FileSystemArtifactStore(tmp_path / "artifacts")
     runs = RunRepository(tmp_path / "control")
     service = VectorBufferRunService(
@@ -217,7 +217,7 @@ class WrongCrsWorker:
 
 
 def test_output_critic_fails_run_without_registering_invalid_output(tmp_path):
-    store, runs, service = make_service(tmp_path, WrongCrsWorker())  # type: ignore[arg-type]
+    store, runs, service = make_service(tmp_path, WrongCrsWorker())
     input_artifact = make_input(store)
     cell = bind_cell_to_input(input_artifact)
     capability = load_fixture("capability.valid.json")
