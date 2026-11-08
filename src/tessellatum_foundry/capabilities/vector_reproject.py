@@ -152,10 +152,15 @@ def reproject_feature_collection(
             raise ReprojectContractError(
                 f"Reprojected geometry at index {index} is invalid, non-finite, or changed type."
             )
+        properties = feature.get("properties", {})
+        if properties is not None and not isinstance(properties, Mapping):
+            raise ReprojectContractError(
+                f"Feature at index {index} properties must be an object or null."
+            )
         output_feature: dict[str, Any] = {
             "type": "Feature",
             "geometry": mapping(projected),
-            "properties": dict(feature.get("properties") or {}),
+            "properties": dict(properties) if properties is not None else None,
         }
         if "id" in feature:
             output_feature["id"] = feature["id"]
