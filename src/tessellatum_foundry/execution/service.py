@@ -398,6 +398,33 @@ class VectorBufferRunService:
             )
             return ExecutionResult(failed, None, None)
 
+        manifest_checksum = self.implementations.manifest_checksum(
+            implementation_manifest["implementation_id"],
+            implementation_manifest["version"],
+        )
+        cache_record = self._cache_record(
+            cell=cell,
+            capability=capability,
+            parameters=parameters,
+            input_snapshot=input_snapshot,
+            implementation=implementation_manifest,
+            manifest_checksum=manifest_checksum,
+            runtime_image_digest=image_digest,
+        )
+        cache_reuse = self._find_cache_reuse(
+            cache_record=cache_record,
+            input_artifact=input_artifact,
+            output_media_type=output_media_type,
+            output_contract=output_contract,
+            permitted_geometry_types=permitted_geometry_types,
+        )
+        if cache_reuse is not None:
+            cache_record = {
+                **cache_record,
+                "status": "hit",
+                "source_run_id": cache_reuse["source_run"]["run_id"],
+            }
+
         started_at = utc_timestamp()
         self.run_repository.transition(
             run_id,
@@ -412,16 +439,49 @@ class VectorBufferRunService:
                 "implementation": {
                     "implementation_id": implementation_manifest["implementation_id"],
                     "version": implementation_manifest["version"],
-                    "manifest_checksum": self.implementations.manifest_checksum(
-                        implementation_manifest["implementation_id"],
-                        implementation_manifest["version"],
-                    ),
+                    "manifest_checksum": manifest_checksum,
                 },
                 "runtime_image_digest": image_digest,
+                "cache": cache_record,
             },
-            event_type="worker_started",
-            event_detail={"runtime_image_digest": image_digest},
+            event_type="cache_hit" if cache_reuse is not None else "worker_started",
+            event_detail=(
+                {"source_run_id": cache_record["source_run_id"]}
+                if cache_reuse is not None
+                else {"runtime_image_digest": image_digest}
+            ),
         )
+
+        if cache_reuse is not None:
+            report = self._cache_reuse_report(
+                run_id=run_id,
+                source_run=cache_reuse["source_run"],
+                source_report=cache_reuse["source_report"],
+                artifact=cache_reuse["artifact"],
+            )
+            self.run_repository.save_validation_report(report)
+            finished = self.run_repository.transition(
+                run_id,
+                expected_status="running",
+                new_status="succeeded",
+                fields={
+                    "finished_at": utc_timestamp(),
+                    "outputs": [
+                        {
+                            "output_port": "result",
+                            "artifact": {
+                                "artifact_id": cache_reuse["artifact"]["artifact_id"],
+                                "version": cache_reuse["artifact"]["version"],
+                            },
+                        }
+                    ],
+                    "validation_report_ids": [report["report_id"]],
+                    "resource_usage": {"duration_ms": 0},
+                },
+                event_type="run_succeeded_from_cache",
+                event_detail={"source_run_id": cache_record["source_run_id"]},
+            )
+            return ExecutionResult(finished, cache_reuse["artifact"], report)
 
         failure_message = ""
         try:
