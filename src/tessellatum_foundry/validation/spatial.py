@@ -477,6 +477,33 @@ def validate_recipe_spatial(
                     )
                 )
 
+            measurement_policy = spatial_constraints.get("measurement_crs_policy")
+            measurement_crs_value = cell.get("constraints", {}).get("measurement_crs")
+            if measurement_policy in {"must_match", "reproject_to_measurement_crs"}:
+                if measurement_crs_value is None:
+                    findings.append(
+                        ValidationFinding(
+                            "spatial.measurement_crs_required",
+                            f"Input port {port_id!r} declares measurement CRS handling "
+                            "but the Geo-Cell has no measurement CRS.",
+                            json_pointer=f"{pointer}/constraints/measurement_crs",
+                        )
+                    )
+                elif measurement_policy == "must_match" and crs is not None:
+                    try:
+                        measurement_crs = _crs_from_contract(measurement_crs_value)
+                    except (CRSError, ValueError, TypeError):
+                        measurement_crs = None
+                    if measurement_crs is not None and not _crs_equal(crs, measurement_crs):
+                        findings.append(
+                            ValidationFinding(
+                                "spatial.input_measurement_crs_mismatch",
+                                f"Input port {port_id!r} must already use the Geo-Cell "
+                                "measurement CRS; add an explicit CRS transformation.",
+                                json_pointer=f"{pointer}/inputs/{port_id}",
+                            )
+                        )
+
             expected_crs_type = spatial_constraints.get("crs_type")
             if expected_crs_type and expected_crs_type != "any" and crs is not None:
                 actual_crs_type = _crs_kind(crs)
@@ -585,6 +612,26 @@ def validate_recipe_spatial(
                             json_pointer=f"{output_pointer}/crs",
                         )
                     )
+            output_same_crs_as = output_spatial_constraints.get("same_crs_as")
+            if output_same_crs_as:
+                source_spatial = resolved_spatial.get(output_same_crs_as)
+                source_crs_value = source_spatial.get("crs") if source_spatial else None
+                if output_crs is not None and source_crs_value is not None:
+                    try:
+                        if not _crs_equal(
+                            _crs_from_contract(output_crs),
+                            _crs_from_contract(source_crs_value),
+                        ):
+                            findings.append(
+                                ValidationFinding(
+                                    "spatial.output_crs_mismatch",
+                                    f"Output port {output_port!r} must use the CRS "
+                                    f"of input port {output_same_crs_as!r}.",
+                                    json_pointer=f"{output_pointer}/crs",
+                                )
+                            )
+                    except (CRSError, ValueError, TypeError):
+                        pass
             allowed_output_geometry_types = set(
                 output_spatial_constraints.get("geometry_types", [])
             )
