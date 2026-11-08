@@ -9,6 +9,7 @@ from typing import Any
 
 from pyproj import CRS
 from pyproj.exceptions import CRSError
+from shapely import get_coordinates
 from shapely.geometry import shape
 from shapely.geometry.base import BaseGeometry
 
@@ -160,7 +161,7 @@ def prepare_buffer_request(
     for index, feature in enumerate(features):
         if not isinstance(feature, Mapping):
             raise BufferContractError(f"Feature at index {index} must be an object.")
-        geometry_json = feature.get("geometry")
+        if feature.get("type") != "Feature":\n            raise BufferContractError(f"Feature at index {index} must have type Feature.")\n        geometry_json = feature.get("geometry")
         if not isinstance(geometry_json, Mapping):
             raise BufferContractError(
                 f"Feature at index {index} must contain a GeoJSON geometry."
