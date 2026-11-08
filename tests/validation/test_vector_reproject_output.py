@@ -8,7 +8,10 @@ from tessellatum_foundry.validation.output import inspect_vector_reproject_outpu
 
 SOURCE_CRS = {"authority": "EPSG", "code": 4326}
 TARGET_CRS = {"authority": "EPSG", "code": 32737}
-PERMITTED = {"Point", "MultiPoint", "LineString", "MultiLineString", "Polygon", "MultiPolygon", "GeometryCollection"}
+PERMITTED = {
+    "Point", "MultiPoint", "LineString", "MultiLineString",
+    "Polygon", "MultiPolygon", "GeometryCollection",
+}
 
 
 def source_collection():
@@ -92,4 +95,7 @@ def test_reproject_output_critic_rejects_geometry_type_changes():
 def test_reproject_output_critic_rejects_invalid_collection():
     report = inspect(output={"type": "FeatureCollection", "features": []})
     assert not report.passed
-    assert any(item.code == "output.feature_collection" and item.status == "failed" for item in report.findings)
+    assert any(
+        item.code == "output.feature_collection" and item.status == "failed"
+        for item in report.findings
+    )
