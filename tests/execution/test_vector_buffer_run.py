@@ -244,6 +244,13 @@ def test_output_critic_fails_run_without_registering_invalid_output(tmp_path):
     assert result.validation_report["overall_status"] == "failed"
     assert result.validation_report["report_id"] in result.run["validation_report_ids"]
     assert result.run["error"]["code"] == "output.validation_failed"
+    with pytest.raises(ExecutionPreconditionError, match="not marked as retryable"):
+        service.execute(
+            cell=cell,
+            capability=capability,
+            actor_id="test-operator",
+            retry_of_run_id=result.run["run_id"],
+        )
 
 
 def test_run_service_rejects_worker_for_a_different_capability_version(tmp_path):
