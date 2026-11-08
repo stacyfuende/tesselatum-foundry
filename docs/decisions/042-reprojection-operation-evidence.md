@@ -26,7 +26,7 @@ The worker already creates and uses a `pyproj.Transformer` for every feature. Th
 
 ## Consequences
 
-- The record describes the operation actually used by the worker, not a control-plane reconstruction.
+- The record describes the operation reported by the pinned worker that performed the transformation, not a control-plane reconstruction. It is a worker-reported execution record anchored to the Run's immutable runtime image digest, not a separate cryptographic attestation.
 - The output Artifact preserves the selected operation identity alongside the worker runtime digest and Run provenance.
 - Unknown PROJ accuracy remains explicitly unknown; it is never converted to zero or inferred from the CRS pair.
 - Cache reuse remains reproducible with respect to the operation evidence recorded by the producing worker.
