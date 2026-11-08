@@ -196,6 +196,7 @@ def test_remote_reproject_worker_fetches_identity_and_executes_target_crs():
     assert execution.crs == target_crs
     assert execution.duration_ms == 8
     assert execution.coordinate_operation["description"] == "UTM zone 37S"
+    assert execution.coordinate_operation["definition"].startswith("+proj=pipeline")
     request_payload = json.loads(opener.requests[1][0].data)
     assert request_payload["capability_id"] == "vector.reproject"
     assert request_payload["target_crs"] == target_crs
