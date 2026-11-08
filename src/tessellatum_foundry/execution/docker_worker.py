@@ -112,6 +112,7 @@ class DockerWorker:
         measurement_crs: dict[str, Any],
         parameters: dict[str, Any],
         runtime_image_digest: str | None = None,
+        target_crs: dict[str, Any] | None = None,
     ) -> WorkerResult:
         if len(input_bytes) > self.max_input_bytes:
             raise WorkerExecutionError("Input Artifact exceeds the worker byte limit.")
@@ -120,17 +121,26 @@ class DockerWorker:
             raise WorkerUnavailableError("Worker image digest is invalid.")
         request = {
             "request_version": "0.1.0",
-            "capability_id": "vector.buffer",
+            "capability_id": self.capability_id,
             "capability_version": capability_version,
             "input_crs": input_crs,
-            "measurement_crs": measurement_crs,
             "parameters": parameters,
         }
+        if self.capability_id == "vector.buffer":
+            request["measurement_crs"] = measurement_crs
+        elif self.capability_id == "vector.reproject":
+            if target_crs is None:
+                raise WorkerExecutionError("vector.reproject requires an explicit target CRS.")
+            request["target_crs"] = target_crs
+        else:
+            raise WorkerExecutionError(
+                f"Docker worker does not support capability {self.capability_id!r}."
+            )
         request_bytes = json.dumps(
             request, ensure_ascii=False, allow_nan=False, separators=(",", ":")
         ).encode("utf-8")
 
-        container_name = f"foundry-buffer-{uuid.uuid4().hex}"
+        container_name = f"foundry-vector-{uuid.uuid4().hex}"
         started = time.monotonic()
         with tempfile.TemporaryDirectory(prefix="foundry-buffer-") as temporary:
             root = Path(temporary)
@@ -245,3 +255,23 @@ class DockerWorker:
             )
         except (OSError, subprocess.TimeoutExpired):
             return
+
+
+class DockerVectorReprojectWorker(DockerWorker):
+    """Run vector.reproject in the same isolated image as the first vector worker."""
+
+    capability_id = "vector.reproject"
+    capability_version = "1.0.0"
+    implementation_id = "vector-reproject-pyproj-shapely"
+    implementation_version = "1.0.0"
+    worker_id = "local-docker-vector-reproject-worker"
+
+    def __init__(self, image: str | None = None, **kwargs: Any) -> None:
+        configured_image = image or os.getenv(
+            "FOUNDRY_VECTOR_REPROJECT_IMAGE",
+            os.getenv(
+                "FOUNDRY_VECTOR_BUFFER_IMAGE",
+                "tessellatum-foundry/vector-buffer-shapely:ci",
+            ),
+        )
+        super().__init__(image=configured_image, **kwargs)
