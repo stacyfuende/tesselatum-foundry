@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 import json
+import subprocess
 import threading
 from http.server import ThreadingHTTPServer
-from types import SimpleNamespace
+from pathlib import Path
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
@@ -203,15 +204,21 @@ def test_remote_worker_http_service_bounds_concurrent_requests(monkeypatch):
     execution_started = threading.Event()
     allow_execution_to_finish = threading.Event()
 
-    def slow_buffer(*args, **kwargs):
+    def slow_process(command, **kwargs):
         execution_started.set()
         if not allow_execution_to_finish.wait(timeout=5):
-            raise TimeoutError("test execution release timed out")
-        return SimpleNamespace(
-            feature_collection={"type": "FeatureCollection", "features": []}
+            raise subprocess.TimeoutExpired(command, kwargs.get("timeout"))
+        output_path = Path(command[command.index("--output") + 1])
+        output_path.write_text(
+            json.dumps({
+                "feature_collection": {"type": "FeatureCollection", "features": []},
+                "crs": payload["input_crs"],
+            }),
+            encoding="utf-8",
         )
+        return subprocess.CompletedProcess(command, 0)
 
-    monkeypatch.setattr(worker_http_server, "buffer_feature_collection", slow_buffer)
+    monkeypatch.setattr(worker_http_server.subprocess, "run", slow_process)
     server = BoundedThreadingHTTPServer(
         ("127.0.0.1", 0), WorkerHandler, max_concurrent_requests=1
     )
@@ -271,3 +278,51 @@ def test_remote_worker_http_service_bounds_concurrent_requests(monkeypatch):
         server.server_close()
         server_thread.join(timeout=2)
         first_thread.join(timeout=2)
+
+
+def test_remote_worker_http_service_times_out_isolated_execution(monkeypatch):
+    digest = "sha256:" + "f" * 64
+    monkeypatch.setenv("FOUNDRY_REMOTE_WORKER_TOKEN", "test-secret")
+    monkeypatch.setenv("FOUNDRY_WORKER_IMAGE_DIGEST", digest)
+    monkeypatch.setenv("FOUNDRY_MAX_INPUT_BYTES", "1048576")
+    monkeypatch.setenv("FOUNDRY_MAX_OUTPUT_BYTES", "1048576")
+    monkeypatch.setenv("FOUNDRY_EXECUTION_TIMEOUT_SECONDS", "1")
+
+    def timeout_process(command, **kwargs):
+        raise subprocess.TimeoutExpired(command, kwargs.get("timeout"))
+
+    monkeypatch.setattr(worker_http_server.subprocess, "run", timeout_process)
+    server = BoundedThreadingHTTPServer(
+        ("127.0.0.1", 0), WorkerHandler, max_concurrent_requests=1
+    )
+    server_thread = threading.Thread(target=server.serve_forever, daemon=True)
+    server_thread.start()
+    payload = {
+        "request_version": "0.1.0",
+        "capability_id": "vector.buffer",
+        "capability_version": "1.0.0",
+        "input_feature_collection": {"type": "FeatureCollection", "features": []},
+        "input_crs": {"authority": "EPSG", "code": 32636},
+        "measurement_crs": {"authority": "EPSG", "code": 32636},
+        "parameters": {"distance": 10, "unit": "m"},
+    }
+    request = Request(
+        f"http://127.0.0.1:{server.server_port}/v1/execute",
+        data=json.dumps(payload).encode(),
+        headers={
+            "Authorization": "Bearer test-secret",
+            "Content-Type": "application/json",
+        },
+        method="POST",
+    )
+    try:
+        try:
+            urlopen(request, timeout=2)
+            raise AssertionError("timed-out execution unexpectedly succeeded")
+        except HTTPError as error:
+            assert error.code == 504
+            assert json.loads(error.read()) == {"error": "worker_execution_timeout"}
+    finally:
+        server.shutdown()
+        server.server_close()
+        server_thread.join(timeout=2)

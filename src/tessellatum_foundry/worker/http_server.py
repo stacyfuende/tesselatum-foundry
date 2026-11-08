@@ -9,13 +9,14 @@ from __future__ import annotations
 import hmac
 import json
 import os
+import subprocess
+import sys
+import tempfile
 import threading
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path
 from typing import Any
-
-from tessellatum_foundry.capabilities.vector_buffer import buffer_feature_collection
-from tessellatum_foundry.capabilities.vector_reproject import reproject_feature_collection
 
 _SUPPORTED_WORKERS = {
     ("vector.buffer", "1.0.0"): "vector-buffer-shapely",
@@ -34,6 +35,87 @@ def _json_bytes(value: dict[str, Any]) -> bytes:
     return json.dumps(
         value, ensure_ascii=False, allow_nan=False, separators=(",", ":")
     ).encode("utf-8")
+
+
+class WorkerExecutionTimeout(RuntimeError):
+    """Raised when an isolated capability process exceeds its wall-clock limit."""
+
+
+def _execute_isolated(
+    request: dict[str, Any],
+    feature_collection: dict[str, Any],
+) -> dict[str, Any]:
+    try:
+        timeout_seconds = int(
+            os.environ.get("FOUNDRY_EXECUTION_TIMEOUT_SECONDS", "110")
+        )
+        max_output_bytes = int(
+            os.environ.get("FOUNDRY_MAX_OUTPUT_BYTES", str(128 * 1024 * 1024))
+        )
+    except ValueError as error:
+        raise ValueError("Worker execution and output limits must be integers.") from error
+    if not 1 <= timeout_seconds <= 3600 or max_output_bytes < 1:
+        raise ValueError("Worker execution and output limits must be positive and in range.")
+
+    cli_request = {
+        key: value
+        for key, value in request.items()
+        if key != "input_feature_collection"
+    }
+    child_env = os.environ.copy()
+    child_env.setdefault("FOUNDRY_MAX_OUTPUT_BYTES", str(max_output_bytes))
+
+    with tempfile.TemporaryDirectory(prefix="foundry-remote-worker-") as directory:
+        root = Path(directory)
+        request_path = root / "request.json"
+        input_path = root / "input.json"
+        output_path = root / "output.json"
+        request_path.write_bytes(_json_bytes(cli_request))
+        input_path.write_bytes(_json_bytes(feature_collection))
+
+        command = [
+            sys.executable,
+            "-m",
+            "tessellatum_foundry.worker.cli",
+            "--request",
+            str(request_path),
+            "--input",
+            str(input_path),
+            "--output",
+            str(output_path),
+        ]
+        try:
+            completed = subprocess.run(
+                command,
+                stdin=subprocess.DEVNULL,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                env=child_env,
+                timeout=timeout_seconds,
+                check=False,
+            )
+        except subprocess.TimeoutExpired as error:
+            raise WorkerExecutionTimeout(
+                f"Capability execution exceeded {timeout_seconds} seconds."
+            ) from error
+
+        if completed.returncode != 0:
+            raise RuntimeError("Isolated capability process failed.")
+        if not output_path.is_file():
+            raise RuntimeError("Isolated capability process produced no output.")
+        if output_path.stat().st_size > max_output_bytes:
+            raise RuntimeError("Isolated capability output exceeded its byte limit.")
+        try:
+            result = json.loads(output_path.read_text(encoding="utf-8"))
+        except (UnicodeDecodeError, json.JSONDecodeError) as error:
+            raise RuntimeError("Isolated capability process returned invalid JSON.") from error
+        if (
+            not isinstance(result, dict)
+            or not isinstance(result.get("feature_collection"), dict)
+            or not isinstance(result.get("crs"), dict)
+        ):
+            raise RuntimeError("Isolated capability process returned an invalid result.")
+        return result
 
 
 class WorkerHandler(BaseHTTPRequestHandler):
@@ -131,26 +213,7 @@ class WorkerHandler(BaseHTTPRequestHandler):
             if not isinstance(feature_collection, dict) or not isinstance(parameters, dict):
                 raise ValueError("invalid feature collection or parameters")
             started = time.monotonic()
-            if capability == ("vector.buffer", "1.0.0"):
-                result = buffer_feature_collection(
-                    feature_collection,
-                    input_crs=request["input_crs"],
-                    measurement_crs=request["measurement_crs"],
-                    **parameters,
-                )
-                output_crs = request["input_crs"]
-            elif capability == ("vector.reproject", "1.0.0"):
-                if parameters:
-                    raise ValueError("vector.reproject@1.0.0 accepts no extra worker parameters.")
-                result = reproject_feature_collection(
-                    feature_collection,
-                    input_crs=request["input_crs"],
-                    target_crs=request["target_crs"],
-                )
-                output_crs = request["target_crs"]
-            else:
-                self._send_json(400, {"error": "unsupported_capability_version"})
-                return
+            result = _execute_isolated(request, feature_collection)
             duration_ms = max(0, int((time.monotonic() - started) * 1000))
             digest = os.environ.get("FOUNDRY_WORKER_IMAGE_DIGEST", "")
             if not digest.startswith("sha256:"):
@@ -158,12 +221,14 @@ class WorkerHandler(BaseHTTPRequestHandler):
             self._send_json(
                 200,
                 {
-                    "feature_collection": result.feature_collection,
-                    "crs": output_crs,
+                    "feature_collection": result["feature_collection"],
+                    "crs": result["crs"],
                     "duration_ms": duration_ms,
                     "runtime_image_digest": digest,
                 },
             )
+        except WorkerExecutionTimeout:
+            self._send_json(504, {"error": "worker_execution_timeout"})
         except (KeyError, TypeError, ValueError, UnicodeDecodeError, json.JSONDecodeError):
             self._send_json(400, {"error": "invalid_worker_request"})
         except Exception:
@@ -240,6 +305,14 @@ def main() -> None:
         )
     except ValueError as error:
         raise SystemExit("FOUNDRY_MAX_CONCURRENT_REQUESTS must be an integer.") from error
+    try:
+        execution_timeout = int(
+            os.environ.get("FOUNDRY_EXECUTION_TIMEOUT_SECONDS", "110")
+        )
+    except ValueError as error:
+        raise SystemExit("FOUNDRY_EXECUTION_TIMEOUT_SECONDS must be an integer.") from error
+    if not 1 <= execution_timeout <= 3600:
+        raise SystemExit("FOUNDRY_EXECUTION_TIMEOUT_SECONDS must be between 1 and 3600.")
     server = BoundedThreadingHTTPServer(
         (bind, port),
         WorkerHandler,

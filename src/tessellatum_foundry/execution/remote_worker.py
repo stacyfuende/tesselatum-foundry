@@ -115,7 +115,11 @@ class RemoteVectorBufferWorker:
                 raise WorkerUnavailableError(
                     "Remote worker redirects are not permitted."
                 ) from error
-            if error.code in {408, 425, 429, 500, 502, 503, 504}:
+            if error.code in {408, 504}:
+                raise WorkerTimeoutError(
+                    f"Remote worker execution timed out (HTTP {error.code})."
+                ) from error
+            if error.code in {425, 429, 500, 502, 503}:
                 raise WorkerUnavailableError(
                     f"Remote worker temporarily unavailable (HTTP {error.code})."
                 ) from error

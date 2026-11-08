@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, hardening/remote-worker-execution-timeout]
   pull_request:
-    branches: [main]
+    branches: [main, hardening/bounded-remote-worker-concurrency]
 
 permissions:
   contents: read

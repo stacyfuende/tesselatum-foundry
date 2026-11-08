@@ -43,5 +43,6 @@ This register records decisions that constrain Foundry's architecture. Each deci
 | [037](037-reprojection-cache-evidence.md) | Shared output-critic evidence enables reprojection cache reuse | Accepted |
 | [038](038-rights-provenance-evidence.md) | Preserve rights declarations and lineage without inferring permission | Accepted |
 | [039](039-bounded-remote-worker-concurrency.md) | Bound concurrent remote worker requests and reject overload explicitly | Accepted |
+| [040](040-isolated-remote-execution-timeout.md) | Isolate remote capability execution and enforce a wall-clock deadline | Accepted |
 
 A decision may be superseded only by a new decision record that explains the change. Do not silently edit an accepted decision to reverse its meaning.
