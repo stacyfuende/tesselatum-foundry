@@ -61,7 +61,7 @@ def test_remote_worker_requires_https_except_explicit_localhost():
     worker = RemoteVectorBufferWorker(
         "http://127.0.0.1:8080", bearer_token="secret", allow_insecure_localhost=True
     )
-    assert worker.worker_type == "remote_http"
+    assert worker.worker_type == "remote"
 
 
 def test_remote_worker_fetches_identity_and_executes_with_pinned_digest():
