@@ -12,7 +12,7 @@ Acceptance tests must use versioned fixtures and deterministic test inputs. Ever
 
 ## B. Spatial and methodological correctness
 
-4. **CRS and units enforced.** A buffer declared in metres against geographic coordinates without a valid measurement-CRS strategy is rejected or explicitly requires review; it must never silently treat angular units as metres.
+4. **CRS and units enforced.** A buffer declared in metres must declare a projected measurement CRS whose horizontal axis units match the declared unit. An input port with a must_match policy rejects a different input CRS; a different input CRS is allowed only when the capability explicitly declares reproject_to_measurement_crs. Angular units must never be silently treated as metres.
 5. **Output contract checked.** A produced output with the wrong data kind, media type, CRS, geometry type, or required validity property fails the applicable output validation.
 
 ## C. Execution and provenance
