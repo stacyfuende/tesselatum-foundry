@@ -20,7 +20,7 @@ Foundry has a contracts-first domain model and spatial metadata validation, but 
 
 ## Consequences
 
-The implementation can be exercised without introducing a worker scheduler or run lifecycle prematurely. It establishes a reusable operation boundary and tests real geometry results. It does not yet constitute an end-to-end Foundry execution path, artifact persistence, or PostGIS parity.
+The implementation can be exercised without introducing a worker scheduler or run lifecycle prematurely. Its media type is a Foundry-specific CRS-aware spatial feature collection: the feature payload is GeoJSON-compatible, while CRS remains separate metadata. It is not mislabeled as RFC 7946 GeoJSON, whose coordinate reference semantics are fixed. It establishes a reusable operation boundary and tests real geometry results. It does not yet constitute an end-to-end Foundry execution path, artifact persistence, or PostGIS parity.
 
 ## Alternatives considered
 
