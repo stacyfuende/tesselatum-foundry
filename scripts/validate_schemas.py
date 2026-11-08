@@ -11,6 +11,7 @@ ROOT = Path(__file__).resolve().parents[1]
 SCHEMA_DIR = ROOT / "schema"
 FIXTURE_DIR = ROOT / "tests" / "fixtures" / "valid"
 CAPABILITY_DIR = ROOT / "capabilities"
+IMPLEMENTATION_DIR = ROOT / "implementations"
 
 FIXTURES = {
     "artifact.schema.json": "artifact.valid.json",
@@ -58,9 +59,20 @@ def main() -> int:
         capability_validator.validate(json.loads(path.read_text(encoding="utf-8")))
         print(f"PASS capability contract {path.relative_to(ROOT)}")
 
+    implementation_validator = Draft202012Validator(
+        schemas["capability-implementation.schema.json"],
+        registry=registry,
+        format_checker=FormatChecker(),
+    )
+    implementation_files = sorted(IMPLEMENTATION_DIR.glob("**/*.json"))
+    for path in implementation_files:
+        implementation_validator.validate(json.loads(path.read_text(encoding="utf-8")))
+        print(f"PASS implementation manifest {path.relative_to(ROOT)}")
+
     print(
         f"Validated {len(schemas)} schemas, {len(FIXTURES)} fixtures, "
-        f"and {len(capability_files)} capability contracts."
+        f"{len(capability_files)} capability contracts, "
+        f"and {len(implementation_files)} implementation manifests."
     )
     return 0
 
