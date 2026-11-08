@@ -604,6 +604,224 @@ class VectorBufferRunService:
         )
         return ExecutionResult(failed, None, None)
 
+    @staticmethod
+    def _cache_record(
+        *,
+        cell: dict[str, Any],
+        capability: dict[str, Any],
+        parameters: dict[str, Any],
+        input_snapshot: dict[str, Any],
+        implementation: dict[str, Any],
+        manifest_checksum: str,
+        runtime_image_digest: str,
+    ) -> dict[str, str]:
+        cache_policy = capability.get("cache_policy", "allowed")
+        determinism = capability["determinism"]
+        if cache_policy != "allowed":
+            reason = (
+                "conditional_cache_policy_not_implemented"
+                if cache_policy == "conditional"
+                else "capability_cache_disabled"
+            )
+            return {"status": "bypassed", "reason": reason}
+        if determinism != "deterministic":
+            return {"status": "bypassed", "reason": "capability_not_deterministic"}
+
+        input_identity = {
+            "input_port": input_snapshot["input_port"],
+            "artifact": input_snapshot["artifact"],
+            "checksum": input_snapshot["checksum"],
+        }
+        material = {
+            "capability": {
+                "capability_id": capability["capability_id"],
+                "version": capability["version"],
+            },
+            "cell": {"cell_id": cell["cell_id"], "version": cell["version"]},
+            "constraints": cell.get("constraints", {}),
+            "implementation": {
+                "implementation_id": implementation["implementation_id"],
+                "version": implementation["version"],
+                "manifest_checksum": manifest_checksum,
+            },
+            "input": input_identity,
+            "normalized_parameters": parameters,
+            "output_contracts": cell.get("output_contracts", {}),
+            "runtime_image_digest": runtime_image_digest,
+            "output_validator": {
+                "name": "foundry-vector-output-critic",
+                "version": "0.1.0",
+            },
+        }
+        canonical = json.dumps(
+            material,
+            ensure_ascii=False,
+            allow_nan=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode("utf-8")
+        return {
+            "status": "miss",
+            "cache_key": hashlib.sha256(canonical).hexdigest(),
+        }
+
+    def _find_cache_reuse(
+        self,
+        *,
+        cache_record: dict[str, str],
+        input_artifact: dict[str, Any],
+        output_media_type: str,
+        output_contract: dict[str, Any],
+        permitted_geometry_types: set[str],
+    ) -> dict[str, Any] | None:
+        if cache_record["status"] != "miss":
+            return None
+        for candidate in self.run_repository.list_cache_candidates(
+            cache_record["cache_key"]
+        ):
+            try:
+                reuse = self._load_cache_candidate(
+                    candidate=candidate,
+                    input_artifact=input_artifact,
+                    output_media_type=output_media_type,
+                    output_contract=output_contract,
+                    permitted_geometry_types=permitted_geometry_types,
+                )
+            except (
+                ArtifactIntegrityError,
+                ContractValidationError,
+                FileNotFoundError,
+                OSError,
+                json.JSONDecodeError,
+            ):
+                continue
+            if reuse is not None:
+                return reuse
+        return None
+
+    def _load_cache_candidate(
+        self,
+        *,
+        candidate: dict[str, Any],
+        input_artifact: dict[str, Any],
+        output_media_type: str,
+        output_contract: dict[str, Any],
+        permitted_geometry_types: set[str],
+    ) -> dict[str, Any] | None:
+        outputs = candidate.get("outputs", [])
+        if len(outputs) != 1 or outputs[0].get("output_port") != "result":
+            return None
+        artifact_ref = outputs[0]["artifact"]
+        artifact = self.artifact_store.get_artifact(
+            artifact_ref["artifact_id"], artifact_ref["version"]
+        )
+        metadata = artifact.get("metadata", {})
+        spatial = artifact.get("spatial", {})
+        artifact_geometry_types = set(spatial.get("geometry_types", []))
+        if (
+            artifact["media_type"] != output_media_type
+            or spatial.get("crs") != output_contract.get("crs")
+            or not artifact_geometry_types
+            or not artifact_geometry_types.issubset(permitted_geometry_types)
+            or artifact.get("rights") != input_artifact.get("rights")
+            or metadata.get("output_port") != "result"
+        ):
+            return None
+
+        producer_run_id = metadata.get("producer_run_id")
+        if not isinstance(producer_run_id, str):
+            return None
+        producer_run = self.run_repository.get_run(producer_run_id)
+        produced_by_source = any(
+            output.get("artifact") == artifact_ref
+            and output.get("output_port") == "result"
+            for output in producer_run.get("outputs", [])
+        )
+        if producer_run["status"] != "succeeded" or not produced_by_source:
+            return None
+
+        source_report = None
+        for report_id in candidate.get("validation_report_ids", []):
+            report = self.run_repository.get_validation_report(report_id)
+            if (
+                report["subject"] == {"kind": "run", "id": candidate["run_id"]}
+                and report["stage"] == "execution_output"
+                and report["overall_status"] == "passed"
+            ):
+                source_report = report
+                break
+        if source_report is None:
+            return None
+
+        self.artifact_store.read_bytes(artifact)
+        return {
+            "source_run": candidate,
+            "source_report": source_report,
+            "artifact": artifact,
+        }
+
+    @staticmethod
+    def _cache_reuse_report(
+        *,
+        run_id: str,
+        source_run: dict[str, Any],
+        source_report: dict[str, Any],
+        artifact: dict[str, Any],
+    ) -> dict[str, Any]:
+        artifact_reference = (
+            f"{artifact['artifact_id']}@{artifact['version']}"
+        )
+        return {
+            "report_id": f"report:{run_id}:cache",
+            "subject": {"kind": "run", "id": run_id},
+            "stage": "execution_output",
+            "overall_status": "passed",
+            "created_at": utc_timestamp(),
+            "validator": {"name": "foundry-cache-reuse", "version": "0.1.0"},
+            "findings": [
+                {
+                    "code": "cache.source_output_reused",
+                    "severity": "info",
+                    "status": "passed",
+                    "message": (
+                        "Reused a checksum-verified immutable Artifact from "
+                        "a previously successful and output-validated Run."
+                    ),
+                    "evidence": [
+                        {
+                            "kind": "run",
+                            "reference": source_run["run_id"],
+                            "summary": "Source Run with the same deterministic cache key.",
+                        },
+                        {
+                            "kind": "validation_report",
+                            "reference": source_report["report_id"],
+                            "summary": "Source output validation passed.",
+                        },
+                        {
+                            "kind": "artifact",
+                            "reference": artifact_reference,
+                            "summary": "Output Artifact checksum verified before reuse.",
+                        },
+                    ],
+                }
+            ],
+            "summary": (
+                "A prior validated output was reused after checking its source "
+                "Run, validation evidence, Artifact metadata, and content checksum."
+            ),
+            "assessed_dimensions": [
+                "source_run_status",
+                "source_artifact_integrity",
+                "source_output_validation_evidence",
+            ],
+            "unassessed_dimensions": [
+                "fresh_geometry_revalidation",
+                "methodological_suitability",
+                "rights_security_policy",
+            ],
+        }
+
     def validate_worker_configuration(self) -> None:
         identifier_pattern = r"[A-Za-z0-9][A-Za-z0-9._:/-]{0,254}"
         version_pattern = r"[A-Za-z0-9][A-Za-z0-9._+-]{0,127}"
