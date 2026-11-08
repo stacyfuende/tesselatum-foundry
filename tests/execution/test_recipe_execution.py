@@ -471,3 +471,26 @@ def test_missing_capability_runner_is_rejected_before_any_run(tmp_path):
     assert not (runs.root / "runs").exists()
     assert worker.calls == 0
     assert worker.digest_calls == 0
+
+
+def test_conflicting_runner_registration_for_exact_capability_is_rejected(tmp_path):
+    store = FileSystemArtifactStore(tmp_path / "artifacts")
+    first_runs = RunRepository(tmp_path / "first-control")
+    second_runs = RunRepository(tmp_path / "second-control")
+    first = VectorBufferRunService(
+        artifact_store=store,
+        run_repository=first_runs,
+        worker=SequenceWorker(),
+    )
+    second = VectorBufferRunService(
+        artifact_store=store,
+        run_repository=second_runs,
+        worker=SequenceWorker(),
+    )
+
+    with pytest.raises(ValueError, match="Multiple Cell runners are registered"):
+        RecipeExecutionService(
+            cell_runner=first,
+            cell_runners={("vector.buffer", "1.0.0"): second},
+            artifact_store=store,
+        )
