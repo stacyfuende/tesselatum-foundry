@@ -21,6 +21,7 @@ _IMMUTABLE_FIELDS = {
     "cell",
     "capability",
     "created_at",
+    "creation_sequence",
     "input_snapshots",
     "normalized_parameters",
     "retry_of_run_id",
@@ -92,6 +93,7 @@ class RunRepository:
         self.root.mkdir(parents=True, exist_ok=True)
         self.contracts = contracts or ContractRegistry()
         self._lock = threading.RLock()
+        self._creation_sequence = self._load_creation_sequence()
 
     def create_queued_run(
         self,
@@ -134,6 +136,9 @@ class RunRepository:
         with self._lock:
             if path.exists():
                 raise RunStateError(f"Run {run_id} already exists.")
+            self._creation_sequence += 1
+            record["creation_sequence"] = self._creation_sequence
+            self.contracts.validate("run.schema.json", record)
             self._write_atomic(path, record, replace=False)
         return record
 
@@ -231,7 +236,11 @@ class RunRepository:
             records.append(record)
         return sorted(
             records,
-            key=lambda item: (item["created_at"], item["run_id"]),
+            key=lambda item: (
+                item["created_at"],
+                item.get("creation_sequence", 0),
+                item["run_id"],
+            ),
         )
 
     def list_runs_for_recipe_execution(
@@ -267,6 +276,23 @@ class RunRepository:
         report = json.loads(path.read_text(encoding="utf-8"))
         self.contracts.validate("validation-report.schema.json", report)
         return report
+
+    def _load_creation_sequence(self) -> int:
+        """Recover the latest local sequence once when opening the repository."""
+        runs_dir = self.root / "runs"
+        highest = 0
+        record_count = 0
+        if runs_dir.is_dir():
+            for path in runs_dir.glob("*.json"):
+                record_count += 1
+                try:
+                    record = json.loads(path.read_text(encoding="utf-8"))
+                except (OSError, json.JSONDecodeError):
+                    continue
+                sequence = record.get("creation_sequence") if isinstance(record, dict) else None
+                if isinstance(sequence, int) and not isinstance(sequence, bool):
+                    highest = max(highest, sequence)
+        return max(highest, record_count)
 
     def _run_path(self, run_id: str) -> Path:
         key = hashlib.sha256(run_id.encode("utf-8")).hexdigest()
