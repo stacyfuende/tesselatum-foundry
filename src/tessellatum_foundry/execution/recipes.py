@@ -172,6 +172,7 @@ class RecipeExecutionService:
             "recipe_id": recipe["recipe_id"],
             "version": recipe["version"],
         }
+        runtime_image_digest: str | None = None
 
         for node_id in node_order:
             node = next(item for item in recipe["nodes"] if item["node_id"] == node_id)
@@ -219,6 +220,7 @@ class RecipeExecutionService:
                     recipe_ref=recipe_ref,
                     recipe_execution_id=execution_id,
                     resolved_inputs=resolved_inputs,
+                    pinned_runtime_image_digest=runtime_image_digest,
                 )
             except ExecutionPreconditionError as error:
                 return RecipeExecutionResult(
@@ -231,6 +233,8 @@ class RecipeExecutionService:
                     error={"code": "execution.precondition_failed", "message": str(error)},
                 )
             node_results[node_id] = result
+            if runtime_image_digest is None:
+                runtime_image_digest = result.run.get("runtime_image_digest")
             if result.run["status"] != "succeeded":
                 return RecipeExecutionResult(
                     execution_id=execution_id,
