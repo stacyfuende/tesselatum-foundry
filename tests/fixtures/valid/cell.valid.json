@@ -22,14 +22,15 @@
     "result": {
       "data_kind": "vector",
       "media_types": [
-        "application/geo+json"
+        "application/vnd.tessellatum.spatial-feature-collection+json"
       ],
       "crs": {
         "authority": "EPSG",
         "code": 32737
       },
       "geometry_types": [
-        "Polygon"
+        "Polygon",
+        "MultiPolygon"
       ],
       "validation_requirements": [
         "valid_geometry"
