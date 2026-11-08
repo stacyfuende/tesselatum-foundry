@@ -1,1 +1,1 @@
--e .[dev,postgis]
+-e .[dev,shapely,postgis]
