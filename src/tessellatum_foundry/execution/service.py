@@ -136,6 +136,10 @@ class VectorBufferRunService:
                 raise ExecutionPreconditionError(
                     "Only failed or timed-out Runs can be retried."
                 )
+            if not previous.get("error", {}).get("retryable", False):
+                raise ExecutionPreconditionError(
+                    "The previous Run is not marked as retryable."
+                )
             if previous["cell"] != {
                 "cell_id": cell["cell_id"],
                 "version": cell["version"],
