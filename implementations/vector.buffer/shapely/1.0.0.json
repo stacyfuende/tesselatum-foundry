@@ -4,7 +4,7 @@
   "capability_version": "1.0.0",
   "version": "1.0.0",
   "engine": "Shapely 2.x / GEOS",
-  "runtime": "Python 3.11 or later; pyproj 3.7 or later",
+  "runtime": "Python 3.11 or later; pyproj 3.7 or later; Shapely 2.x",
   "entrypoint": "tessellatum_foundry.capabilities.vector_buffer:buffer_feature_collection",
   "network_access": "none",
   "conformance": {
