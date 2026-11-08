@@ -21,7 +21,7 @@ The first Shapely implementation demonstrated the operation boundary, but an eng
 
 ## Consequences
 
-The two implementations share only engine-neutral request preparation and the result envelope; they independently parse, validate and execute geometries. The PostGIS adapter is limited to CRS definitions that resolve unambiguously to EPSG identifiers. The current capability has two executable realizations, but interchangeability is claimed only after the real PostGIS-backed CI suite passes.
+The two implementations share only engine-neutral request preparation and the result envelope; they independently parse, validate and execute geometries. The PostGIS adapter is limited to CRS definitions that resolve unambiguously to EPSG identifiers. Both implementations passed PostGIS-backed CI run 173 on 2026-11-08: Ruff passed, 8 schemas, 7 fixtures, 1 capability contract and 2 implementation manifests validated, and 91 tests passed. Their manifests record conformance suite version 0.1.0 as passed. Interchangeability is established only within the declared semantics and tested cases/tolerances; it does not promise byte-identical encodings or equivalence for untested geometry edge cases.
 
 ## Alternatives considered
 
