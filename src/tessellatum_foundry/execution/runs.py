@@ -217,26 +217,47 @@ class RunRepository:
             self._write_atomic(path, report, replace=False)
         return report
 
-    def list_runs_for_recipe_execution(
-        self, recipe_execution_id: str
-    ) -> list[dict[str, Any]]:
-        """List immutable cell Runs correlated to one Recipe execution."""
+    def list_runs(self) -> list[dict[str, Any]]:
+        """List all persisted Runs in stable creation order."""
         runs_dir = self.root / "runs"
         if not runs_dir.is_dir():
             return []
         records = []
         for path in runs_dir.glob("*.json"):
             record = json.loads(path.read_text(encoding="utf-8"))
-            if record.get("recipe_execution_id") == recipe_execution_id:
-                self.contracts.validate("run.schema.json", record)
-                records.append(record)
+            self.contracts.validate("run.schema.json", record)
+            if self._run_path(record["run_id"]) != path:
+                raise RunStateError("Stored Run identity does not match its registry path.")
+            records.append(record)
         return sorted(
             records,
-            key=lambda item: (
-                item.get("recipe_node_order", -1),
-                item["created_at"],
-                item["run_id"],
-            ),
+            key=lambda item: (item["created_at"], item["run_id"]),
+        )
+
+    def list_runs_for_recipe_execution(
+        self, recipe_execution_id: str
+    ) -> list[dict[str, Any]]:
+        """List immutable cell Runs correlated to one Recipe execution."""
+        return [
+            record
+            for record in self.list_runs()
+            if record.get("recipe_execution_id") == recipe_execution_id
+        ]
+
+    def list_cache_candidates(self, cache_key: str) -> list[dict[str, Any]]:
+        """Return successful Runs with the exact cache key, newest first."""
+        candidates = [
+            record
+            for record in self.list_runs()
+            if record["status"] == "succeeded"
+            and record.get("cache", {}).get("cache_key") == cache_key
+            and record.get("outputs")
+            and record.get("validation_report_ids")
+        ]
+        return sorted(
+            candidates,
+            key=lambda item: (item.get("finished_at", ""), item["run_id"]),
+            reverse=True,
         )
 
     def get_validation_report(self, report_id: str) -> dict[str, Any]:
