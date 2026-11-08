@@ -153,6 +153,10 @@ def test_reproject_run_persists_output_artifact_and_validation_evidence(tmp_path
     assert result.output_artifact["spatial"]["crs"] == TARGET_CRS
     assert result.output_artifact["spatial"]["geometry_types"] == ["Point"]
     assert result.validation_report["overall_status"] == "passed"
+    assert result.validation_report["validator"] == {
+        "name": "foundry-vector-reproject-output-critic",
+        "version": "0.1.0",
+    }
     output = json.loads(store.read_bytes(result.output_artifact))
     assert output["features"][0]["id"] == "site-01"
     assert output["features"][0]["properties"] == {"name": "Nairobi"}
