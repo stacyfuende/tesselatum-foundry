@@ -1,0 +1,30 @@
+{
+  "report_id": "report-buffer-001",
+  "subject": {
+    "kind": "run",
+    "id": "run-buffer-001",
+    "version": "1.0.0"
+  },
+  "stage": "execution_output",
+  "overall_status": "passed",
+  "created_at": "2026-11-08T08:01:04Z",
+  "validator": {
+    "name": "foundry-spatial-critic",
+    "version": "0.1.0"
+  },
+  "findings": [
+    {
+      "code": "geometry.validity",
+      "severity": "info",
+      "status": "passed",
+      "message": "All output geometries are valid."
+    }
+  ],
+  "summary": "Output contract checks passed.",
+  "assessed_dimensions": [
+    "geometry_validity"
+  ],
+  "unassessed_dimensions": [
+    "methodological_suitability"
+  ]
+}
