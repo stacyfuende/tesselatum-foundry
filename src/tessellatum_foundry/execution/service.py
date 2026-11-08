@@ -808,10 +808,16 @@ class VectorBufferRunService:
             for code in _REQUIRED_OUTPUT_FINDINGS
         ):
             return None
-        crs_findings = [
-            code for code in _REQUIRED_OUTPUT_CRS_FINDINGS if code in finding_statuses
-        ]
-        if len(crs_findings) != 1 or finding_statuses[crs_findings[0]] != "passed":
+        expected_crs_finding = self._expected_output_crs_finding()
+        if (
+            expected_crs_finding not in _REQUIRED_OUTPUT_CRS_FINDINGS
+            or finding_statuses.get(expected_crs_finding) != "passed"
+            or any(
+                code in finding_statuses
+                for code in _REQUIRED_OUTPUT_CRS_FINDINGS
+                if code != expected_crs_finding
+            )
+        ):
             return None
         assessed = source_report.get("assessed_dimensions")
         if not isinstance(assessed, list) or any(
@@ -828,6 +834,11 @@ class VectorBufferRunService:
             "source_report": source_report,
             "artifact": artifact,
         }
+
+    @staticmethod
+    def _expected_output_crs_finding() -> str:
+        """Return the CRS invariant required for this capability's output."""
+        return "output.crs_matches_input"
 
     @staticmethod
     def _cache_reuse_report(
