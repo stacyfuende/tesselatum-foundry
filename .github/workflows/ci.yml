@@ -10,8 +10,24 @@ permissions:
   contents: read
 
 jobs:
-  contracts:
+  contracts-and-conformance:
     runs-on: ubuntu-latest
+    services:
+      postgis:
+        image: postgis/postgis:16-3.4
+        env:
+          POSTGRES_DB: foundry
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d foundry"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      FOUNDRY_POSTGIS_DSN: postgresql://postgres:postgres@localhost:5432/foundry
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -25,5 +41,5 @@ jobs:
         run: ruff check .
       - name: Validate schemas and fixtures
         run: python scripts/validate_schemas.py
-      - name: Run tests
+      - name: Run tests, including PostGIS conformance
         run: python -m pytest
