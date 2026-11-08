@@ -437,6 +437,18 @@ def validate_recipe_spatial(
                 continue
             resolved_spatial[port_id] = spatial
             spatial_constraints = port.get("spatial", {})
+            if (
+                port.get("data_kind") in _SPATIAL_DATA_KINDS
+                and spatial.get("kind") != port.get("data_kind")
+            ):
+                findings.append(
+                    ValidationFinding(
+                        "spatial.input_kind_mismatch",
+                        f"Input port {port_id!r} expects {port.get('data_kind')!r} "
+                        f"spatial data, but received {spatial.get('kind')!r}.",
+                        json_pointer=f"{pointer}/inputs/{port_id}",
+                    )
+                )
             crs_value = spatial.get("crs")
             crs: CRS | None = None
             if crs_value is not None:
@@ -523,8 +535,11 @@ def validate_recipe_spatial(
                     )
                 )
 
+        output_ports = _port_map(capability.get("output_ports", []))
         for output_port, contract in cell.get("output_contracts", {}).items():
             output_pointer = f"{pointer}/output_contracts/{output_port}"
+            output_port_contract = output_ports.get(output_port, {})
+            output_spatial_constraints = output_port_contract.get("spatial", {})
             output_crs = contract.get("crs")
             if contract.get("data_kind") in _SPATIAL_DATA_KINDS and output_crs is None:
                 findings.append(
@@ -536,7 +551,21 @@ def validate_recipe_spatial(
                 )
             elif output_crs is not None:
                 try:
-                    _crs_from_contract(output_crs)
+                    resolved_output_crs = _crs_from_contract(output_crs)
+                    expected_output_crs_type = output_spatial_constraints.get("crs_type")
+                    if (
+                        expected_output_crs_type
+                        and expected_output_crs_type != "any"
+                        and _crs_kind(resolved_output_crs) != expected_output_crs_type
+                    ):
+                        findings.append(
+                            ValidationFinding(
+                                "spatial.output_crs_type_mismatch",
+                                f"Output port {output_port!r} requires a "
+                                f"{expected_output_crs_type} CRS.",
+                                json_pointer=f"{output_pointer}/crs",
+                            )
+                        )
                 except (CRSError, ValueError, TypeError) as error:
                     findings.append(
                         ValidationFinding(
@@ -545,6 +574,25 @@ def validate_recipe_spatial(
                             json_pointer=f"{output_pointer}/crs",
                         )
                     )
+            allowed_output_geometry_types = set(
+                output_spatial_constraints.get("geometry_types", [])
+            )
+            declared_output_geometry_types = set(contract.get("geometry_types", []))
+            if (
+                allowed_output_geometry_types
+                and not declared_output_geometry_types.issubset(
+                    allowed_output_geometry_types
+                )
+            ):
+                findings.append(
+                    ValidationFinding(
+                        "spatial.output_geometry_type_mismatch",
+                        f"Output port {output_port!r} permits "
+                        f"{sorted(allowed_output_geometry_types)}, but the cell declares "
+                        f"{sorted(declared_output_geometry_types)}.",
+                        json_pointer=f"{output_pointer}/geometry_types",
+                    )
+                )
             findings.extend(
                 _geometry_findings(
                     contract.get("geometry_types"),
