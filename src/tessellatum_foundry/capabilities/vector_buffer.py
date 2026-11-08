@@ -86,7 +86,7 @@ def _feature_geometry(feature: Mapping[str, Any], index: int) -> BaseGeometry:
     try:
         geometry = shape(feature["geometry"])
     except (TypeError, ValueError) as error:
-        raise BufferContractError(f"Feature at index {index} has invalid geometry: {error}") from error
+        raise BufferContractError(\n            f"Feature at index {index} has invalid geometry: {error}"\n        ) from error
     if geometry.geom_type not in _SUPPORTED_INPUT_TYPES:
         raise BufferContractError(
             f"Feature at index {index} has unsupported geometry type {geometry.geom_type!r}."
