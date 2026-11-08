@@ -80,6 +80,7 @@ class VectorBufferRunService:
         recipe_ref: dict[str, str] | None = None,
         recipe_execution_id: str | None = None,
         resolved_inputs: dict[str, dict[str, Any]] | None = None,
+        pinned_runtime_image_digest: str | None = None,
     ) -> ExecutionResult:
         self.contracts.validate("cell.schema.json", cell)
         self.contracts.validate("capability.schema.json", capability)
@@ -98,6 +99,12 @@ class VectorBufferRunService:
                 "Recipe reference and recipe_execution_id must be supplied together."
             )
         resolved_inputs = resolved_inputs or {}
+        if pinned_runtime_image_digest is not None and not re.fullmatch(
+            r"sha256:[a-fA-F0-9]{64}", pinned_runtime_image_digest
+        ):
+            raise ExecutionPreconditionError(
+                "Pinned runtime image digest must be an immutable SHA-256 image ID."
+            )
         try:
             implementation_manifest = self.implementations.require_conformant(
                 implementation_id=self.worker.implementation_id,
@@ -306,7 +313,7 @@ class VectorBufferRunService:
         )
 
         try:
-            image_digest = self.worker.image_digest()
+            image_digest = pinned_runtime_image_digest or self.worker.image_digest()
             if not isinstance(image_digest, str) or not re.fullmatch(
                 r"sha256:[a-fA-F0-9]{64}", image_digest
             ):
