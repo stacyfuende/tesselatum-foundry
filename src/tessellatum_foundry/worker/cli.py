@@ -33,6 +33,7 @@ def _write_json_once_or_replace(path: Path, value: dict[str, Any]) -> None:
             stream.write("\n")
             stream.flush()
             os.fsync(stream.fileno())
+        temporary.chmod(0o644)
         os.replace(temporary, path)
     finally:
         temporary.unlink(missing_ok=True)
