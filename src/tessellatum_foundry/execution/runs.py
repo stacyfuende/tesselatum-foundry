@@ -165,14 +165,6 @@ class RunRepository:
             if new_status not in _ALLOWED_TRANSITIONS.get(status, set()):
                 raise RunStateError(f"Invalid Run transition: {status} -> {new_status}.")
             changes = fields or {}
-            permitted_fields = _ALLOWED_TRANSITION_FIELDS[(status, new_status)]
-            unexpected_fields = set(changes) - permitted_fields
-            if unexpected_fields:
-                names = ", ".join(sorted(unexpected_fields))
-                raise RunStateError(
-                    f"Fields {names} are not permitted for transition "
-                    f"{status} -> {new_status}."
-                )
             for name in _IMMUTABLE_FIELDS:
                 if name in changes and changes[name] != current.get(name):
                     raise RunStateError(
@@ -187,6 +179,14 @@ class RunRepository:
                     raise RunStateError(
                         f"Run execution identity field {name!r} cannot be changed."
                     )
+            permitted_fields = _ALLOWED_TRANSITION_FIELDS[(status, new_status)]
+            unexpected_fields = set(changes) - permitted_fields
+            if unexpected_fields:
+                names = ", ".join(sorted(unexpected_fields))
+                raise RunStateError(
+                    f"Fields {names} are not permitted for transition "
+                    f"{status} -> {new_status}."
+                )
             updated = dict(current)
             updated.update(changes)
             updated["status"] = new_status
