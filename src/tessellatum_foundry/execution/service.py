@@ -31,7 +31,7 @@ from tessellatum_foundry.execution.implementations import (
     ImplementationRegistryError,
 )
 from tessellatum_foundry.execution.protocol import VectorBufferWorker
-from tessellatum_foundry.execution.runs import RunRepository, RunStateError
+from tessellatum_foundry.execution.runs import RunRepository
 from tessellatum_foundry.storage.artifacts import (
     ArtifactIntegrityError,
     FileSystemArtifactStore,
@@ -717,6 +717,8 @@ class VectorBufferRunService:
         )
         metadata = artifact.get("metadata", {})
         spatial = artifact.get("spatial", {})
+        if not isinstance(metadata, dict) or not isinstance(spatial, dict):
+            return None
         artifact_geometry_types = set(spatial.get("geometry_types", []))
         if (
             artifact["media_type"] != output_media_type
