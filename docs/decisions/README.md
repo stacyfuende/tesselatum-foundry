@@ -24,7 +24,9 @@ This register records decisions that constrain Foundry's architecture. Each deci
 | [018](018-first-local-run-and-isolated-worker.md) | First local Run path and isolated worker | Accepted |
 | [019](019-vector-buffer-worker-protocol.md) | Separate worker protocol from Docker adapter | Accepted |
 | [020](020-implementation-conformance-gate.md) | Gate execution on registered implementation conformance | Accepted |
-| [021](021-versioned-cell-and-recipe-definition-storage.md) | Immutable versioned Cell and Recipe storage | Accepted |
+| [021](021-package-canonical-runtime-data.md) | Package canonical schemas and runtime manifests | Accepted |
 | [022](022-sequential-recipe-execution.md) | Sequential Recipe execution as correlated cell Runs | Accepted |
+| [023](023-canonical-capability-registry.md) | Resolve execution against canonical Capability contracts | Accepted |
+| [024](024-versioned-definition-storage.md) | Immutable versioned Cell and Recipe storage | Accepted |
 
 A decision may be superseded only by a new decision record that explains the change. Do not silently edit an accepted decision to reverse its meaning.
