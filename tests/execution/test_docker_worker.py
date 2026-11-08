@@ -16,10 +16,13 @@ from tessellatum_foundry.execution.docker_worker import (
 _IMAGE_ID = "sha256:" + "b" * 64
 
 
+class StubDigestDockerWorker(DockerWorker):
+    def image_digest(self) -> str:
+        return _IMAGE_ID
+
+
 def _worker(**kwargs) -> DockerWorker:
-    worker = DockerWorker(**kwargs)
-    worker.image_digest = lambda: _IMAGE_ID  # type: ignore[method-assign]
-    return worker
+    return StubDigestDockerWorker(**kwargs)
 
 
 def test_docker_worker_applies_isolation_limits_and_pins_image(monkeypatch):
