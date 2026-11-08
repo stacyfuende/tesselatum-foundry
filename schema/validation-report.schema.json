@@ -17,32 +17,51 @@
       "$ref": "urn:tessellatum-foundry:schema:common:1.0.0#/$defs/identifier"
     },
     "subject": {
-      "type": "object",
-      "required": [
-        "kind",
-        "id",
-        "version"
-      ],
-      "properties": {
-        "kind": {
-          "type": "string",
-          "enum": [
-            "artifact",
-            "capability",
-            "cell",
-            "recipe",
-            "run",
-            "implementation"
-          ]
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "kind",
+            "id",
+            "version"
+          ],
+          "properties": {
+            "kind": {
+              "type": "string",
+              "enum": [
+                "artifact",
+                "capability",
+                "cell",
+                "recipe",
+                "implementation"
+              ]
+            },
+            "id": {
+              "$ref": "urn:tessellatum-foundry:schema:common:1.0.0#/$defs/identifier"
+            },
+            "version": {
+              "$ref": "urn:tessellatum-foundry:schema:common:1.0.0#/$defs/version"
+            }
+          },
+          "additionalProperties": false
         },
-        "id": {
-          "$ref": "urn:tessellatum-foundry:schema:common:1.0.0#/$defs/identifier"
-        },
-        "version": {
-          "$ref": "urn:tessellatum-foundry:schema:common:1.0.0#/$defs/version"
+        {
+          "type": "object",
+          "required": [
+            "kind",
+            "id"
+          ],
+          "properties": {
+            "kind": {
+              "const": "run"
+            },
+            "id": {
+              "$ref": "urn:tessellatum-foundry:schema:common:1.0.0#/$defs/identifier"
+            }
+          },
+          "additionalProperties": false
         }
-      },
-      "additionalProperties": false
+      ]
     },
     "stage": {
       "type": "string",
