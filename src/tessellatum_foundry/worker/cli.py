@@ -12,8 +12,6 @@ import tempfile
 from pathlib import Path
 from typing import Any
 
-from shapely.geometry import shape
-
 from tessellatum_foundry.capabilities.vector_buffer import buffer_feature_collection
 
 
@@ -65,16 +63,9 @@ def execute_request(request_path: Path, input_path: Path, output_path: Path) -> 
         measurement_crs=request["measurement_crs"],
         **request["parameters"],
     )
-    geometry_types = sorted(
-        {
-            shape(feature["geometry"]).geom_type
-            for feature in result.feature_collection["features"]
-        }
-    )
     payload = {
         "feature_collection": result.feature_collection,
         "crs": request["input_crs"],
-        "geometry_types": geometry_types,
     }
     _write_json_once_or_replace(output_path, payload)
 
