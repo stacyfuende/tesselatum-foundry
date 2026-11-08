@@ -45,10 +45,13 @@ from tessellatum_foundry.validation.output import inspect_vector_buffer_output
 from tessellatum_foundry.validation.spatial import validate_recipe_spatial
 
 
-_OUTPUT_VALIDATOR_NAME = "foundry-vector-output-critic"
-_OUTPUT_VALIDATOR_VERSION = "0.1.0"
-_REQUIRED_OUTPUT_FINDINGS = {
+_OUTPUT_VALIDATOR_NAME = "foundry-spatial-output-critic"
+_OUTPUT_VALIDATOR_VERSION = "0.2.0"
+_REQUIRED_OUTPUT_CRS_FINDINGS = {
     "output.crs_matches_input",
+    "output.crs_matches_contract",
+}
+_REQUIRED_OUTPUT_FINDINGS = {
     "output.feature_collection",
     "output.feature_count_preserved",
     "output.geometry_validity",
@@ -794,7 +797,9 @@ class VectorBufferRunService:
             if not isinstance(finding, dict):
                 continue
             code = finding.get("code")
-            if isinstance(code, str) and code in _REQUIRED_OUTPUT_FINDINGS:
+            if isinstance(code, str) and code in (
+                _REQUIRED_OUTPUT_FINDINGS | _REQUIRED_OUTPUT_CRS_FINDINGS
+            ):
                 if code in finding_statuses:
                     return None
                 finding_statuses[code] = finding.get("status")
@@ -802,6 +807,11 @@ class VectorBufferRunService:
             finding_statuses.get(code) != "passed"
             for code in _REQUIRED_OUTPUT_FINDINGS
         ):
+            return None
+        crs_findings = [
+            code for code in _REQUIRED_OUTPUT_CRS_FINDINGS if code in finding_statuses
+        ]
+        if len(crs_findings) != 1 or finding_statuses[crs_findings[0]] != "passed":
             return None
         assessed = source_report.get("assessed_dimensions")
         if not isinstance(assessed, list) or any(
