@@ -169,3 +169,22 @@ def test_reproject_preserves_null_properties_and_geometry_collections():
     assert feature["geometry"]["type"] == "GeometryCollection"
     assert feature["properties"] is None
     assert feature["id"] == "mixed"
+
+
+def test_reproject_preserves_three_dimensional_coordinates():
+    collection = {
+        "type": "FeatureCollection",
+        "features": [{
+            "type": "Feature",
+            "geometry": {"type": "Point", "coordinates": [36.8, -1.3, 42.5]},
+            "properties": {},
+        }],
+    }
+    result = reproject_feature_collection(
+        collection,
+        input_crs={"authority": "EPSG", "code": 4326},
+        target_crs={"authority": "EPSG", "code": 32737},
+    )
+    coordinates = result.feature_collection["features"][0]["geometry"]["coordinates"]
+    assert len(coordinates) == 3
+    assert coordinates[2] == pytest.approx(42.5)
