@@ -224,3 +224,32 @@ def test_z_is_ignored_and_buffer_output_is_two_dimensional(buffer_engine):
     geometry = output_geometry(invoke(buffer_engine, data))
     assert not geometry.has_z
     assert geometry.is_valid
+
+
+def test_postgis_requires_unambiguous_epsg_identifier():
+    from tessellatum_foundry.capabilities.buffer_contract import BufferContractError
+    from tessellatum_foundry.capabilities.postgis_vector_buffer import (
+        buffer_feature_collection_postgis,
+    )
+
+    custom_crs = {
+        "proj": "tmerc",
+        "lat_0": 1,
+        "lon_0": 34.1,
+        "k": 0.9987,
+        "x_0": 234567,
+        "y_0": 123456,
+        "ellps": "WGS84",
+        "units": "m",
+        "no_defs": True,
+    }
+    data = collection({"type": "Point", "coordinates": [0, 0]})
+    with pytest.raises(BufferContractError, match="unambiguous EPSG identifier"):
+        buffer_feature_collection_postgis(
+            None,
+            data,
+            input_crs=custom_crs,
+            measurement_crs=custom_crs,
+            distance=10,
+            unit="metre",
+        )
