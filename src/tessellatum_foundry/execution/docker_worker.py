@@ -203,8 +203,10 @@ class DockerWorker:
                     f"Worker exited with code {process.returncode}: {detail}",
                     exit_code=process.returncode,
                 )
-            if not output_path.is_file():
-                raise WorkerExecutionError("Worker exited successfully without an output file.")
+            if output_path.is_symlink() or not output_path.is_file():
+                raise WorkerExecutionError(
+                    "Worker exited without a regular output file."
+                )
             if output_path.stat().st_size > self.max_output_bytes:
                 raise WorkerExecutionError("Worker output exceeds the configured byte limit.")
             try:
