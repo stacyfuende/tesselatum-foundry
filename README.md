@@ -86,7 +86,11 @@ The Validation Report is a separate evidence object. Implementations are registe
 - The planner is optional and never required by the execution core.
 - Security, provenance, licensing, and cost visibility are architectural concerns.
 
-## Vector capabilities\n\n`vector.reproject@1.0.0` is the second registered vector operation. Its Shapely/pyproj kernel accepts an explicit source CRS from Artifact metadata and an explicit target CRS parameter, uses x/y axis order, rejects ballpark coordinate operations, preserves feature IDs/properties and geometry types, and fails closed on invalid or non-finite geometries. It deliberately does not repair geometry, densify edges, clip, or split antimeridian crossings. Its contract and kernel are implemented, but its conformance gate and Foundry Run/Recipe integration are not yet complete. See [ADR-033](docs/decisions/033-vector-reproject-crs-semantics.md).\n\n## First capability: vector.buffer
+## Vector capabilities
+
+`vector.reproject@1.0.0` is the second registered vector operation. Its Shapely/pyproj kernel accepts an explicit source CRS from Artifact metadata and an explicit target CRS parameter, uses x/y axis order, rejects ballpark coordinate operations, preserves feature IDs/properties and geometry types, and fails closed on invalid or non-finite geometries. It deliberately does not repair geometry, densify edges, clip, or split antimeridian crossings. Its contract and kernel are implemented, but its conformance gate and Foundry Run/Recipe integration are not yet complete. See [ADR-033](docs/decisions/033-vector-reproject-crs-semantics.md).
+
+## First capability: vector.buffer
 
 `vector.buffer@1.0.0` supports Point, MultiPoint, LineString, MultiLineString, Polygon and MultiPolygon inputs. It requires an explicit projected measurement CRS equal to the input CRS, rejects invalid input geometries rather than repairing them, and returns valid Polygon/MultiPolygon outputs while preserving feature IDs and properties. Its first two independent realizations are Shapely and PostGIS; both use the same semantic request validator. The PostGIS adapter requires an unambiguous EPSG CRS and checks the output SRID. Both implementations passed the shared geometry conformance suite in [CI run 173](https://github.com/stacyfuende/tesselatum-foundry/actions/runs/42486888151). That conformance claim is limited to the declared contract and tested cases/tolerances; it does not imply byte-identical geometry encodings.
 
