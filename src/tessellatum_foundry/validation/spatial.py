@@ -16,7 +16,6 @@ ObjectKey = tuple[str, str]
 def _object_key(object_id: str, version: str) -> ObjectKey:
     return object_id, version
 
-_GEOGRAPHIC_KINDS = {"geographic", "projected", "geocentric", "engineering", "compound"}
 _SPATIAL_DATA_KINDS = {"vector", "raster", "point_cloud", "mesh"}
 _SUPPORTED_GEOMETRIES = {
     "Point",
