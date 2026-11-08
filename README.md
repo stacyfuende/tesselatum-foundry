@@ -75,7 +75,7 @@ The Validation Report is a separate evidence object. Implementations are registe
 - Contracts precede implementations.
 - A schema-valid object is not necessarily semantically valid.
 - Execution is deterministic where the Capability permits it and always auditable.
-- Every Run records the exact versions and inputs it used.
+- Every Run records the exact versions and inputs it used, and its provenance cannot be rewritten during lifecycle transitions.
 - Workers are replaceable, but must conform to a shared execution contract.
 - Capability implementations must pass conformance tests before being treated as interchangeable.
 - The planner is optional and never required by the execution core.
