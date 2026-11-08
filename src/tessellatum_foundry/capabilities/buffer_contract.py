@@ -106,11 +106,18 @@ def _validate_crs(input_crs: Any, measurement_crs: Any, unit: str) -> CRS:
     return measurement
 
 
+def _is_finite_number(value: int | float) -> bool:
+    try:
+        return math.isfinite(value)
+    except OverflowError:
+        return False
+
+
 def _coordinates_are_finite_numbers(value: Any) -> bool:
     if isinstance(value, bool):
         return False
     if isinstance(value, (int, float)):
-        return math.isfinite(value)
+        return _is_finite_number(value)
     if isinstance(value, (list, tuple)):
         return all(_coordinates_are_finite_numbers(item) for item in value)
     return False
@@ -133,7 +140,7 @@ def prepare_buffer_request(
     """Validate shared parameters and metadata without invoking a geometry engine."""
     if not isinstance(distance, (int, float)) or isinstance(distance, bool):
         raise BufferContractError("Distance must be a number.")
-    if not math.isfinite(distance) or distance <= 0:
+    if not _is_finite_number(distance) or distance <= 0:
         raise BufferContractError("Distance must be greater than zero.")
     if (
         not isinstance(quad_segs, int)
@@ -148,7 +155,7 @@ def prepare_buffer_request(
     if (
         not isinstance(mitre_limit, (int, float))
         or isinstance(mitre_limit, bool)
-        or not math.isfinite(mitre_limit)
+        or not _is_finite_number(mitre_limit)
         or mitre_limit <= 0
     ):
         raise BufferContractError("mitre_limit must be greater than zero.")
