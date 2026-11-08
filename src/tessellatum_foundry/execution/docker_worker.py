@@ -37,6 +37,11 @@ class WorkerTimeoutError(TimeoutError):
 class DockerWorker:
     """Run the Shapely implementation in a network-isolated Docker container."""
 
+    implementation_id = "vector-buffer-shapely"
+    implementation_version = "1.0.0"
+    worker_id = "local-docker-worker"
+    worker_type = "local_docker"
+
     def __init__(
         self,
         image: str | None = None,
@@ -100,6 +105,7 @@ class DockerWorker:
         self,
         *,
         input_bytes: bytes,
+        capability_version: str,
         input_crs: dict[str, Any],
         measurement_crs: dict[str, Any],
         parameters: dict[str, Any],
@@ -113,6 +119,7 @@ class DockerWorker:
         request = {
             "request_version": "0.1.0",
             "capability_id": "vector.buffer",
+            "capability_version": capability_version,
             "input_crs": input_crs,
             "measurement_crs": measurement_crs,
             "parameters": parameters,
