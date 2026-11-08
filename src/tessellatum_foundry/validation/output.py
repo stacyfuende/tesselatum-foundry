@@ -116,7 +116,6 @@ def inspect_vector_buffer_output(
     dimensionality_is_2d = True
     output_types_supported = True
     for index, output_feature in enumerate(result_features):
-        pointer = f"/features/{index}"
         if not isinstance(output_feature, Mapping) or output_feature.get("type") != "Feature":
             geometry_validity = False
             metadata_matches = False
@@ -165,9 +164,11 @@ def inspect_vector_buffer_output(
     add(
         "output.geometry_types",
         output_types_supported and bool(output_types),
-        f"Output geometry types are within the declared polygonal contract: {sorted(output_types)}."
+        "Output geometry types are within the declared polygonal contract: "
+        f"{sorted(output_types)}."
         if output_types_supported and output_types
-        else f"Output geometry types violate the declared polygonal contract: {sorted(output_types)}.",
+        else "Output geometry types violate the declared polygonal contract: "
+        f"{sorted(output_types)}.",
         "/features",
     )
     add(
