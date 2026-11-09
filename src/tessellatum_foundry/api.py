@@ -279,6 +279,11 @@ def create_app(
     def get_artifact_content(artifact_id: str, version: str) -> Response:
         try:
             artifact = control_plane.get_artifact(artifact_id, version)
+            stored_size = artifact.get("size_bytes")
+            if type(stored_size) is not int or stored_size > maximum_response:
+                raise HTTPException(
+                    status_code=413, detail="artifact_response_size_limit_exceeded"
+                )
             content = control_plane.read_artifact(artifact)
             if len(content) > maximum_response:
                 raise HTTPException(
