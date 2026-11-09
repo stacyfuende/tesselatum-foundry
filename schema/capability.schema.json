@@ -220,6 +220,15 @@
         "nondeterministic"
       ]
     },
+    "semantics": {
+      "type": "array",
+      "description": "Normative statements defining the meaning and interpretation of this capability.",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    },
     "preconditions": {
       "type": "array",
       "items": {
