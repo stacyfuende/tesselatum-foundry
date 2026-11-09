@@ -164,3 +164,4 @@ The current allowance notice should be checked in **Settings → Billing & licen
 - Commits: kernel `18ac678`; critic `e46e3d2`; regression test `5074726`; ADR-044 numerical clarification `1ddb7f6`.
 - Arithmetic was independently exercised in the available Python environment, including signed int64 extrema and uint64 endpoints. The actual project test suite and GeoTIFF regression tests have not been run. The implementation manifest remains `not_run`; no Actions run or PR was started.
 - Follow-up formatting review normalized the new test-function spacing and wrapped an overlong critic expression (commits `410c3b9` and `a25df7f`).
+- Expanded the full-range int64 mean regression to a tiled 32×16 GeoTIFF with the signed extrema in separate raster blocks and 510 zero samples. It now verifies exact blockwise sum merging with expected mean `-1/512` (commit `dff59bc`).
