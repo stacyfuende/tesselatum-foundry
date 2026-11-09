@@ -115,6 +115,7 @@ input:focus, textarea:focus {
   border-color: #568b9b;
 }
 input[type="file"] { padding: .45rem; }
+.inline-link { color: #1b5666; font-size: .78rem; font-weight: 650; }
 .wide { grid-column: 1 / -1; }
 .actions {
   display: flex;
