@@ -234,3 +234,5 @@ The current allowance notice should be checked in **Settings → Billing & licen
 - Additional safeguards/configuration commits: API worker and response ceilings `ec12f62`, Artifact download bound test `e9100c3`, client longer execution timeout `5a83177`, timeout test `1f15106`, client response ceiling `c5ef0bb`, remote worker env template `8965eaf`, and aligned deployment docs `ac96efb`.
 
 - Follow-up limit-hardening commits: API pre-read download ceiling `a0a4817`, client checksum metadata validation `f3c8bb3`, worker deployment run commands `6323403`, and private network setup `d0c1fc0`.
+
+- Latest isolated working-branch HEAD at this status update: `bf4141a50f85c04fb123ea5832ae674ce35b758c`. GitHub Actions API reports zero runs on this branch and no PR has been opened from it. The two accidentally placed `deploy/console` files have been deleted from `main`; the main tree no longer contains that directory, and the Actions history shows no runs from the accidental commits or cleanup.
