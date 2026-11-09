@@ -37,7 +37,11 @@
     "Input is a readable raster supported by the installed GDAL drivers.",
     "Input declares a CRS.",
     "Selected band indexes are unique 1-based indexes within the dataset band count.",
-    "Every selected band contains at least one finite, non-nodata pixel.",\n    "Nodata and masked pixels are excluded.",\n    "Statistics describe raw stored samples; scale and offset metadata are reported but not applied.",\n    "Population standard deviation (ddof=0) is used.",\n    "Every valid pixel is processed without sampling or approximation."
+    "Every selected band contains at least one finite, non-nodata pixel.",
+    "Nodata and masked pixels are excluded.",
+    "Statistics describe raw stored samples; scale and offset metadata are reported but not applied.",
+    "Population standard deviation (ddof=0) is used.",
+    "Every valid pixel is processed without sampling or approximation."
   ],
   "semantics": [
     "Nodata and masked pixels are excluded.",
@@ -47,7 +51,9 @@
   ],
   "validation_requirements": [
     "Each selected band appears exactly once in the result.",
-    "Valid pixel counts are positive.",\n    "Standard deviation is the population standard deviation (ddof=0).",\n    "Statistics describe raw stored sample values; scale and offset metadata are not applied.",
+    "Valid pixel counts are positive.",
+    "Standard deviation is the population standard deviation (ddof=0).",
+    "Statistics describe raw stored sample values; scale and offset metadata are not applied.",
     "All reported statistics are finite.",
     "Reported dimensions match the source raster."
   ],
