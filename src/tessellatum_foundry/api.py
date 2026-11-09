@@ -78,10 +78,9 @@ def create_app(
     control_plane = foundry or _build_foundry_from_environment()
 
     def authorize(authorization: str | None = Header(default=None)) -> None:
-        expected = f"Bearer {token}"
-        if not isinstance(authorization, str) or not hmac.compare_digest(
-            authorization, expected
-        ):
+        expected = f"Bearer {token}".encode("utf-8")
+        supplied = authorization.encode("utf-8") if isinstance(authorization, str) else b""
+        if not hmac.compare_digest(supplied, expected):
             raise HTTPException(status_code=401, detail="unauthorized")
 
     async def read_json_object(request: Request) -> dict[str, Any]:
@@ -160,6 +159,20 @@ def create_app(
                 status_code=422,
                 detail=f"unknown_artifact_fields: {', '.join(sorted(unknown))}",
             )
+        required = {
+            "artifact_id",
+            "version",
+            "content_base64",
+            "created_by",
+            "media_type",
+            "format",
+        }
+        missing = required - set(payload)
+        if missing:
+            raise HTTPException(
+                status_code=422,
+                detail="missing_artifact_fields: " + ", ".join(sorted(missing)),
+            )
         encoded = payload.get("content_base64")
         if not isinstance(encoded, str):
             raise HTTPException(status_code=422, detail="content_base64_is_required")
@@ -225,6 +238,32 @@ def create_app(
                 "Content-Length": str(len(content)),
             },
         )
+
+    @app.get("/v1/cells", dependencies=[Depends(authorize)])
+    def list_cells(
+        limit: int = Query(default=100, ge=1, le=1000),
+    ) -> list[dict[str, Any]]:
+        return control_plane.definitions.list_records("cell")[-limit:]
+
+    @app.get("/v1/cells/{cell_id}/{version}", dependencies=[Depends(authorize)])
+    def get_cell(cell_id: str, version: str) -> dict[str, Any]:
+        try:
+            return control_plane.definitions.get_cell(cell_id, version)
+        except FileNotFoundError as error:
+            raise HTTPException(status_code=404, detail="cell_not_found") from error
+
+    @app.get("/v1/recipes", dependencies=[Depends(authorize)])
+    def list_recipes(
+        limit: int = Query(default=100, ge=1, le=1000),
+    ) -> list[dict[str, Any]]:
+        return control_plane.definitions.list_records("recipe")[-limit:]
+
+    @app.get("/v1/recipes/{recipe_id}/{version}", dependencies=[Depends(authorize)])
+    def get_recipe(recipe_id: str, version: str) -> dict[str, Any]:
+        try:
+            return control_plane.definitions.get_recipe(recipe_id, version)
+        except FileNotFoundError as error:
+            raise HTTPException(status_code=404, detail="recipe_not_found") from error
 
     @app.post("/v1/cells", dependencies=[Depends(authorize)])
     async def register_cell(request: Request) -> dict[str, Any]:
