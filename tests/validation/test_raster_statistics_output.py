@@ -210,21 +210,28 @@ def test_raster_statistics_preserves_mean_for_full_range_int64_samples():
         source_stream,
         "w",
         driver="GTiff",
-        width=2,
-        height=1,
+        width=32,
+        height=16,
         count=1,
         dtype="int64",
         crs="EPSG:32636",
         transform=from_origin(500000, 1000000, 10, 10),
+        tiled=True,
+        blockxsize=16,
+        blockysize=16,
     ) as dataset:
-        dataset.write(np.array([[[minimum, maximum]]], dtype=np.int64))
+        samples = np.zeros((1, 16, 32), dtype=np.int64)
+        samples[0, 0, 0] = minimum
+        samples[0, 0, -1] = maximum
+        dataset.write(samples)
     source = source_stream.getvalue()
 
     result = raster_band_statistics(source)
     band = result.statistics["bands"][0]
     assert band["minimum"] == int(minimum)
     assert band["maximum"] == int(maximum)
-    assert band["mean"] == -0.5
+    assert band["valid_pixel_count"] == 512
+    assert band["mean"] == -1 / 512
 
     inspection = inspect_raster_band_statistics_output(
         input_raster_bytes=source,
