@@ -11,7 +11,7 @@ Foundry's Artifact and spatial metadata models already recognize raster data, in
 
 1. Introduce `raster.band_statistics@1.0.0` as the first raster capability.
 2. Accept a georeferenced raster Artifact as an immutable byte input and select bands using optional 1-based indexes; omission selects all bands.
-3. Calculate exact statistics over every valid pixel in each selected band. Do not sample or approximate.
+3. Calculate statistics exhaustively over every valid pixel in each selected band. Do not sample or approximate.
 4. Exclude GDAL-masked and nodata pixels. Reject a selected band with no finite valid samples.
 5. Report minimum, maximum, mean, population standard deviation, and valid-pixel count for each band.
 6. Report stored-value scale, offset, and unit metadata, but do not apply scale/offset to sample values. The output explicitly identifies raw stored-sample semantics.
