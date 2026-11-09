@@ -47,22 +47,41 @@ def _windowed_statistics(dataset: rasterio.io.DatasetReader, band_index: int) ->
     count = 0
     mean = 0.0
     m2 = 0.0
-    minimum = math.inf
-    maximum = -math.inf
+    minimum: float | int = math.inf
+    maximum: float | int = -math.inf
+    integer_samples = False
+    integer_baseline: int | None = None
 
     for _, window in dataset.block_windows(band_index):
         masked = dataset.read(band_index, window=window, masked=True)
-        values = np.asarray(masked.compressed(), dtype=np.float64)
-        values = values[np.isfinite(values)]
-        if values.size == 0:
+        raw_values = masked.compressed()
+        if raw_values.size == 0:
             continue
+        integer_samples = np.issubdtype(raw_values.dtype, np.integer)
+        if integer_samples:
+            if integer_baseline is None:
+                integer_baseline = int(raw_values[0])
+            # Subtract as Python integers before float conversion. This avoids
+            # losing low-order bits for int64/uint64 samples above 2**53.
+            values = np.fromiter(
+                (int(value) - integer_baseline for value in raw_values),
+                dtype=np.float64,
+                count=int(raw_values.size),
+            )
+            chunk_min = int(np.min(raw_values))
+            chunk_max = int(np.max(raw_values))
+        else:
+            values = np.asarray(raw_values, dtype=np.float64)
+            values = values[np.isfinite(values)]
+            if values.size == 0:
+                continue
+            chunk_min = float(np.min(values))
+            chunk_max = float(np.max(values))
 
         chunk_count = int(values.size)
         chunk_mean = float(np.mean(values, dtype=np.float64))
         centered = values - chunk_mean
         chunk_m2 = float(np.dot(centered, centered))
-        chunk_min = float(np.min(values))
-        chunk_max = float(np.max(values))
 
         if count == 0:
             count, mean, m2 = chunk_count, chunk_mean, chunk_m2
@@ -81,7 +100,8 @@ def _windowed_statistics(dataset: rasterio.io.DatasetReader, band_index: int) ->
         )
     variance = m2 / count
     standard_deviation = math.sqrt(max(0.0, variance))
-    if not all(math.isfinite(value) for value in (minimum, maximum, mean, standard_deviation)):
+    reported_mean = float(integer_baseline + mean) if integer_baseline is not None else mean
+    if not all(math.isfinite(float(value)) for value in (minimum, maximum, reported_mean, standard_deviation)):
         raise RasterStatisticsError(
             f"Band {band_index} statistics exceed finite float64 output range."
         )
@@ -89,7 +109,7 @@ def _windowed_statistics(dataset: rasterio.io.DatasetReader, band_index: int) ->
         "valid_pixel_count": count,
         "minimum": minimum,
         "maximum": maximum,
-        "mean": mean,
+        "mean": reported_mean,
         "standard_deviation": standard_deviation,
     }
 
