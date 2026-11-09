@@ -40,7 +40,9 @@ Use the returned immutable `sha256:...` image ID as `FOUNDRY_WORKER_IMAGE_DIGEST
 - Buffer: `FOUNDRY_WORKER_CAPABILITY_ID=vector.buffer`, `FOUNDRY_WORKER_CAPABILITY_VERSION=1.0.0`, and a unique `FOUNDRY_REMOTE_WORKER_TOKEN`.
 - Reprojection: `FOUNDRY_WORKER_CAPABILITY_ID=vector.reproject`, `FOUNDRY_WORKER_CAPABILITY_VERSION=1.0.0`, `FOUNDRY_IMPLEMENTATION_ID=vector-reproject-pyproj-shapely`, and a different unique `FOUNDRY_REMOTE_WORKER_TOKEN`.
 
-Each process advertises and executes exactly one capability. Do not expose the worker's plain HTTP port publicly; allow inbound traffic only from the control plane through the TLS ingress.
+Copy `deploy/remote-worker.env.example` separately for each worker and populate unique tokens, worker IDs, and the immutable image ID. For reprojection, change the capability ID to `vector.reproject` and implementation ID to `vector-reproject-pyproj-shapely`. Keep the worker execution deadline at 110 seconds unless you also raise the control-plane adapter timeout, Python client execution timeout, and reverse-proxy timeout. The example defaults are 110 seconds in the worker, 120 seconds in the API adapter, 145 seconds in the Python client, and 150 seconds in Nginx.
+
+Each process advertises and executes exactly one capability. The default process semaphore allows two active executions; overload returns HTTP 503 with `Retry-After`, while a hard child-process deadline returns HTTP 504 and becomes a timed-out Run. Do not expose the worker's plain HTTP port publicly; allow inbound traffic only from the control plane through the TLS ingress.
 
 
 Copy `deploy/control-plane/env.example` to a secret-managed location outside the repository. Set:
