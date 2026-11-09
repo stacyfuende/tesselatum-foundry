@@ -90,3 +90,14 @@ Do not equate an empty status list with success. Do not claim a CI pass without 
 
 ---
 *This document is intentionally a living tracker, not a substitute for immutable ADRs, PR descriptions, test results, or release records.*
+
+
+## CI usage policy
+
+The repository CI workflow is intentionally pull-request-first. The full Docker/PostGIS integration suite runs for relevant pull-request changes and can also be started manually with `workflow_dispatch`. It does not automatically repeat the full suite on the merge-to-`main` push, because a normal merge has already been validated on its pull request.
+
+The workflow ignores documentation-only changes and uses a concurrency group with `cancel-in-progress: true`, so a newer commit on the same pull request supersedes an obsolete in-progress run. This reduces wasted hosted-runner time while retaining a full pre-merge integration gate.
+
+For local verification, contributors can run the same component checks and test suite from the repository environment. A self-hosted Actions runner is a possible later option for a trusted, privately controlled machine; do not expose a self-hosted runner to untrusted pull-request code, especially from forks. GitHub documents self-hosted runner usage as not consuming the included hosted-runner minutes, while standard hosted runner usage is free for public repositories. Billing allowances are account-level and may be shared across private repositories owned by the same account.
+
+The current allowance notice should be checked in **Settings → Billing & licensing → Usage** to confirm whether it refers to included compute, legacy minute quota, or storage. Do not infer remaining minutes from an email percentage alone.
