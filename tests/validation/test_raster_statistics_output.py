@@ -82,7 +82,6 @@ def test_raster_statistics_output_critic_rejects_tampered_values_and_dimensions(
     } <= failed_codes
 
 
-
 def test_raster_statistics_preserves_large_int64_extrema_and_variance():
     base = 2**60
     source_stream = BytesIO()
@@ -113,7 +112,6 @@ def test_raster_statistics_preserves_large_int64_extrema_and_variance():
         output={"statistics": result.statistics, "crs": result.crs},
     )
     assert inspection.passed
-
 
 
 def test_raster_statistics_excludes_internal_mask_and_non_finite_float_samples():
