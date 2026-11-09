@@ -130,7 +130,7 @@ output = result["outputs"]["buffered_sites"]
 verified_bytes = client.read_artifact(output["artifact_id"], output["version"])
 ```
 
-The client enforces HTTPS by default, rejects redirects, bounds request/response sizes, and verifies downloaded Artifact bytes against both the immutable metadata checksum and the response digest header. For local HTTP-only tests, callers must explicitly enable `allow_insecure_localhost=True`. API and client tests run with `python -m pip install -e '.[dev,shapely]'` followed by `python -m pytest tests/test_api.py tests/test_client.py`.
+The client enforces HTTPS by default, rejects redirects, bounds request/response sizes, and verifies downloaded Artifact bytes against both the immutable metadata checksum and the response digest header. Normal calls default to a 30-second timeout; Recipe execution defaults to 145 seconds to exceed the worker's 110-second deadline while remaining below the example Nginx 150-second upstream timeout. If you change the worker deadline, align the API adapter, client execution timeout, and reverse-proxy timeout together. For local HTTP-only tests, callers must explicitly enable `allow_insecure_localhost=True`. API and client tests run with `python -m pip install -e '.[dev,shapely]'` followed by `python -m pytest tests/test_api.py tests/test_client.py`.
 
 ## Important launch limitations
 
