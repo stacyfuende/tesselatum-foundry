@@ -13,7 +13,7 @@ This example is intentionally small and deterministic. It uses synthetic polygon
 From the repository root:
 
 ```bash
-python -m pip install -e '.[dev,shapely]'
+python -m pip install -e '.[shapely]'
 docker build \
   -f workers/vector_buffer/Dockerfile \
   -t tessellatum-foundry/vector-buffer-shapely:ci \
