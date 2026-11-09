@@ -1,0 +1,23 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "id": "site-001",
+      "properties": {"name": "Example site A", "source": "synthetic"},
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[500000, 9850000], [500020, 9850000], [500020, 9850020], [500000, 9850020], [500000, 9850000]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "site-002",
+      "properties": {"name": "Example site B", "source": "synthetic"},
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[500060, 9850000], [500080, 9850000], [500080, 9850020], [500060, 9850020], [500060, 9850000]]]
+      }
+    }
+  ]
+}
