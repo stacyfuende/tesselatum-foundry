@@ -120,7 +120,7 @@ def raster_band_statistics(
     *,
     bands: Sequence[int] | None = None,
 ) -> RasterStatisticsOutput:
-    """Calculate exact statistics over valid stored samples in selected bands.
+    """Calculate exhaustive statistics over valid stored samples in selected bands.
 
     Raster blocks are processed incrementally, so working memory is bounded by
     the largest source block rather than the full raster dimensions. Nodata and
