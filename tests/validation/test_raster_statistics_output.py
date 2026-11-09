@@ -238,3 +238,51 @@ def test_raster_statistics_preserves_mean_for_full_range_int64_samples():
         output={"statistics": result.statistics, "crs": result.crs},
     )
     assert inspection.passed
+
+def test_raster_statistics_preserves_selected_multiband_order_and_metadata():
+    stream = BytesIO()
+    with rasterio.open(
+        stream,
+        "w",
+        driver="GTiff",
+        width=2,
+        height=2,
+        count=2,
+        dtype="int16",
+        crs="EPSG:32636",
+        transform=from_origin(500000, 1000000, 10, 10),
+        nodata=-9999,
+    ) as dataset:
+        dataset.write(
+            np.array(
+                [
+                    [[1, 2], [3, 4]],
+                    [[10, 20], [30, -9999]],
+                ],
+                dtype=np.int16,
+            )
+        )
+        dataset.set_band_description(1, "first")
+        dataset.set_band_description(2, "second")
+    source = stream.getvalue()
+
+    result = raster_band_statistics(source, bands=[2, 1])
+    bands = result.statistics["bands"]
+    assert [band["band"] for band in bands] == [2, 1]
+    assert [band["valid_pixel_count"] for band in bands] == [3, 4]
+    assert [band["minimum"] for band in bands] == [10, 1]
+    assert [band["maximum"] for band in bands] == [30, 4]
+    assert [band["mean"] for band in bands] == [20.0, 2.5]
+
+    inspection = inspect_raster_band_statistics_output(
+        input_raster_bytes=source,
+        output={"statistics": result.statistics, "crs": result.crs},
+    )
+    assert inspection.passed
+
+
+@pytest.mark.parametrize("bands", [[], [0], [2], [1, 1], [True], "1"])
+def test_raster_statistics_rejects_invalid_band_selection(bands):
+    with pytest.raises(RasterStatisticsError):
+        raster_band_statistics(_source(), bands=bands)
+
