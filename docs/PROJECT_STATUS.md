@@ -163,3 +163,4 @@ The current allowance notice should be checked in **Settings → Billing & licen
 - Added a full-range int64 regression test asserting exact extrema, mean `-0.5`, and critic acceptance. Existing adjacent int64 and uint64 tests cover precision around large positive values.
 - Commits: kernel `18ac678`; critic `e46e3d2`; regression test `5074726`; ADR-044 numerical clarification `1ddb7f6`.
 - Arithmetic was independently exercised in the available Python environment, including signed int64 extrema and uint64 endpoints. The actual project test suite and GeoTIFF regression tests have not been run. The implementation manifest remains `not_run`; no Actions run or PR was started.
+- Follow-up formatting review normalized the new test-function spacing and wrapped an overlong critic expression (commits `410c3b9` and `a25df7f`).
