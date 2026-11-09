@@ -7,7 +7,7 @@ The `foundry` command is the operator interface for a persistent, single-user lo
 From a source checkout:
 
 ```bash
-python -m pip install -e '.[dev,shapely]'
+python -m pip install -e '.[shapely]'
 ```
 
 The CLI entry point is installed as `foundry`. Recipe execution uses the existing isolated Docker workers, so Docker Engine must be available and the matching worker images must already be built or pulled. The CLI does not silently build or pull images.
