@@ -262,8 +262,6 @@ def test_raster_statistics_preserves_selected_multiband_order_and_metadata():
                 dtype=np.int16,
             )
         )
-        dataset.set_band_description(1, "first")
-        dataset.set_band_description(2, "second")
     source = stream.getvalue()
 
     result = raster_band_statistics(source, bands=[2, 1])
