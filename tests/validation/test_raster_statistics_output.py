@@ -164,6 +164,7 @@ def test_raster_statistics_rejects_band_with_no_finite_valid_pixels():
     with pytest.raises(RasterStatisticsError, match="no finite, valid pixels"):
         raster_band_statistics(stream.getvalue())
 
+
 def test_raster_statistics_preserves_large_uint64_extrema_and_variance():
     maximum = np.iinfo(np.uint64).max
     source_stream = BytesIO()
@@ -199,6 +200,7 @@ def test_raster_statistics_preserves_large_uint64_extrema_and_variance():
         output={"statistics": result.statistics, "crs": result.crs},
     )
     assert inspection.passed
+
 
 def test_raster_statistics_preserves_mean_for_full_range_int64_samples():
     minimum = np.iinfo(np.int64).min
