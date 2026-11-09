@@ -173,8 +173,14 @@ def create_app(
                 status_code=422,
                 detail="missing_artifact_fields: " + ", ".join(sorted(missing)),
             )
+        for field in ("artifact_id", "version", "created_by", "media_type", "format"):
+            value = payload.get(field)
+            if not isinstance(value, str) or not value.strip():
+                raise HTTPException(
+                    status_code=422, detail=f"{field}_must_be_a_non_empty_string"
+                )
         encoded = payload.get("content_base64")
-        if not isinstance(encoded, str):
+        if not isinstance(encoded, str) or not encoded:
             raise HTTPException(status_code=422, detail="content_base64_is_required")
         try:
             content = base64.b64decode(encoded, validate=True)
