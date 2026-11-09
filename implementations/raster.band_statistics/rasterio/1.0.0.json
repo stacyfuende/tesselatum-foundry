@@ -8,7 +8,7 @@
   "entrypoint": "tessellatum_foundry.capabilities.raster_statistics:raster_band_statistics",
   "network_access": "none",
   "conformance": {
-    "status": "pending",
+    "status": "not_run",
     "suite_version": "0.1.0"
   },
   "determinism": "deterministic"
