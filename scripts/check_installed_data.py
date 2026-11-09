@@ -11,7 +11,7 @@ def main() -> None:
     capabilities = CapabilityRegistry(contracts=contracts)
     if len(contracts.schemas) != 9:
         raise SystemExit(f"Expected 9 installed schemas, found {len(contracts.schemas)}.")
-    capabilities.get("vector.buffer", "1.0.0")
+    capabilities.get("vector.buffer", "1.0.0")\n    capabilities.get("raster.band_statistics", "1.0.0")
     implementations.require_conformant(
         implementation_id="vector-buffer-shapely",
         version="1.0.0",
