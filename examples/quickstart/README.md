@@ -81,4 +81,4 @@ Replace the output ID and version with the Artifact reference returned by the Re
 
 This quickstart demonstrates one local vector.buffer Run through the canonical Capability, immutable Artifact and definition stores, isolated Docker worker, independent output critic, and Recipe runner. It is a smoke path, not full CI or a production deployment.
 
-The sample data are synthetic. No real site suitability, legal rights, positional accuracy, or planning conclusion is implied. The local CLI is single-user; do not expose it, its workspace, or the Docker socket to untrusted users. Hosted multi-tenant deployment remains a separate launch milestone.
+The sample data are synthetic and intentionally omit a rights declaration, so the rights-provenance report should surface that missing evidence for review. No real site suitability, legal rights, positional accuracy, or planning conclusion is implied. The local CLI is single-user; do not expose it, its workspace, or the Docker socket to untrusted users. Hosted multi-tenant deployment remains a separate launch milestone.
