@@ -99,6 +99,7 @@ The ingress for each loopback port must terminate TLS and enforce an allowlist s
 Create a persistent Docker volume and run the API container on a private network. A minimal local binding is:
 
 ```bash
+docker network create foundry-private
 docker volume create foundry-control-data
 docker run -d \
   --name foundry-control-plane \
