@@ -91,7 +91,6 @@ def test_raster_statistics_requires_crs():
         raster_band_statistics(output.getvalue())
 
 
-
 def test_raster_statistics_reports_scale_without_applying_it():
     output = BytesIO()
     with rasterio.open(
@@ -117,6 +116,7 @@ def test_raster_statistics_reports_scale_without_applying_it():
     assert band["offset"] == 100.0
     assert band["unit"] is None
     assert result.statistics["value_semantics"] == "raw_stored_samples"
+
 
 def test_raster_statistics_aggregates_multiple_tiled_windows_exactly():
     values = np.arange(600 * 700, dtype=np.int32).reshape(1, 600, 700)
@@ -154,6 +154,7 @@ def test_raster_statistics_aggregates_multiple_tiled_windows_exactly():
         float(np.std(valid, ddof=0)), rel=1e-12
     )
 
+
 def test_raster_statistics_excludes_non_finite_float_samples():
     source = np.array(
         [[[1.0, np.nan, np.inf], [-np.inf, 5.0, -9999.0]]],
@@ -167,6 +168,7 @@ def test_raster_statistics_excludes_non_finite_float_samples():
     assert band["maximum"] == 5.0
     assert band["mean"] == 3.0
     assert band["standard_deviation"] == 2.0
+
 
 
 def test_raster_statistics_windowed_output_passes_independent_critic():
@@ -196,3 +198,33 @@ def test_raster_statistics_windowed_output_passes_independent_critic():
     )
 
     assert inspection.passed, inspection.findings
+
+
+
+def test_raster_statistics_critic_rejects_tampered_summary():
+    source = np.array([[[1, 2], [3, 4]]], dtype=np.uint8)
+    raster_bytes = _raster_bytes(source)
+    result = raster_band_statistics(raster_bytes)
+    tampered = {
+        "statistics": {
+            **result.statistics,
+            "bands": [
+                {
+                    **result.statistics["bands"][0],
+                    "valid_pixel_count": 3,
+                    "mean": 999,
+                }
+            ],
+        },
+        "crs": result.crs,
+    }
+
+    inspection = inspect_raster_band_statistics_output(
+        input_raster_bytes=raster_bytes,
+        output=tampered,
+    )
+
+    assert not inspection.passed
+    failed_codes = {finding.code for finding in inspection.findings if finding.status == "failed"}
+    assert "raster_output.valid_pixel_counts" in failed_codes
+    assert "raster_output.numeric_statistics" in failed_codes
