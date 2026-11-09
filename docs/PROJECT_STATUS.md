@@ -137,3 +137,10 @@ The current allowance notice should be checked in **Settings → Billing & licen
 - Hardened numeric validation in the independent raster critic: a tampered output containing an integer too large to convert to float64 is now treated as a failed numeric result instead of risking an uncaught OverflowError (commit 9dee8c0).
 - Extended the critic tampering regression to include a 10**1000 minimum value (commit 0e99a12).
 - No local Python test run or Actions run has been performed. Keep the validation state provisional until the raster validation tests run in the supported environment.
+
+
+## 2026-11-09 implementation hand-off — contract/runtime consistency
+
+- Aligned the raster implementation manifest's declared NumPy runtime with the package's optional dependency range (`numpy>=1.26,<3`) rather than claiming only NumPy 2.x (commit 63598ba).
+- Reworded the Capability description and ADR-044 from “exact statistics” to “exhaustive statistics”. The operation processes every valid pixel, but mean and standard deviation are float64 results, not arbitrary-precision real-number calculations (commits e647552 and 3f41f3b).
+- The implementation manifest remains `conformance.status: not_run`. No local tests or GitHub Actions were run.
