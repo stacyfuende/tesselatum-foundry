@@ -40,7 +40,7 @@ A runnable synthetic-data example demonstrates Artifact ingestion, immutable Cel
 
 ## Local operator CLI
 
-Install from a source checkout with `python -m pip install -e '.[dev,shapely]'`, then initialize a workspace:
+Install from a source checkout with `python -m pip install -e '.[shapely]'`, then initialize a workspace:
 
 ```bash
 foundry --data-dir ./foundry-data init
