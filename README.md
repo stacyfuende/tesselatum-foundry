@@ -21,7 +21,7 @@ The repository follows a contracts-first implementation sequence. The first mile
 - [~] Execution/output validation and operation-specific methodological evidence are implemented for vector.buffer and vector.reproject. Rights provenance evidence records declarations and lineage without inferring permission. Analytical suitability, area-of-use/accuracy review, and authoritative rights/security policy evaluation remain outstanding.
 - [~] Recipe orchestration dispatches through exact capability-version runner registrations. vector.buffer@1.0.0 and vector.reproject@1.0.0 now have separate Run services and isolated local Docker workers; a mixed-capability sequential Recipe is integration-tested. Parallel scheduling remains outstanding.
 - [~] Authenticated HTTPS remote worker adapter and HTTP execution service implemented; deployment hardening and end-to-end remote Run conformance remain outstanding.
-- [ ] Initial raster capabilities implemented.
+- [~] Initial raster capability (band statistics) is under review; kernel/critic and packaging exist on a feature branch, but CI verification and Run/Artifact/Recipe integration remain outstanding.
 - [x] Dependency-free read-only Recipe DAG viewer implemented.
 - [x] Deterministic execution cache with immutable output reuse and parameter-based invalidation implemented; cache reuse requires current complete output-validation evidence.
 - [~] Local Python SDK is available; authenticated network API and generated client SDK remain outstanding.
@@ -60,10 +60,11 @@ Open [viewer/index.html](viewer/index.html) in a browser, then paste a canonical
 
 ## Start here
 
-1. [Architecture](ARCHITECTURE.md)
-2. [Decision register](docs/decisions/README.md)
-3. [Schemas](schema/)
-4. [v0.1 acceptance criteria](tests/acceptance/README.md)
+1. [Living project status and collaboration guide](docs/PROJECT_STATUS.md) — current implementation, open work, verification gates, and hand-off notes.
+2. [Architecture](ARCHITECTURE.md)
+3. [Decision register](docs/decisions/README.md)
+4. [Schemas](schema/)
+5. [v0.1 acceptance criteria](tests/acceptance/README.md)
 
 ## Foundational model
 
