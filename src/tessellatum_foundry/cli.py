@@ -66,11 +66,10 @@ def _build_parser() -> argparse.ArgumentParser:
     export.add_argument("--version", required=True)
     export.add_argument("--output", required=True, type=Path)
 
-    for kind in ("cell", "recipe"):
-        register = commands.add_parser(kind, help=f"Register an immutable {kind} definition.")
-        register.add_argument("register", choices=["register"])
-        register.add_argument("--file", required=True, type=Path)
-        register.add_argument("--created-by", required=True)
+    register_cell = commands.add_parser("cell", help="Register an immutable Cell definition.")
+    register_cell.add_argument("register", choices=["register"])
+    register_cell.add_argument("--file", required=True, type=Path)
+    register_cell.add_argument("--created-by", required=True)
 
     recipe = commands.add_parser("recipe", help="Validate and execute registered Recipes.")
     recipe_commands = recipe.add_subparsers(dest="recipe_command", required=True)
