@@ -380,7 +380,9 @@ def test_reproject_method_report_fails_when_geographic_bbox_exceeds_operation_ar
 
     findings = findings_by_code(report)
     assert report["overall_status"] == "failed"
-    assert findings["method.input_extent_within_operation_area_of_use"]["status"] == "failed"
+    coverage = findings["method.input_extent_within_operation_area_of_use"]
+    assert coverage["status"] == "failed"
+    assert coverage["severity"] == "warning"
 
 
 
