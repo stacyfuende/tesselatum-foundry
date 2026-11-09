@@ -246,6 +246,10 @@ def create_app(
         try:
             artifact = control_plane.get_artifact(artifact_id, version)
             content = control_plane.read_artifact(artifact)
+            if len(content) > maximum:
+                raise HTTPException(
+                    status_code=413, detail="artifact_response_size_limit_exceeded"
+                )
         except FileNotFoundError as error:
             raise HTTPException(status_code=404, detail="artifact_not_found") from error
         checksum = artifact["checksum"]["value"]
