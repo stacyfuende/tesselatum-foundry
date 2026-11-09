@@ -91,6 +91,44 @@ All `/v1` routes require `Authorization: Bearer <FOUNDRY_API_TOKEN>`. The health
 
 The API rejects missing or invalid bearer tokens, non-JSON bodies, missing Content-Length, oversized requests, malformed base64, and unknown fields on write operations. Artifact responses replace local filesystem paths with an opaque `foundry://sha256/...` storage identifier; retrieve bytes through the authenticated content endpoint. Responses disable caching and set basic content-sniffing/referrer protections. Interactive OpenAPI/Swagger documentation is disabled.
 
+## Python API client
+
+The repository includes a dependency-free synchronous `FoundryClient` for this API:
+
+```python
+import os
+
+from tessellatum_foundry import FoundryClient
+
+client = FoundryClient(
+    "https://foundry.example.internal",
+    bearer_token=os.environ["FOUNDRY_API_TOKEN"],
+)
+
+capabilities = client.list_capabilities()
+artifact = client.put_artifact(
+    artifact_id="sites",
+    version="1.0.0",
+    content=open("sites.geojson", "rb").read(),
+    created_by="operator",
+    media_type="application/geo+json",
+    format_name="GeoJSON",
+)
+cell = client.register_cell(cell_definition, created_by="operator")
+recipe = client.register_recipe(recipe_definition, created_by="operator")
+result = client.execute_recipe(
+    recipe["definition_ref"]["definition_id"],
+    recipe["definition_ref"]["version"],
+    actor_id="operator",
+)
+verified_bytes = client.read_artifact(
+    result["outputs"]["buffered_sites"]["artifact_id"],
+    result["outputs"]["buffered_sites"]["version"],
+)
+```
+
+The client enforces HTTPS by default, rejects redirects, bounds request/response sizes, and verifies downloaded Artifact bytes against both the immutable metadata checksum and the response digest header. For local HTTP-only tests, callers must explicitly enable `allow_insecure_localhost=True`. API and client tests run with `python -m pip install -e '.[dev,shapely]'` followed by `python -m pytest tests/test_api.py tests/test_client.py`.
+
 ## Important launch limitations
 
 This deployment is **single-tenant**: every authorized caller shares one API token and one workspace. It has no user identities, roles, tenant isolation, quotas, database-backed distributed transactions, object-storage adapter, or per-tenant encryption. The filesystem stores remain local to one control-plane process; do not increase Uvicorn workers or run multiple replicas against the same volume.
