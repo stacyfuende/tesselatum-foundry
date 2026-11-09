@@ -39,3 +39,5 @@ def test_console_reverse_proxy_enforces_same_origin_security_headers():
     assert "frame-ancestors 'none'" in config
     assert "X-Content-Type-Options" in config
     assert "nginx-unprivileged" in dockerfile
+    assert "COPY examples/quickstart" in dockerfile
+    assert "loadQuickstart" in (CONSOLE / "index.html").read_text(encoding="utf-8")
