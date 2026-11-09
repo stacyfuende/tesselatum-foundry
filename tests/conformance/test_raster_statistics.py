@@ -205,7 +205,7 @@ def test_raster_statistics_windowed_output_passes_independent_critic():
 
 
 def test_raster_statistics_critic_rejects_tampered_summary():
-    source = np.array([[[1, 2], [3, 4]]], dtype=np.uint8)
+    source = np.array([[[1]]], dtype=np.uint8)
     raster_bytes = _raster_bytes(source)
     result = raster_band_statistics(raster_bytes)
     tampered = {
@@ -214,7 +214,7 @@ def test_raster_statistics_critic_rejects_tampered_summary():
             "bands": [
                 {
                     **result.statistics["bands"][0],
-                    "valid_pixel_count": 3,
+                    "valid_pixel_count": True,
                     "mean": 999,
                 }
             ],
