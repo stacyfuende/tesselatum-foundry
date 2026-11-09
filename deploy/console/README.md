@@ -1,6 +1,6 @@
 # Foundry Console
 
-The Console is a static, same-origin browser interface for the private control-plane API. It supports connecting with a bearer token, inspecting registries, uploading Artifacts with JSON metadata, registering Cell and Recipe documents, executing Recipes, inspecting Runs and Validation Reports, and downloading output Artifacts with SHA-256 verification.
+The Console is a static, same-origin browser interface for the private control-plane API. It supports connecting with a bearer token, inspecting registries, uploading Artifacts with JSON metadata, registering Cell and Recipe documents, executing Recipes, inspecting Runs and Validation Reports, and downloading output Artifacts with SHA-256 verification. A bundled synthetic quickstart lets operators load the sample Cell/Recipe and metadata and download its GeoJSON input.
 
 ## Build
 
