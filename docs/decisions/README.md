@@ -50,6 +50,6 @@ This register records decisions that constrain Foundry's architecture. Each deci
 | [045](045-capability-semantics-schema.md) | Declare normative capability semantics in the canonical schema | Accepted |
 | [046](046-local-operator-cli.md) | Provide a local operator CLI over the canonical SDK | Accepted |
 | [047](047-private-control-plane-api.md) | Add a private authenticated single-tenant control-plane API | Accepted for private preview |
-| [039](039-methodological-evidence.md) | Produce operation-specific methodological evidence without a generic quality score | Accepted |
-
+| [048](048-bounded-remote-worker-concurrency.md) | Bound concurrent remote capability executions | Accepted |
+| [049](049-isolated-remote-execution-timeout.md) | Enforce remote capability execution deadlines in isolated child processes | Accepted |
 A decision may be superseded only by a new decision record that explains the change. Do not silently edit an accepted decision to reverse its meaning.
