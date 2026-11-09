@@ -179,7 +179,10 @@ def test_raster_statistics_preserves_large_uint64_extrema_and_variance():
         transform=from_origin(500000, 1000000, 10, 10),
     ) as dataset:
         dataset.write(
-            np.array([[[maximum - 3, maximum - 2, maximum - 1, maximum]]], dtype=np.uint64)
+            np.array(
+                [[[maximum - 3, maximum - 2, maximum - 1, maximum]]],
+                dtype=np.uint64,
+            )
         )
     source = source_stream.getvalue()
 
