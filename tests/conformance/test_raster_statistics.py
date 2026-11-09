@@ -231,3 +231,37 @@ def test_raster_statistics_critic_rejects_tampered_summary():
     failed_codes = {finding.code for finding in inspection.findings if finding.status == "failed"}
     assert "raster_output.valid_pixel_counts" in failed_codes
     assert "raster_output.numeric_statistics" in failed_codes
+
+
+
+def test_raster_statistics_processes_striped_geotiff_windows():
+    values = np.arange(513 * 257, dtype=np.int32).reshape(1, 513, 257)
+    raster = BytesIO()
+    with rasterio.open(
+        raster,
+        "w",
+        driver="GTiff",
+        width=257,
+        height=513,
+        count=1,
+        dtype="int32",
+        crs="EPSG:32636",
+        transform=from_origin(500000, 1000000, 10, 10),
+        tiled=False,
+    ) as dataset:
+        dataset.write(values)
+        assert dataset.is_tiled is False
+        assert dataset.block_shapes[0][0] < dataset.height
+
+    raster_bytes = raster.getvalue()
+    result = raster_band_statistics(raster_bytes)
+    band = result.statistics["bands"][0]
+    expected = values.astype(np.float64)
+
+    assert band["valid_pixel_count"] == expected.size
+    assert band["minimum"] == float(np.min(expected))
+    assert band["maximum"] == float(np.max(expected))
+    assert band["mean"] == pytest.approx(float(np.mean(expected)), rel=1e-12)
+    assert band["standard_deviation"] == pytest.approx(
+        float(np.std(expected, ddof=0)), rel=1e-12
+    )
