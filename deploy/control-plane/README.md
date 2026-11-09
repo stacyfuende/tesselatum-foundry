@@ -47,7 +47,8 @@ Copy `deploy/control-plane/env.example` to a secret-managed location outside the
 - `FOUNDRY_API_TOKEN` to a random value of at least 32 characters.
 - Separate strong bearer tokens for the buffer and reprojection workers.
 - HTTPS base URLs for the corresponding worker services.
-- A request-size limit appropriate for the data being uploaded.
+- Request and response byte ceilings appropriate for the Artifact sizes you will accept and return.
+- The control-plane-to-worker timeout and worker input/output ceilings. The defaults are 120 seconds and 128 MiB; the remote worker's default child-process deadline is 110 seconds.
 
 For example, generate an API token with `openssl rand -hex 32`. Never commit populated environment files or put tokens in image build arguments.
 
@@ -130,7 +131,7 @@ output = result["outputs"]["buffered_sites"]
 verified_bytes = client.read_artifact(output["artifact_id"], output["version"])
 ```
 
-The client enforces HTTPS by default, rejects redirects, bounds request/response sizes, and verifies downloaded Artifact bytes against both the immutable metadata checksum and the response digest header. Normal calls default to a 30-second timeout; Recipe execution defaults to 145 seconds to exceed the worker's 110-second deadline while remaining below the example Nginx 150-second upstream timeout. If you change the worker deadline, align the API adapter, client execution timeout, and reverse-proxy timeout together. For local HTTP-only tests, callers must explicitly enable `allow_insecure_localhost=True`. API and client tests run with `python -m pip install -e '.[dev,shapely]'` followed by `python -m pytest tests/test_api.py tests/test_client.py`.
+The client enforces HTTPS by default, rejects redirects, bounds request/response sizes (32 MiB request / 128 MiB response by default), and verifies downloaded Artifact bytes against both the immutable metadata checksum and the response digest header. Normal calls default to a 30-second timeout; Recipe execution defaults to 145 seconds to exceed the worker's 110-second deadline while remaining below the example Nginx 150-second upstream timeout. If you change the worker deadline, align the API adapter, client execution timeout, API response ceiling, and reverse-proxy timeout together. For local HTTP-only tests, callers must explicitly enable `allow_insecure_localhost=True`. API and client tests run with `python -m pip install -e '.[dev,shapely]'` followed by `python -m pytest tests/test_api.py tests/test_client.py`.
 
 ## Important launch limitations
 
