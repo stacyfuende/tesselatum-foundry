@@ -25,7 +25,7 @@ Engineering principles:
 | Vector buffer | Shapely and PostGIS realizations; shared conformance; dedicated Run path and isolated local Docker worker | Broader CRS/geometry edge-case coverage; suitability and authoritative rights/security policy remain outside current evidence |
 | Vector reprojection | Shapely/pyproj kernel; dedicated Run path and worker; independent output critic; mixed Recipe use; target-CRS-aware evidence-gated cache | Area-of-use review is proposed in PR #20; not a positional-accuracy guarantee |
 | Recipe execution | Deterministic sequential topological execution; upstream Artifact and Run lineage; mixed buffer/reproject Recipe coverage | Parallel scheduling, retries/resume policy, and broader capability families |
-| Local SDK | LocalFoundry facade over canonical registries/stores and sequential Recipe execution | Authenticated network API, multi-tenant service boundary, generated client SDK |
+| Local SDK and operator CLI | LocalFoundry facade plus installed `foundry` CLI for workspace initialization, Artifact ingest/export, immutable Cell/Recipe registration, Recipe execution, and Run/report/registry inspection | CLI is a local single-user interface; authenticated network API, tenant isolation, database-backed persistence, generated client SDK, and production operations remain outstanding |
 | Raster band statistics | Initial kernel, contract, Rasterio/NumPy packaging, independent critic, and generated GeoTIFF tests are proposed in PR #21 | Not yet integrated into Run/Artifact/Recipe lifecycle. The feature branch now processes source blocks incrementally in both the kernel and independent critic, with a multi-tile regression test. This bounds working memory to a source block, but CI verification is still outstanding; very wide striped rasters can still have large blocks. Verify CI and installed distribution before treating the branch as conformant |
 | Remote worker | Authenticated HTTPS transport and service exist for vector capabilities | PR #13 concurrency bound and PR #15 process-isolated hard timeouts are open; production ingress, resource policy, monitoring, secret rotation and deployment verification remain |
 | Provenance / methodology | Rights declarations and lineage are recorded; buffer approximation and reprojection operation evidence are recorded | Declarations are not proof of legal permission; suitability, authoritative rights policy, security policy and accuracy assessment require additional inputs and governance |
@@ -181,3 +181,15 @@ The current allowance notice should be checked in **Settings → Billing & licen
 - Review limitation to retain: the critic independently recomputes from the source but uses the same Rasterio/GDAL and NumPy dependency family; it is an independent code path, not an independent numerical engine.
 
 - Added multi-band selection and invalid-band-index regression cases after the initial review; source-level only, not executed. Test file commits: `fcf8a75` (coverage) and `4dd10b0` (fixture cleanup).
+
+
+## 2026-11-09 implementation hand-off — local operator CLI
+
+- Added an installed `foundry` entry point backed by the existing `LocalFoundry` SDK. The CLI supports workspace initialization; immutable Artifact ingest, show, and checksum-verified export; Cell and Recipe registration; exact Recipe execution; Run listing/inspection; Validation Report inspection; and canonical Capability/implementation listing.
+- Added public stable-order `list()` methods to the Capability and implementation registries rather than making the CLI inspect their private dictionaries.
+- Added source-level CLI tests for workspace initialization, registry counts, Cell/Recipe registration, Artifact ingest/show/export, checksum verification, and concise not-found errors.
+- Added [docs/CLI.md](CLI.md), README entry point, and ADR-046. The CLI consumes canonical JSON and the existing SDK; it introduces no alternate workflow schema and does not bypass implementation conformance.
+- CLI does not automatically build or pull Docker images. Recipe execution continues to require the existing worker images and Docker runtime.
+- Launch boundary is explicit: this is a local single-user operator workflow, not a hosted API. Filesystem stores are not multi-process database persistence; there is no tenant isolation, user authentication, browser authoring UI, or production deployment profile.
+- Commits: registry list methods `9de5e2f`, `ab89276`; CLI `86bbdbf`, parser correction `70001b9`; package entry point `bb8031f`; CLI tests `4f03af8`; operator guide `3bbb696`; README `0cd3eb4`; ADR-046 `9898e56`; decision index `0aa8c25`.
+- Verification is still pending: tests have not been executed, Ruff is unavailable, no package install or Docker execution was performed, and no Actions workflow or PR was triggered.
