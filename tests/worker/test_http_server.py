@@ -310,7 +310,10 @@ def test_remote_worker_http_service_times_out_isolated_execution(monkeypatch):
             returncode = None
 
             def communicate(self, timeout=None):
-                raise subprocess.TimeoutExpired(command, timeout)
+                if timeout is not None:
+                    raise subprocess.TimeoutExpired(command, timeout)
+                self.returncode = -9
+                return b"", b""
 
             def kill(self):
                 self.returncode = -9
