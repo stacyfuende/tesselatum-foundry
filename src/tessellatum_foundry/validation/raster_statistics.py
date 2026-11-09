@@ -9,7 +9,7 @@ from typing import Any
 
 import numpy as np
 import rasterio
-from pyproj import CRS
+from pyproj import CRS\nfrom pyproj.exceptions import CRSError
 
 
 @dataclass(frozen=True)
@@ -221,7 +221,7 @@ def inspect_raster_band_statistics_output(
                     else "Band metadata differs from the source raster.",
                     "/statistics/bands",
                 )
-    except (OSError, ValueError, TypeError, rasterio.errors.RasterioError) as error:
+    except (OSError, ValueError, TypeError, CRSError, rasterio.errors.RasterioError) as error:
         add(
             "raster_output.source_readable",
             False,
