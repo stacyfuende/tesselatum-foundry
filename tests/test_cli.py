@@ -160,3 +160,36 @@ def test_cli_reports_invalid_artifact_metadata_without_traceback(tmp_path, capsy
     assert status == 2
     assert "was not found" in captured.err
     assert captured.out == ""
+
+def test_cli_validates_documents_against_canonical_schema(tmp_path, capsys):
+    valid_file = FIXTURES / "cell.valid.json"
+    assert main(
+        [
+            "--data-dir",
+            str(tmp_path),
+            "validate",
+            "--schema",
+            "cell.schema.json",
+            "--file",
+            str(valid_file),
+        ]
+    ) == 0
+    result = json.loads(capsys.readouterr().out)
+    assert result["status"] == "valid"
+
+    invalid_file = _write_json(tmp_path / "invalid-cell.json", {})
+    assert main(
+        [
+            "--data-dir",
+            str(tmp_path),
+            "validate",
+            "--schema",
+            "cell.schema.json",
+            "--file",
+            str(invalid_file),
+        ]
+    ) == 2
+    captured = capsys.readouterr()
+    assert "cell.schema.json validation failed" in captured.err
+    assert captured.out == ""
+
