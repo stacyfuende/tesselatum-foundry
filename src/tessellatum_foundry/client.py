@@ -134,7 +134,11 @@ class FoundryClient:
             try:
                 error_body = error.read(min(self.max_response_bytes, 64 * 1024))
                 parsed_error = json.loads(error_body.decode("utf-8"))
-                detail = parsed_error.get("detail", parsed_error)
+                detail = (
+                    parsed_error.get("detail", parsed_error)
+                    if isinstance(parsed_error, dict)
+                    else parsed_error
+                )
             except (OSError, UnicodeDecodeError, json.JSONDecodeError):
                 detail = "request_failed"
             if error.code in {301, 302, 303, 307, 308}:
