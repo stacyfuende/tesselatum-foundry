@@ -28,4 +28,7 @@ __all__ = [
     "reproject_feature_collection",
     "ReprojectContractError",
     "ReprojectOutput",
+    "raster_band_statistics",
+    "RasterStatisticsError",
+    "RasterStatisticsOutput",
 ]
