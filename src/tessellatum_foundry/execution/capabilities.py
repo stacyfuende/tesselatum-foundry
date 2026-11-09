@@ -36,6 +36,13 @@ class CapabilityRegistry:
                 )
             self._capabilities[key] = capability
 
+    def list(self) -> list[dict[str, Any]]:
+        """Return registered Capability contracts in stable identifier/version order."""
+        return [
+            deepcopy(self._capabilities[key])
+            for key in sorted(self._capabilities)
+        ]
+
     def get(self, capability_id: str, version: str) -> dict[str, Any]:
         """Return a copy of the exact canonical Capability contract."""
         key = (capability_id, version)
