@@ -56,7 +56,8 @@ All `/v1` routes require `Authorization: Bearer <FOUNDRY_API_TOKEN>`. The health
 
 - `GET /v1/capabilities`, `GET /v1/implementations`
 - `POST /v1/artifacts` (base64 content plus metadata); `GET /v1/artifacts/{id}/{version}`; `GET /v1/artifacts/{id}/{version}/content`
-- `POST /v1/cells`, `POST /v1/recipes`
+- `POST /v1/cells`, `GET /v1/cells`, `GET /v1/cells/{id}/{version}`
+- `POST /v1/recipes`, `GET /v1/recipes`, `GET /v1/recipes/{id}/{version}`
 - `POST /v1/recipes/{id}/{version}/runs`
 - `GET /v1/runs`, `GET /v1/runs/{run_id}`, `GET /v1/reports/{report_id}`
 
