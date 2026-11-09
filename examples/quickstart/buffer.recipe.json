@@ -1,0 +1,23 @@
+{
+  "recipe_id": "quickstart-site-buffers",
+  "version": "1.0.0",
+  "title": "Quickstart: buffer synthetic sites",
+  "nodes": [
+    {
+      "node_id": "buffer-sites",
+      "cell": {
+        "cell_id": "quickstart-buffer-sites",
+        "version": "1.0.0"
+      },
+      "label": "Buffer sites by 10 metres"
+    }
+  ],
+  "edges": [],
+  "declared_outputs": [
+    {
+      "name": "buffered_sites",
+      "node_id": "buffer-sites",
+      "output_port": "result"
+    }
+  ]
+}
