@@ -23,10 +23,10 @@ The repository follows a contracts-first implementation sequence. The first mile
 - [~] Execution/output validation and operation-specific methodological evidence are implemented for vector.buffer and vector.reproject. Rights provenance evidence records declarations and lineage without inferring permission. Analytical suitability, area-of-use/accuracy review, and authoritative rights/security policy evaluation remain outstanding.
 - [~] Recipe orchestration dispatches through exact capability-version runner registrations. vector.buffer@1.0.0 and vector.reproject@1.0.0 now have separate Run services and isolated local Docker workers; a mixed-capability sequential Recipe is integration-tested. Parallel scheduling remains outstanding.
 - [~] Authenticated HTTPS remote worker adapter and HTTP execution service implemented; deployment hardening and end-to-end remote Run conformance remain outstanding.
-- [~] First raster kernel and canonical contract introduced: raster.band_statistics@1.0.0 computes exact per-band statistics over valid stored samples. Run/Recipe integration and conformance CI remain outstanding.
+- [~] First raster kernel and canonical contract introduced: raster.band_statistics@1.0.0 computes exhaustive per-band statistics over valid finite stored samples. Run/Recipe integration and conformance CI remain outstanding.
 - [x] Dependency-free read-only Recipe DAG viewer implemented.
 - [x] Deterministic execution cache with immutable output reuse and parameter-based invalidation implemented; cache reuse requires current complete output-validation evidence.
-- [~] Local Python SDK is available; authenticated network API and generated client SDK remain outstanding.
+- [~] Local Python SDK, authenticated single-tenant control-plane API, dependency-free Python API client, and browser Console are implemented for a restricted private preview; user identities, roles, tenant isolation, durable database/object storage, and a generated SDK remain outstanding.
 
 Items are marked complete when implementation and corresponding tests are present. Runtime and CI verification are reported separately.
 
@@ -88,10 +88,12 @@ Open [viewer/index.html](viewer/index.html) in a browser, then paste a canonical
 
 ## Start here
 
-1. [Architecture](ARCHITECTURE.md)
-2. [Decision register](docs/decisions/README.md)
-3. [Schemas](schema/)
-4. [v0.1 acceptance criteria](tests/acceptance/README.md)
+1. [Project vision](docs/PROJECT_VISION.md) — the long-term Tessellatum ambition and how Foundry contributes to it.
+2. [Living project status and collaboration guide](docs/PROJECT_STATUS.md) — current implementation, open work, verification gates, and hand-off notes.
+3. [Architecture](ARCHITECTURE.md)
+4. [Decision register](docs/decisions/README.md)
+5. [Schemas](schema/)
+6. [v0.1 acceptance criteria](tests/acceptance/README.md)
 
 ## Foundational model
 
