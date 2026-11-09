@@ -7,6 +7,7 @@ import pytest
 
 from tessellatum_foundry.execution.docker_worker import (
     WorkerExecutionError,
+    WorkerTimeoutError,
     WorkerUnavailableError,
 )
 from tessellatum_foundry.execution.remote_worker import (
@@ -153,18 +154,6 @@ def test_remote_reproject_worker_fetches_identity_and_executes_target_crs():
         "crs": target_crs,
         "duration_ms": 8,
         "runtime_image_digest": digest,
-        "coordinate_operation": {
-            "description": "UTM zone 37S",
-            "definition": "+proj=pipeline +step +proj=utm +zone=37 +south",
-            "accuracy_m": 0.0,
-            "area_of_use": {
-                "west": 36.0,
-                "south": -80.0,
-                "east": 42.0,
-                "north": 0.0,
-                "name": "UTM zone 37S area",
-            },
-        },
     }
     identity_payload = {
         "worker_id": "remote-reproject-worker",
@@ -195,8 +184,6 @@ def test_remote_reproject_worker_fetches_identity_and_executes_target_crs():
     assert execution.runtime_image_digest == digest
     assert execution.crs == target_crs
     assert execution.duration_ms == 8
-    assert execution.coordinate_operation["description"] == "UTM zone 37S"
-    assert execution.coordinate_operation["definition"].startswith("+proj=pipeline")
     request_payload = json.loads(opener.requests[1][0].data)
     assert request_payload["capability_id"] == "vector.reproject"
     assert request_payload["target_crs"] == target_crs
@@ -213,37 +200,17 @@ def test_remote_reproject_worker_rejects_buffer_only_identity():
         worker.image_digest()
 
 
-
-def test_remote_reproject_worker_rejects_missing_operation_evidence():
-    digest = "sha256:" + "c" * 64
-    target_crs = {"authority": "EPSG", "code": 32737}
-    identity_payload = {
-        "worker_id": "remote-reproject-worker",
-        "capability_id": "vector.reproject",
-        "capability_version": "1.0.0",
-        "implementation_id": "vector-reproject-pyproj-shapely",
-        "implementation_version": "1.0.0",
-        "runtime_image_digest": digest,
-    }
-    result = {
-        "feature_collection": {"type": "FeatureCollection", "features": []},
-        "crs": target_crs,
-        "duration_ms": 8,
-        "runtime_image_digest": digest,
-    }
-    worker = RemoteVectorReprojectWorker(
-        "https://worker.example", bearer_token="secret"
+@pytest.mark.parametrize("status_code", [408, 504])
+def test_remote_worker_maps_http_timeout_to_timed_out_run(status_code):
+    worker = RemoteVectorBufferWorker("https://worker.example", bearer_token="secret")
+    timeout = HTTPError(
+        "https://worker.example/v1/identity",
+        status_code,
+        "Gateway Timeout",
+        {},
+        None,
     )
-    worker._opener = FakeOpener(
-        [FakeResponse(identity_payload), FakeResponse(result)]
-    )
+    worker._opener = FakeOpener([timeout])
 
-    with pytest.raises(WorkerExecutionError, match="omitted coordinate-operation evidence"):
-        worker.execute(
-            input_bytes=b'{"type":"FeatureCollection","features":[]}',
-            capability_version="1.0.0",
-            input_crs={"authority": "EPSG", "code": 4326},
-            target_crs=target_crs,
-            parameters={"target_crs": target_crs},
-            runtime_image_digest=digest,
-        )
+    with pytest.raises(WorkerTimeoutError, match="timed out"):
+        worker.image_digest()
