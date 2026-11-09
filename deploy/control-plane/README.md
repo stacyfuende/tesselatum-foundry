@@ -56,6 +56,44 @@ For example, generate an API token with `openssl rand -hex 32`. Never commit pop
 
 Build one remote worker image for each capability deployment. Each worker process advertises exactly one capability version. Configure the worker's `FOUNDRY_WORKER_CAPABILITY_ID`, `FOUNDRY_WORKER_CAPABILITY_VERSION`, `FOUNDRY_IMPLEMENTATION_ID`, `FOUNDRY_REMOTE_WORKER_TOKEN`, and `FOUNDRY_WORKER_IMAGE_DIGEST`. The digest must be the immutable image ID reported by Docker for the image actually running. The remote worker requires TLS at a trusted ingress; its plain HTTP listener must remain on a private network.
 
+## Run the two worker processes
+
+Use the separate env files for the buffer and reprojection workers. The same image is configured to advertise one capability per process. Publish each worker only on a loopback host port so a TLS ingress can reach it; do not publish the worker port on a public interface.
+
+```bash
+docker run -d \
+  --name foundry-buffer-worker \
+  --restart unless-stopped \
+  --network foundry-private \
+  --read-only \
+  --cap-drop ALL \
+  --security-opt no-new-privileges:true \
+  --pids-limit 128 \
+  --memory 2g \
+  --cpus 2.0 \
+  --tmpfs /tmp:rw,nosuid,nodev,size=512m \
+  --env-file /secure/path/foundry-buffer-worker.env \
+  -p 127.0.0.1:8081:8080 \
+  tessellatum-foundry/remote-vector-worker:0.1.0
+
+docker run -d \
+  --name foundry-reproject-worker \
+  --restart unless-stopped \
+  --network foundry-private \
+  --read-only \
+  --cap-drop ALL \
+  --security-opt no-new-privileges:true \
+  --pids-limit 128 \
+  --memory 2g \
+  --cpus 2.0 \
+  --tmpfs /tmp:rw,nosuid,nodev,size=512m \
+  --env-file /secure/path/foundry-reproject-worker.env \
+  -p 127.0.0.1:8082:8080 \
+  tessellatum-foundry/remote-vector-worker:0.1.0
+```
+
+The ingress for each loopback port must terminate TLS and enforce an allowlist so only the control plane can call the worker. Apply network egress restrictions to the worker containers; do not assume process isolation alone prevents outbound network access. The worker child processes share the worker container's network namespace and resource ceiling.
+
 ## Run behind a trusted ingress
 
 Create a persistent Docker volume and run the API container on a private network. A minimal local binding is:
