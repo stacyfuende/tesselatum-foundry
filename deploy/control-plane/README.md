@@ -15,6 +15,23 @@ The image runs as UID/GID 10001, uses one Uvicorn worker to preserve the filesys
 
 ## Configure secrets and remote workers
 
+Build the shared remote-worker image once:
+
+```bash
+docker build -f workers/vector_buffer/Dockerfile.remote \
+  -t tessellatum-foundry/remote-vector-worker:0.1.0 .
+docker image inspect --format='{{.Id}}' \
+  tessellatum-foundry/remote-vector-worker:0.1.0
+```
+
+Use the returned immutable `sha256:...` image ID as `FOUNDRY_WORKER_IMAGE_DIGEST` for the worker containers. Run two separate worker processes from this image, each on a private network and behind its own trusted TLS ingress:
+
+- Buffer: `FOUNDRY_WORKER_CAPABILITY_ID=vector.buffer`, `FOUNDRY_WORKER_CAPABILITY_VERSION=1.0.0`, and a unique `FOUNDRY_REMOTE_WORKER_TOKEN`.
+- Reprojection: `FOUNDRY_WORKER_CAPABILITY_ID=vector.reproject`, `FOUNDRY_WORKER_CAPABILITY_VERSION=1.0.0`, `FOUNDRY_IMPLEMENTATION_ID=vector-reproject-pyproj-shapely`, and a different unique `FOUNDRY_REMOTE_WORKER_TOKEN`.
+
+Each process advertises and executes exactly one capability. Do not expose the worker's plain HTTP port publicly; allow inbound traffic only from the control plane through the TLS ingress.
+
+
 Copy `deploy/control-plane/env.example` to a secret-managed location outside the repository. Set:
 - `FOUNDRY_API_TOKEN` to a random value of at least 32 characters.
 - Separate strong bearer tokens for the buffer and reprojection workers.
