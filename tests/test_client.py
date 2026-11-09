@@ -78,13 +78,13 @@ class _Handler(BaseHTTPRequestHandler):
 
 
 @pytest.fixture
-def api_url():
+def api_server():
     server = ThreadingHTTPServer(("127.0.0.1", 0), _Handler)
     server.received_payload = None
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
     try:
-        yield f"http://127.0.0.1:{server.server_port}"
+        yield server
     finally:
         server.shutdown()
         server.server_close()
@@ -101,9 +101,9 @@ def test_client_requires_secure_url_and_strong_token():
         )
 
 
-def test_client_reads_artifact_and_verifies_immutable_checksum(api_url):
+def test_client_reads_artifact_and_verifies_immutable_checksum(api_server):
     client = FoundryClient(
-        api_url,
+        f"http://127.0.0.1:{api_server.server_port}",
         bearer_token=TOKEN,
         allow_insecure_localhost=True,
     )
@@ -114,12 +114,9 @@ def test_client_reads_artifact_and_verifies_immutable_checksum(api_url):
     assert client.read_artifact("demo", "1.0.0") == ARTIFACT_BYTES
 
 
-def test_client_uploads_artifact_as_bounded_base64_json(api_url):
-    server_host, server_port = api_url.removeprefix("http://").split(":")
-    server = None
-    # Resolve the fixture's server through a short-lived independent endpoint.
+def test_client_uploads_artifact_as_bounded_base64_json(api_server):
     client = FoundryClient(
-        api_url,
+        f"http://127.0.0.1:{api_server.server_port}",
         bearer_token=TOKEN,
         allow_insecure_localhost=True,
     )
@@ -132,14 +129,12 @@ def test_client_uploads_artifact_as_bounded_base64_json(api_url):
         format_name="GeoJSON",
     )
     assert response["artifact_id"] == "upload"
-    assert server is None
-    assert server_host == "127.0.0.1"
-    assert int(server_port) > 0
+    assert api_server.received_payload["artifact_id"] == "upload"
+    assert api_server.received_payload["content_base64"] == "c2FtcGxl"
 
-
-def test_client_surfaces_api_errors_and_rejects_redirects(api_url):
+def test_client_surfaces_api_errors_and_rejects_redirects(api_server):
     client = FoundryClient(
-        api_url,
+        f"http://127.0.0.1:{api_server.server_port}",
         bearer_token=TOKEN,
         allow_insecure_localhost=True,
     )
@@ -152,9 +147,9 @@ def test_client_surfaces_api_errors_and_rejects_redirects(api_url):
         client._request("GET", "/redirect")
 
 
-def test_client_enforces_request_size_limit(api_url):
+def test_client_enforces_request_size_limit(api_server):
     client = FoundryClient(
-        api_url,
+        f"http://127.0.0.1:{api_server.server_port}",
         bearer_token=TOKEN,
         allow_insecure_localhost=True,
         max_request_bytes=8,
