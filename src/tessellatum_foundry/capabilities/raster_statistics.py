@@ -42,6 +42,58 @@ def _normalize_bands(bands: Sequence[int] | None, count: int) -> tuple[int, ...]
     return tuple(normalized)
 
 
+def _windowed_statistics(dataset: rasterio.io.DatasetReader, band_index: int) -> dict[str, float | int]:
+    """Compute exact count/min/max/mean/population SD with bounded window memory."""
+    count = 0
+    mean = 0.0
+    m2 = 0.0
+    minimum = math.inf
+    maximum = -math.inf
+
+    for _, window in dataset.block_windows(band_index):
+        masked = dataset.read(band_index, window=window, masked=True)
+        values = np.asarray(masked.compressed(), dtype=np.float64)
+        values = values[np.isfinite(values)]
+        if values.size == 0:
+            continue
+
+        chunk_count = int(values.size)
+        chunk_mean = float(np.mean(values, dtype=np.float64))
+        centered = values - chunk_mean
+        chunk_m2 = float(np.dot(centered, centered))
+        chunk_min = float(np.min(values))
+        chunk_max = float(np.max(values))
+
+        if count == 0:
+            count, mean, m2 = chunk_count, chunk_mean, chunk_m2
+        else:
+            combined = count + chunk_count
+            delta = chunk_mean - mean
+            m2 += chunk_m2 + delta * delta * count * chunk_count / combined
+            mean += delta * chunk_count / combined
+            count = combined
+        minimum = min(minimum, chunk_min)
+        maximum = max(maximum, chunk_max)
+
+    if count == 0:
+        raise RasterStatisticsError(
+            f"Band {band_index} contains no finite, valid pixels."
+        )
+    variance = m2 / count
+    standard_deviation = math.sqrt(max(0.0, variance))
+    if not all(math.isfinite(value) for value in (minimum, maximum, mean, standard_deviation)):
+        raise RasterStatisticsError(
+            f"Band {band_index} statistics exceed finite float64 output range."
+        )
+    return {
+        "valid_pixel_count": count,
+        "minimum": minimum,
+        "maximum": maximum,
+        "mean": mean,
+        "standard_deviation": standard_deviation,
+    }
+
+
 def raster_band_statistics(
     raster_bytes: bytes,
     *,
@@ -49,9 +101,11 @@ def raster_band_statistics(
 ) -> RasterStatisticsOutput:
     """Calculate exact statistics over valid stored samples in selected bands.
 
-    Nodata and masked pixels are excluded. Values are raw stored samples: GDAL
-    scale/offset metadata is reported but deliberately not applied. Statistics
-    are population statistics (ddof=0), computed in float64.
+    Raster blocks are processed incrementally, so working memory is bounded by
+    the largest source block rather than the full raster dimensions. Nodata and
+    masked pixels are excluded. Values are raw stored samples: GDAL scale/offset
+    metadata is reported but deliberately not applied. Standard deviation is
+    population standard deviation (ddof=0), accumulated in float64.
     """
     if not isinstance(raster_bytes, bytes) or not raster_bytes:
         raise RasterStatisticsError("Input must be non-empty raster bytes.")
@@ -66,22 +120,12 @@ def raster_band_statistics(
                     raise RasterStatisticsError("Raster must declare a CRS.")
                 band_results: list[dict[str, Any]] = []
                 for band_index in selected:
-                    samples = dataset.read(band_index, masked=True)
-                    values = np.asarray(samples.compressed(), dtype=np.float64)
-                    values = values[np.isfinite(values)]
-                    if values.size == 0:
-                        raise RasterStatisticsError(
-                            f"Band {band_index} contains no finite, valid pixels."
-                        )
+                    summary = _windowed_statistics(dataset, band_index)
                     band_results.append(
                         {
                             "band": band_index,
                             "dtype": dataset.dtypes[band_index - 1],
-                            "valid_pixel_count": int(values.size),
-                            "minimum": float(np.min(values)),
-                            "maximum": float(np.max(values)),
-                            "mean": float(np.mean(values, dtype=np.float64)),
-                            "standard_deviation": float(np.std(values, dtype=np.float64)),
+                            **summary,
                             "scale": float(dataset.scales[band_index - 1]),
                             "offset": float(dataset.offsets[band_index - 1]),
                             "unit": dataset.units[band_index - 1],
