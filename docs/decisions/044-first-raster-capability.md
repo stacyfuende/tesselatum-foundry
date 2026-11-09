@@ -30,3 +30,7 @@ Foundry's Artifact and spatial metadata models already recognize raster data, in
 ## Deliberate exclusions
 
 This version does not reproject, resample, warp, mosaic, clip, classify, calculate zonal statistics, infer units, apply scale/offset, or interpret color maps. It does not claim suitability for a particular scientific or operational purpose.
+
+## Numerical precision refinement
+
+The window accumulator preserves integer extrema as Python integers and, for integer bands, subtracts a fixed per-band integer baseline before converting deltas to float64 for the mergeable mean/variance calculation. This prevents adjacent int64/uint64 samples above 2^53 from collapsing to the same float64 value before variance is calculated. The independent critic performs the same source-derived calculation in its own code path and compares integer extrema exactly. Mean and population standard deviation remain float64 outputs; they are not arbitrary-precision decimal results. A regression test covers adjacent int64 values around 2^60. This is an exhaustive scan of valid samples, not a claim of exact real-number arithmetic.
