@@ -151,6 +151,9 @@ def test_api_rejects_oversized_and_malformed_artifact_requests(tmp_path):
                 "artifact_id": "bad",
                 "version": "1.0.0",
                 "content_base64": "not-base64!",
+                "created_by": "api-test",
+                "media_type": "application/geo+json",
+                "format": "GeoJSON",
             },
         )
         assert malformed.status_code == 422
