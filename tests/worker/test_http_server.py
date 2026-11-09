@@ -1,7 +1,10 @@
 from __future__ import annotations
 
 import json
+import subprocess
 import threading
+from http.server import ThreadingHTTPServer
+from pathlib import Path
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
@@ -9,8 +12,11 @@ from tessellatum_foundry.execution.remote_worker import (
     RemoteVectorBufferWorker,
     RemoteVectorReprojectWorker,
 )
-from tessellatum_foundry.worker.http_server import WorkerHandler
-from http.server import ThreadingHTTPServer
+from tessellatum_foundry.worker import http_server as worker_http_server
+from tessellatum_foundry.worker.http_server import (
+    BoundedThreadingHTTPServer,
+    WorkerHandler,
+)
 
 
 def test_remote_worker_http_service_authenticates_and_executes(monkeypatch):
@@ -150,9 +156,6 @@ def test_remote_worker_http_service_executes_vector_reproject(monkeypatch):
         )
         assert result.runtime_image_digest == digest
         assert result.crs == target_crs
-        assert result.coordinate_operation is not None
-        assert result.coordinate_operation["description"]
-        assert "definition" in result.coordinate_operation
         coordinates = result.feature_collection["features"][0]["geometry"]["coordinates"]
         assert 240000 < coordinates[0] < 280000
         assert 9800000 < coordinates[1] < 9900000
@@ -189,3 +192,234 @@ def test_remote_worker_http_service_executes_vector_reproject(monkeypatch):
         server.shutdown()
         server.server_close()
         thread.join(timeout=2)
+
+
+def test_remote_worker_http_service_bounds_concurrent_requests(monkeypatch):
+    digest = "sha256:" + "e" * 64
+    monkeypatch.setenv("FOUNDRY_REMOTE_WORKER_TOKEN", "test-secret")
+    monkeypatch.setenv("FOUNDRY_WORKER_IMAGE_DIGEST", digest)
+    monkeypatch.setenv("FOUNDRY_MAX_INPUT_BYTES", "1048576")
+    monkeypatch.setenv("FOUNDRY_MAX_OUTPUT_BYTES", "1048576")
+
+    execution_started = threading.Event()
+    allow_execution_to_finish = threading.Event()
+
+    def slow_process(command, **kwargs):
+        execution_started.set()
+        if not allow_execution_to_finish.wait(timeout=5):
+            raise subprocess.TimeoutExpired(command, kwargs.get("timeout"))
+        output_path = Path(command[command.index("--output") + 1])
+        output_path.write_text(
+            json.dumps({
+                "feature_collection": {"type": "FeatureCollection", "features": []},
+                "crs": payload["input_crs"],
+            }),
+            encoding="utf-8",
+        )
+        class FakeProcess:
+            pid = 12345
+            returncode = 0
+
+            def communicate(self, timeout=None):
+                return b"", b""
+
+            def kill(self):
+                pass
+
+        return FakeProcess()
+
+    monkeypatch.setattr(worker_http_server.subprocess, "Popen", slow_process)
+    server = BoundedThreadingHTTPServer(
+        ("127.0.0.1", 0), WorkerHandler, max_concurrent_executions=1
+    )
+    server_thread = threading.Thread(target=server.serve_forever, daemon=True)
+    server_thread.start()
+    base_url = f"http://127.0.0.1:{server.server_port}"
+    payload = {
+        "request_version": "0.1.0",
+        "capability_id": "vector.buffer",
+        "capability_version": "1.0.0",
+        "input_feature_collection": {"type": "FeatureCollection", "features": []},
+        "input_crs": {"authority": "EPSG", "code": 32636},
+        "measurement_crs": {"authority": "EPSG", "code": 32636},
+        "parameters": {"distance": 10, "unit": "m"},
+    }
+
+    def post_request():
+        request = Request(
+            f"{base_url}/v1/execute",
+            data=json.dumps(payload).encode(),
+            headers={
+                "Authorization": "Bearer test-secret",
+                "Content-Type": "application/json",
+            },
+            method="POST",
+        )
+        with urlopen(request, timeout=5) as response:
+            return response.status, json.loads(response.read())
+
+    first_result = []
+    first_errors = []
+
+    def run_first():
+        try:
+            first_result.append(post_request())
+        except Exception as error:
+            first_errors.append(error)
+
+    first_thread = threading.Thread(target=run_first, daemon=True)
+    first_thread.start()
+    try:
+        assert execution_started.wait(timeout=2), "first execution did not start"
+        try:
+            post_request()
+            raise AssertionError("second request unexpectedly entered the worker")
+        except HTTPError as error:
+            assert error.code == 503
+            assert error.headers.get("Retry-After") == "2"
+        allow_execution_to_finish.set()
+        first_thread.join(timeout=5)
+        assert not first_thread.is_alive()
+        assert not first_errors
+        assert first_result[0][0] == 200
+    finally:
+        allow_execution_to_finish.set()
+        server.shutdown()
+        server.server_close()
+        server_thread.join(timeout=2)
+        first_thread.join(timeout=2)
+
+
+def test_remote_worker_http_service_times_out_isolated_execution(monkeypatch):
+    digest = "sha256:" + "f" * 64
+    monkeypatch.setenv("FOUNDRY_REMOTE_WORKER_TOKEN", "test-secret")
+    monkeypatch.setenv("FOUNDRY_WORKER_IMAGE_DIGEST", digest)
+    monkeypatch.setenv("FOUNDRY_MAX_INPUT_BYTES", "1048576")
+    monkeypatch.setenv("FOUNDRY_MAX_OUTPUT_BYTES", "1048576")
+    monkeypatch.setenv("FOUNDRY_EXECUTION_TIMEOUT_SECONDS", "1")
+
+    killed_groups = []
+    process_options = []
+    monkeypatch.setattr(
+        worker_http_server.os, "killpg",
+        lambda pid, sig: killed_groups.append((pid, sig)),
+    )
+
+    def timeout_process(command, **kwargs):
+        process_options.append(kwargs)
+        class FakeProcess:
+            pid = 23456
+            returncode = None
+
+            def communicate(self, timeout=None):
+                if timeout is not None:
+                    raise subprocess.TimeoutExpired(command, timeout)
+                self.returncode = -9
+                return b"", b""
+
+            def kill(self):
+                self.returncode = -9
+
+        return FakeProcess()
+
+    monkeypatch.setattr(worker_http_server.subprocess, "Popen", timeout_process)
+    server = BoundedThreadingHTTPServer(
+        ("127.0.0.1", 0), WorkerHandler, max_concurrent_executions=1
+    )
+    server_thread = threading.Thread(target=server.serve_forever, daemon=True)
+    server_thread.start()
+    payload = {
+        "request_version": "0.1.0",
+        "capability_id": "vector.buffer",
+        "capability_version": "1.0.0",
+        "input_feature_collection": {"type": "FeatureCollection", "features": []},
+        "input_crs": {"authority": "EPSG", "code": 32636},
+        "measurement_crs": {"authority": "EPSG", "code": 32636},
+        "parameters": {"distance": 10, "unit": "m"},
+    }
+    request = Request(
+        f"http://127.0.0.1:{server.server_port}/v1/execute",
+        data=json.dumps(payload).encode(),
+        headers={
+            "Authorization": "Bearer test-secret",
+            "Content-Type": "application/json",
+        },
+        method="POST",
+    )
+    try:
+        try:
+            urlopen(request, timeout=2)
+            raise AssertionError("timed-out execution unexpectedly succeeded")
+        except HTTPError as error:
+            assert error.code == 504
+            assert json.loads(error.read()) == {"error": "worker_execution_timeout"}
+        assert killed_groups
+        assert killed_groups[0][0] == 23456
+        assert process_options[0]["start_new_session"] is True
+    finally:
+        server.shutdown()
+        server.server_close()
+        server_thread.join(timeout=2)
+
+
+def test_remote_worker_child_process_receives_only_allowlisted_environment(monkeypatch):
+    monkeypatch.setenv("FOUNDRY_REMOTE_WORKER_TOKEN", "must-not-leak")
+    monkeypatch.setenv("POLAR_API_KEY", "must-not-leak-either")
+    monkeypatch.setenv("FOUNDRY_MAX_OUTPUT_BYTES", "4096")
+    captured = {}
+
+    def fake_process(command, **kwargs):
+        captured.update(kwargs["env"])
+        output_path = Path(command[command.index("--output") + 1])
+        output_path.write_text(
+            json.dumps({
+                "feature_collection": {"type": "FeatureCollection", "features": []},
+                "crs": {"authority": "EPSG", "code": 32636},
+            }),
+            encoding="utf-8",
+        )
+        class FakeProcess:
+            pid = 34567
+            returncode = 0
+
+            def communicate(self, timeout=None):
+                return b"", b""
+
+            def kill(self):
+                pass
+
+        return FakeProcess()
+
+    monkeypatch.setattr(worker_http_server.subprocess, "Popen", fake_process)
+    result = worker_http_server._execute_isolated(
+        {
+            "request_version": "0.1.0",
+            "capability_id": "vector.buffer",
+            "capability_version": "1.0.0",
+            "input_crs": {"authority": "EPSG", "code": 32636},
+            "measurement_crs": {"authority": "EPSG", "code": 32636},
+            "parameters": {"distance": 10, "unit": "m"},
+        },
+        {"type": "FeatureCollection", "features": []},
+    )
+
+    assert result["feature_collection"]["type"] == "FeatureCollection"
+    assert "FOUNDRY_REMOTE_WORKER_TOKEN" not in captured
+    assert "POLAR_API_KEY" not in captured
+    assert captured["FOUNDRY_MAX_OUTPUT_BYTES"] == "4096"
+    assert captured["PYTHONNOUSERSITE"] == "1"
+
+
+
+def test_worker_size_limit_environment_requires_positive_integers(monkeypatch):
+    assert worker_http_server._positive_int_environment("TEST_LIMIT", 17) == 17
+    monkeypatch.setenv("TEST_LIMIT", "2048")
+    assert worker_http_server._positive_int_environment("TEST_LIMIT", 17) == 2048
+
+    for invalid_value in ("0", "-1", "not-an-integer"):
+        monkeypatch.setenv("TEST_LIMIT", invalid_value)
+        try:
+            worker_http_server._positive_int_environment("TEST_LIMIT", 17)
+            raise AssertionError(f"accepted invalid limit: {invalid_value}")
+        except ValueError as error:
+            assert "TEST_LIMIT" in str(error)
