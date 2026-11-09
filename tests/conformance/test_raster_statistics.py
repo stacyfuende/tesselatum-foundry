@@ -89,3 +89,31 @@ def test_raster_statistics_requires_crs():
         dataset.write(np.ones((1, 2, 2), dtype=np.uint8))
     with pytest.raises(RasterStatisticsError, match="declare a CRS"):
         raster_band_statistics(output.getvalue())
+
+
+
+def test_raster_statistics_reports_scale_without_applying_it():
+    output = BytesIO()
+    with rasterio.open(
+        output,
+        "w",
+        driver="GTiff",
+        width=2,
+        height=1,
+        count=1,
+        dtype="uint16",
+        crs="EPSG:32636",
+        transform=from_origin(500000, 1000000, 10, 10),
+    ) as dataset:
+        dataset.write(np.array([[[2, 4]]], dtype=np.uint16))
+        dataset.scales = (0.5,)
+        dataset.offsets = (100.0,)
+        dataset.set_band_description(1, "surface temperature DN")
+
+    result = raster_band_statistics(output.getvalue())
+    band = result.statistics["bands"][0]
+    assert band["mean"] == 3
+    assert band["scale"] == 0.5
+    assert band["offset"] == 100.0
+    assert band["unit"] is None
+    assert result.statistics["value_semantics"] == "raw_stored_samples"
