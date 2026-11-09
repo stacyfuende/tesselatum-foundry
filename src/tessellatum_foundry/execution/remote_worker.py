@@ -115,7 +115,11 @@ class RemoteVectorBufferWorker:
                 raise WorkerUnavailableError(
                     "Remote worker redirects are not permitted."
                 ) from error
-            if error.code in {408, 425, 429, 500, 502, 503, 504}:
+            if error.code in {408, 504}:
+                raise WorkerTimeoutError(
+                    f"Remote worker execution timed out (HTTP {error.code})."
+                ) from error
+            if error.code in {425, 429, 500, 502, 503}:
                 raise WorkerUnavailableError(
                     f"Remote worker temporarily unavailable (HTTP {error.code})."
                 ) from error
@@ -322,15 +326,9 @@ class RemoteVectorReprojectWorker(RemoteVectorBufferWorker):
             raise WorkerExecutionError(
                 "Remote worker returned an invalid execution duration."
             )
-        coordinate_operation = payload.get("coordinate_operation")
-        if not isinstance(coordinate_operation, dict):
-            raise WorkerExecutionError(
-                "Remote reproject worker omitted coordinate-operation evidence."
-            )
         return WorkerResult(
             feature_collection=payload["feature_collection"],
             crs=payload["crs"],
             duration_ms=reported_duration,
             runtime_image_digest=pinned_digest,
-            coordinate_operation=coordinate_operation,
         )
