@@ -39,6 +39,13 @@ class ImplementationRegistry:
                 )
             self._manifests[key] = manifest
 
+    def list(self) -> list[dict[str, Any]]:
+        """Return implementation manifests in stable identifier/version order."""
+        return [
+            deepcopy(self._manifests[key])
+            for key in sorted(self._manifests)
+        ]
+
     def get(self, implementation_id: str, version: str) -> dict[str, Any]:
         """Return an exact implementation manifest or fail closed."""
         key = (implementation_id, version)
