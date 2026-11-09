@@ -9,6 +9,7 @@ from __future__ import annotations
 import hmac
 import json
 import os
+import signal
 import subprocess
 import sys
 import tempfile
@@ -102,22 +103,34 @@ def _execute_isolated(
             "--output",
             str(output_path),
         ]
+        process = subprocess.Popen(
+            command,
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            env=child_env,
+            start_new_session=(os.name == "posix"),
+        )
         try:
-            completed = subprocess.run(
-                command,
-                stdin=subprocess.DEVNULL,
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
-                env=child_env,
-                timeout=timeout_seconds,
-                check=False,
-            )
+            process.communicate(timeout=timeout_seconds)
         except subprocess.TimeoutExpired as error:
+            # The worker may spawn helper processes. Kill its whole session so
+            # timed-out work cannot outlive the request or escape the slot cap.
+            if os.name == "posix":
+                try:
+                    os.killpg(process.pid, signal.SIGKILL)
+                except ProcessLookupError:
+                    pass
+                except OSError:
+                    process.kill()
+            else:
+                process.kill()
+            process.communicate()
             raise WorkerExecutionTimeout(
                 f"Capability execution exceeded {timeout_seconds} seconds."
             ) from error
 
-        if completed.returncode != 0:
+        if process.returncode != 0:
             raise RuntimeError("Isolated capability process failed.")
         if not output_path.is_file():
             raise RuntimeError("Isolated capability process produced no output.")
