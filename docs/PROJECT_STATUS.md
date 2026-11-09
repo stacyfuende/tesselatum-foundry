@@ -235,4 +235,4 @@ The current allowance notice should be checked in **Settings → Billing & licen
 
 - Follow-up limit-hardening commits: API pre-read download ceiling `a0a4817`, client checksum metadata validation `f3c8bb3`, worker deployment run commands `6323403`, and private network setup `d0c1fc0`.
 
-- Latest isolated working-branch HEAD at this status update: `bf4141a50f85c04fb123ea5832ae674ce35b758c`. GitHub Actions API reports zero runs on this branch and no PR has been opened from it. The two accidentally placed `deploy/console` files have been deleted from `main`; the main tree no longer contains that directory, and the Actions history shows no runs from the accidental commits or cleanup.
+- The preceding isolated branch HEAD was `bf4141a50f85c04fb123ea5832ae674ce35b758c`; this status refresh is committed as `36d34ae71b9a18d604300f8b7f391eb792076a15`. GitHub Actions API reports zero runs on this branch and no PR has been opened from it. The two accidentally placed `deploy/console` files have been deleted from `main`; the main tree no longer contains that directory, and the Actions history shows no runs from the accidental commits or cleanup.
