@@ -36,7 +36,7 @@ Only after local verification should one deliberate PR validation run be request
 
 Required before a real user other than the operator is invited:
 
-- Integrate the remote-worker concurrency limit from PR #13 and the process-isolated hard timeout from PR #15; verify both in containers.
+- Verify the remote-worker concurrency limit and process-isolated hard timeout ported from PRs #13 and #15 on this branch; reconcile or supersede those open PRs after integration review, then verify both in containers.
 - Complete security review of the API, shared-token handling, Nginx proxy, worker network boundaries, resource ceilings, and filesystem permissions.
 - Put the control plane and workers behind trusted TLS ingress and private networking; apply rate, connection, and request-body limits.
 - Store API and worker secrets in a secret manager, document rotation, and test rotation.
