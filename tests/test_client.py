@@ -53,7 +53,7 @@ class _Handler(BaseHTTPRequestHandler):
             self.send_header("Content-Length", "0")
             self.end_headers()
             return
-        if self.path == "/missing":
+        if self.path == "/v1/reports/missing":
             self._send(404, b'{"detail":"report_not_found"}')
             return
         self._send(404, b'{"detail":"not_found"}')
@@ -131,6 +131,7 @@ def test_client_uploads_artifact_as_bounded_base64_json(api_server):
     assert response["artifact_id"] == "upload"
     assert api_server.received_payload["artifact_id"] == "upload"
     assert api_server.received_payload["content_base64"] == "c2FtcGxl"
+
 
 def test_client_surfaces_api_errors_and_rejects_redirects(api_server):
     client = FoundryClient(
