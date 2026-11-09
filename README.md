@@ -30,6 +30,10 @@ The repository follows a contracts-first implementation sequence. The first mile
 
 Items are marked complete when implementation and corresponding tests are present. Runtime and CI verification are reported separately.
 
+## Private control-plane API
+
+An optional FastAPI service provides bearer-authenticated Artifact, Cell, Recipe, Run, Validation Report, and registry endpoints. Build and deployment instructions are in [deploy/control-plane](deploy/control-plane/README.md). This is a controlled single-tenant private-preview boundary; it is not production multi-tenant hosting.
+
 ## End-to-end quickstart
 
 A runnable synthetic-data example demonstrates Artifact ingestion, immutable Cell/Recipe registration, isolated Docker execution, output validation, and checksum-verified export. Follow [examples/quickstart](examples/quickstart/README.md) to execute the first vector.buffer Recipe locally.
