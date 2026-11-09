@@ -61,7 +61,7 @@ All `/v1` routes require `Authorization: Bearer <FOUNDRY_API_TOKEN>`. The health
 - `POST /v1/recipes/{id}/{version}/runs`
 - `GET /v1/runs`, `GET /v1/runs/{run_id}`, `GET /v1/reports/{report_id}`
 
-The API rejects missing or invalid bearer tokens, non-JSON bodies, missing Content-Length, oversized requests, malformed base64, and unknown fields on write operations. Responses disable caching and set basic content-sniffing/referrer protections. Interactive OpenAPI/Swagger documentation is disabled.
+The API rejects missing or invalid bearer tokens, non-JSON bodies, missing Content-Length, oversized requests, malformed base64, and unknown fields on write operations. Artifact responses replace local filesystem paths with an opaque `foundry://sha256/...` storage identifier; retrieve bytes through the authenticated content endpoint. Responses disable caching and set basic content-sniffing/referrer protections. Interactive OpenAPI/Swagger documentation is disabled.
 
 ## Important launch limitations
 
