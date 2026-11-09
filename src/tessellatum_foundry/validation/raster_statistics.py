@@ -9,7 +9,8 @@ from typing import Any
 
 import numpy as np
 import rasterio
-from pyproj import CRS\nfrom pyproj.exceptions import CRSError
+from pyproj import CRS
+from pyproj.exceptions import CRSError
 
 
 @dataclass(frozen=True)
