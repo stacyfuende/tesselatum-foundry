@@ -120,5 +120,5 @@ The current allowance notice should be checked in **Settings → Billing & licen
 - Updated the kernel and critic to preserve integer min/max values and subtract a fixed per-band integer baseline using Python integer arithmetic before float64 mean/variance accumulation. The critic compares integer extrema exactly and remains a separate implementation path.
 - Added a regression test using adjacent int64 values around 2^60; it checks exact extrema, population standard deviation of the small offsets, and critic acceptance.
 - Updated ADR-044 to distinguish exhaustive pixel processing from arbitrary-precision arithmetic: mean and standard deviation remain float64 outputs.
-- Commits: kernel 8c24bdd and cleanup 72a8749; critic b72e310; regression test a924e97; ADR-044 b5b8876.
+- Commits: kernel 8c24bdd, cleanup 72a8749, and formatting/documentation clarification 6d9c8ab; critic b72e310; regression test a924e97; ADR-044 b5b8876.
 - These changes have been committed but not executed in a local Python environment or GitHub Actions. Do not mark the test as passing or the raster implementation conformant until targeted tests and full CI pass.
