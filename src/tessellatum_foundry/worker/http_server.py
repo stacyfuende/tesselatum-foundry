@@ -38,6 +38,16 @@ def _json_bytes(value: dict[str, Any]) -> bytes:
     ).encode("utf-8")
 
 
+def _positive_int_environment(name: str, default: int) -> int:
+    try:
+        value = int(os.environ.get(name, str(default)))
+    except ValueError as error:
+        raise ValueError(f"{name} must be a positive integer.") from error
+    if value < 1:
+        raise ValueError(f"{name} must be a positive integer.")
+    return value
+
+
 class WorkerExecutionTimeout(RuntimeError):
     """Raised when an isolated capability process exceeds its wall-clock limit."""
 
@@ -46,17 +56,14 @@ def _execute_isolated(
     request: dict[str, Any],
     feature_collection: dict[str, Any],
 ) -> dict[str, Any]:
-    try:
-        timeout_seconds = int(
-            os.environ.get("FOUNDRY_EXECUTION_TIMEOUT_SECONDS", "110")
-        )
-        max_output_bytes = int(
-            os.environ.get("FOUNDRY_MAX_OUTPUT_BYTES", str(128 * 1024 * 1024))
-        )
-    except ValueError as error:
-        raise ValueError("Worker execution and output limits must be integers.") from error
-    if not 1 <= timeout_seconds <= 3600 or max_output_bytes < 1:
-        raise ValueError("Worker execution and output limits must be positive and in range.")
+    timeout_seconds = _positive_int_environment(
+        "FOUNDRY_EXECUTION_TIMEOUT_SECONDS", 110
+    )
+    max_output_bytes = _positive_int_environment(
+        "FOUNDRY_MAX_OUTPUT_BYTES", 128 * 1024 * 1024
+    )
+    if timeout_seconds > 3600:
+        raise ValueError("FOUNDRY_EXECUTION_TIMEOUT_SECONDS must not exceed 3600.")
 
     cli_request = {
         key: value
@@ -166,7 +173,7 @@ class WorkerHandler(BaseHTTPRequestHandler):
         extra_headers: dict[str, str] | None = None,
     ) -> None:
         body = _json_bytes(payload)
-        maximum = int(os.environ.get("FOUNDRY_MAX_OUTPUT_BYTES", str(128 * 1024 * 1024)))
+        maximum = _positive_int_environment("FOUNDRY_MAX_OUTPUT_BYTES", 128 * 1024 * 1024)
         if len(body) > maximum:
             status = 500
             body = _json_bytes({"error": "worker_response_limit_exceeded"})
@@ -228,7 +235,7 @@ class WorkerHandler(BaseHTTPRequestHandler):
         except ValueError:
             self._send_json(411, {"error": "content_length_required"})
             return
-        maximum = int(os.environ.get("FOUNDRY_MAX_INPUT_BYTES", str(128 * 1024 * 1024)))
+        maximum = _positive_int_environment("FOUNDRY_MAX_INPUT_BYTES", 128 * 1024 * 1024)
         if content_length < 1 or content_length > maximum:
             self._send_json(413, {"error": "request_size_limit_exceeded"})
             return
@@ -336,6 +343,11 @@ def main() -> None:
         raise SystemExit("FOUNDRY_EXECUTION_TIMEOUT_SECONDS must be an integer.") from error
     if not 1 <= execution_timeout <= 3600:
         raise SystemExit("FOUNDRY_EXECUTION_TIMEOUT_SECONDS must be between 1 and 3600.")
+    try:
+        _positive_int_environment("FOUNDRY_MAX_INPUT_BYTES", 128 * 1024 * 1024)
+        _positive_int_environment("FOUNDRY_MAX_OUTPUT_BYTES", 128 * 1024 * 1024)
+    except ValueError as error:
+        raise SystemExit(str(error)) from error
     server = BoundedThreadingHTTPServer(
         (bind, port),
         WorkerHandler,
