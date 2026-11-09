@@ -425,3 +425,50 @@ def test_worker_size_limit_environment_requires_positive_integers(monkeypatch):
             raise AssertionError(f"accepted invalid limit: {invalid_value}")
         except ValueError as error:
             assert "TEST_LIMIT" in str(error)
+
+
+def test_worker_separates_artifact_input_limit_from_json_envelope_limit(monkeypatch):
+    monkeypatch.setenv("FOUNDRY_REMOTE_WORKER_TOKEN", "test-secret")
+    monkeypatch.setenv("FOUNDRY_WORKER_IMAGE_DIGEST", "sha256:" + "a" * 64)
+    monkeypatch.setenv("FOUNDRY_MAX_INPUT_BYTES", "32")
+    monkeypatch.setenv("FOUNDRY_MAX_REQUEST_BYTES", "2048")
+    monkeypatch.setenv("FOUNDRY_MAX_OUTPUT_BYTES", "4096")
+    server = BoundedThreadingHTTPServer(
+        ("127.0.0.1", 0), WorkerHandler, max_concurrent_executions=1
+    )
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    payload = {
+        "request_version": "0.1.0",
+        "capability_id": "vector.buffer",
+        "capability_version": "1.0.0",
+        "input_feature_collection": {
+            "type": "FeatureCollection",
+            "features": [{"type": "Feature", "properties": {"padding": "x" * 128}}],
+        },
+        "input_crs": {"authority": "EPSG", "code": 32636},
+        "measurement_crs": {"authority": "EPSG", "code": 32636},
+        "parameters": {"distance": 10, "unit": "m"},
+    }
+    request = Request(
+        f"http://127.0.0.1:{server.server_port}/v1/execute",
+        data=json.dumps(payload).encode(),
+        headers={
+            "Authorization": "Bearer test-secret",
+            "Content-Type": "application/json",
+        },
+        method="POST",
+    )
+    try:
+        try:
+            urlopen(request, timeout=2)
+            raise AssertionError("worker accepted an oversized input Artifact")
+        except HTTPError as error:
+            assert error.code == 413
+            assert json.loads(error.read()) == {
+                "error": "input_artifact_size_limit_exceeded"
+            }
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=2)
