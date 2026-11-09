@@ -2,6 +2,17 @@
 
 The control-plane image exposes the authenticated Foundry HTTP API. It is an initial private deployment target, not a public multi-tenant SaaS service.
 
+## Run API tests without invoking GitHub Actions
+
+From the repository root:
+
+```bash
+python -m pip install -e '.[dev]'
+python -m pytest tests/test_api.py
+```
+
+The development extra includes FastAPI and its test client. These tests use an injected temporary local workspace and do not start Docker workers or contact external services.
+
 ## Build
 
 From the repository root:
