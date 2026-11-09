@@ -386,6 +386,45 @@ def test_reproject_method_report_fails_when_geographic_bbox_exceeds_operation_ar
 
 
 
+def test_reproject_method_report_leaves_invalid_geographic_bbox_unassessed():
+    report = build_methodology_report(
+        run_id="run:invalid-area-bbox",
+        cell={},
+        capability={"capability_id": "vector.reproject"},
+        parameters={"target_crs": {"authority": "EPSG", "code": 3857}},
+        input_artifact=artifact(
+            "source.points",
+            {"authority": "EPSG", "code": 4326},
+            ["Point"],
+            bbox=[-200.0, -5.0, 179.0, 5.0],
+        ),
+        output_artifact=artifact(
+            "projected.points",
+            {"authority": "EPSG", "code": 3857},
+            ["Point"],
+            metadata={
+                "coordinate_operation": {
+                    "description": "World operation",
+                    "definition": "+proj=pipeline +step +proj=merc",
+                    "accuracy_m": 1.0,
+                    "area_of_use": {
+                        "west": -180.0,
+                        "south": -85.0,
+                        "east": 180.0,
+                        "north": 85.0,
+                        "name": "World",
+                    },
+                }
+            },
+        ),
+    )
+
+    coverage = findings_by_code(report)[
+        "method.input_extent_within_operation_area_of_use"
+    ]
+    assert coverage["status"] == "not_assessed"
+
+
 def test_reproject_method_report_handles_antimeridian_wrapping_operation_area():
     report = build_methodology_report(
         run_id="run:wrapped-area",
