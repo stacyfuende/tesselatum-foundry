@@ -231,10 +231,19 @@ def inspect_raster_band_statistics_output(
                     }
                     for field in numeric_fields:
                         actual = band_result.get(field)
+                        actual_is_numeric = (
+                            not isinstance(actual, bool)
+                            and isinstance(actual, (int, float))
+                        )
+                        try:
+                            actual_is_finite = (
+                                math.isfinite(float(actual)) if actual_is_numeric else False
+                            )
+                        except (OverflowError, TypeError, ValueError):
+                            actual_is_finite = False
                         if (
-                            isinstance(actual, bool)
-                            or not isinstance(actual, (int, float))
-                            or not math.isfinite(actual)
+                            not actual_is_numeric
+                            or not actual_is_finite
                             or (
                                 actual != expected[field]
                                 if field in {"minimum", "maximum"}
