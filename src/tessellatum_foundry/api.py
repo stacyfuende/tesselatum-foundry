@@ -23,6 +23,17 @@ from tessellatum_foundry.storage.artifacts import ImmutableArtifactError
 from tessellatum_foundry.storage.definitions import ImmutableDefinitionError
 
 
+def _positive_integer_environment(name: str, default: int) -> int:
+    raw = os.environ.get(name, str(default))
+    try:
+        value = int(raw)
+    except ValueError as error:
+        raise RuntimeError(f"{name} must be a positive integer.") from error
+    if value < 1:
+        raise RuntimeError(f"{name} must be a positive integer.")
+    return value
+
+
 def _build_foundry_from_environment() -> LocalFoundry:
     root = Path(os.environ.get("FOUNDRY_DATA_DIR", "./foundry-data"))
     mode = os.environ.get("FOUNDRY_WORKER_MODE", "docker")
@@ -39,15 +50,30 @@ def _build_foundry_from_environment() -> LocalFoundry:
         raise RuntimeError(
             "Remote mode requires URLs and bearer tokens for both vector workers."
         )
+    worker_timeout = _positive_integer_environment(
+        "FOUNDRY_REMOTE_WORKER_TIMEOUT_SECONDS", 120
+    )
+    max_input_bytes = _positive_integer_environment(
+        "FOUNDRY_REMOTE_WORKER_MAX_INPUT_BYTES", 128 * 1024 * 1024
+    )
+    max_output_bytes = _positive_integer_environment(
+        "FOUNDRY_REMOTE_WORKER_MAX_OUTPUT_BYTES", 128 * 1024 * 1024
+    )
     return LocalFoundry(
         root,
         worker=RemoteVectorBufferWorker(
             buffer_url,
             bearer_token=buffer_token,
+            timeout_seconds=worker_timeout,
+            max_input_bytes=max_input_bytes,
+            max_output_bytes=max_output_bytes,
         ),
         reproject_worker=RemoteVectorReprojectWorker(
             reproject_url,
             bearer_token=reproject_token,
+            timeout_seconds=worker_timeout,
+            max_input_bytes=max_input_bytes,
+            max_output_bytes=max_output_bytes,
         ),
     )
 
@@ -74,6 +100,7 @@ def create_app(
     *,
     api_token: str | None = None,
     max_request_bytes: int | None = None,
+    max_response_bytes: int | None = None,
 ) -> FastAPI:
     """Create a private, single-tenant API app with an injected or env-built Foundry."""
     token = api_token if api_token is not None else os.environ.get("FOUNDRY_API_TOKEN", "")
@@ -84,8 +111,15 @@ def create_app(
         if max_request_bytes is not None
         else int(os.environ.get("FOUNDRY_API_MAX_REQUEST_BYTES", str(32 * 1024 * 1024)))
     )
-    if maximum < 1024:
-        raise ValueError("API request limit must be at least 1024 bytes.")
+    maximum_response = (
+        max_response_bytes
+        if max_response_bytes is not None
+        else _positive_integer_environment(
+            "FOUNDRY_API_MAX_RESPONSE_BYTES", 128 * 1024 * 1024
+        )
+    )
+    if maximum < 1024 or maximum_response < 1024:
+        raise ValueError("API request and response limits must be at least 1024 bytes.")
     control_plane = foundry or _build_foundry_from_environment()
 
     def authorize(authorization: str | None = Header(default=None)) -> None:
@@ -246,7 +280,7 @@ def create_app(
         try:
             artifact = control_plane.get_artifact(artifact_id, version)
             content = control_plane.read_artifact(artifact)
-            if len(content) > maximum:
+            if len(content) > maximum_response:
                 raise HTTPException(
                     status_code=413, detail="artifact_response_size_limit_exceeded"
                 )
