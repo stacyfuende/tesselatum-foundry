@@ -105,8 +105,12 @@ def coordinate_operation_evidence_valid(value: Any) -> bool:
         west, south, east, north = bounds
         if (
             west < -180
+            or west > 180
+            or east < -180
             or east > 180
             or south < -90
+            or south > 90
+            or north < -90
             or north > 90
             or south > north
         ):
@@ -130,7 +134,14 @@ def _geographic_bbox_within_area_of_use(
         min_x, min_y, max_x, max_y = bbox
     else:
         min_x, min_y, _, max_x, max_y, _ = bbox
-    if min_x > max_x or min_y > max_y:
+    if (
+        min_x > max_x
+        or min_y > max_y
+        or min_x < -180
+        or max_x > 180
+        or min_y < -90
+        or max_y > 90
+    ):
         return None
 
     west = area["west"]
