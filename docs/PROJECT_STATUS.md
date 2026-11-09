@@ -49,7 +49,7 @@ Important implementation observation: the branch initially read each entire band
 1. [x] Replace whole-band reads with block/window iteration and a numerically stable mergeable accumulator (count, min, max, mean, population variance) in the kernel.
 2. [x] Keep critic validation independently implemented and windowed; it does not call the kernel.
 3. [~] Add tiled and striped GeoTIFF tests, internal/external masks, nodata, non-finite floating samples, multiple bands, empty-valid-band behavior, and very large synthetic dimensions. A multi-tile exactness test is now present; broaden the edge-case matrix.
-4. [~] Confirm finite output behavior for extreme numeric values and avoid integer overflow by converting window samples to float64 before arithmetic. Float64 overflow is explicitly rejected in the kernel; critic-side adversarial tests remain.
+4. [~] Confirm finite output behavior for extreme numeric values. Integer bands now retain exact integer extrema and use per-band integer baselines before float64 variance accumulation, avoiding loss of adjacent int64/uint64 values above 2^53. Mean and standard deviation remain float64 outputs; broader adversarial tests (including uint64 extremes and float64 overflow) remain.
 5. If future contract versions add exact quantiles/median, design a bounded-memory exact algorithm (e.g. external selection) or explicitly revise semantics; do not silently substitute approximate quantiles.
 6. Only then connect the capability to canonical dispatch, Run lifecycle, Artifact persistence, Recipe execution, cache evidence, and installed package conformance. Remove the not_run gate only after the entire path is validated.
 
@@ -112,3 +112,13 @@ The current allowance notice should be checked in **Settings → Billing & licen
 - Commits on the working branch: `55aaddf` (schema), `da1d440` (test), `b65f90a` (ADR), `9773077` (ADR index).
 - No workflow run was triggered by these commits. Local tests have not been run in this environment. Do not mark PR #21 or the raster implementation conformant until a full required check passes on the final PR head.
 - Next: perform read-only review of the resulting diff, run targeted schema tests and the installed-package smoke test in a controlled local environment if available, then decide whether to request one deliberate PR validation run. Preserve the raster manifest state as `not_run`.
+
+
+## 2026-11-09 implementation hand-off — raster integer precision review
+
+- Read-only review found that both the raster kernel and independent critic converted integer samples directly to float64. Adjacent int64/uint64 values above 2^53 could therefore collapse before min/max and variance were computed.
+- Updated the kernel and critic to preserve integer min/max values and subtract a fixed per-band integer baseline using Python integer arithmetic before float64 mean/variance accumulation. The critic compares integer extrema exactly and remains a separate implementation path.
+- Added a regression test using adjacent int64 values around 2^60; it checks exact extrema, population standard deviation of the small offsets, and critic acceptance.
+- Updated ADR-044 to distinguish exhaustive pixel processing from arbitrary-precision arithmetic: mean and standard deviation remain float64 outputs.
+- Commits: kernel 8c24bdd and cleanup 72a8749; critic b72e310; regression test a924e97; ADR-044 b5b8876.
+- These changes have been committed but not executed in a local Python environment or GitHub Actions. Do not mark the test as passing or the raster implementation conformant until targeted tests and full CI pass.
