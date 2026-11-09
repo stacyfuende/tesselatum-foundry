@@ -18,7 +18,7 @@ The repository already has a worker CLI that executes the exact capability reque
 4. On timeout, send `SIGKILL` to the child's process group (falling back to direct-child termination where process groups are unavailable), reap the child, and return HTTP 504 with a stable `worker_execution_timeout` error code.
 5. On non-zero exit, missing output, invalid output JSON or output-size violation, fail the request. Never return partial output as a successful execution.
 6. Preserve the CLI's output file-size limit and the HTTP server's response-size limit. Continue to apply container CPU, memory, process and network limits.
-7. Keep the bounded request concurrency limit from ADR-039. A new Run attempt remains the retry boundary; the remote worker does not retry internally.
+7. Keep the bounded request concurrency limit from ADR-048. A new Run attempt remains the retry boundary; the remote worker does not retry internally.
 
 ## Consequences
 
