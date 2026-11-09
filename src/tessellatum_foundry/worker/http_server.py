@@ -235,8 +235,13 @@ class WorkerHandler(BaseHTTPRequestHandler):
         except ValueError:
             self._send_json(411, {"error": "content_length_required"})
             return
-        maximum = _positive_int_environment("FOUNDRY_MAX_INPUT_BYTES", 128 * 1024 * 1024)
-        if content_length < 1 or content_length > maximum:
+        maximum_input = _positive_int_environment(
+            "FOUNDRY_MAX_INPUT_BYTES", 128 * 1024 * 1024
+        )
+        maximum_request = _positive_int_environment(
+            "FOUNDRY_MAX_REQUEST_BYTES", maximum_input + 1024 * 1024
+        )
+        if content_length < 1 or content_length > maximum_request:
             self._send_json(413, {"error": "request_size_limit_exceeded"})
             return
         try:
@@ -257,6 +262,9 @@ class WorkerHandler(BaseHTTPRequestHandler):
             parameters = request["parameters"]
             if not isinstance(feature_collection, dict) or not isinstance(parameters, dict):
                 raise ValueError("invalid feature collection or parameters")
+            if len(_json_bytes(feature_collection)) > maximum_input:
+                self._send_json(413, {"error": "input_artifact_size_limit_exceeded"})
+                return
             if not self.server._execution_slots.acquire(blocking=False):
                 self._send_json(
                     503,
@@ -344,7 +352,12 @@ def main() -> None:
     if not 1 <= execution_timeout <= 3600:
         raise SystemExit("FOUNDRY_EXECUTION_TIMEOUT_SECONDS must be between 1 and 3600.")
     try:
-        _positive_int_environment("FOUNDRY_MAX_INPUT_BYTES", 128 * 1024 * 1024)
+        maximum_input = _positive_int_environment(
+            "FOUNDRY_MAX_INPUT_BYTES", 128 * 1024 * 1024
+        )
+        _positive_int_environment(
+            "FOUNDRY_MAX_REQUEST_BYTES", maximum_input + 1024 * 1024
+        )
         _positive_int_environment("FOUNDRY_MAX_OUTPUT_BYTES", 128 * 1024 * 1024)
     except ValueError as error:
         raise SystemExit(str(error)) from error
