@@ -19,7 +19,7 @@ foundry = "tessellatum_foundry.cli:main"
 [project.optional-dependencies]
 dev = [
   "fastapi>=0.115,<1",
-  "httpx>=0.27,<1",
+  "httpx>=0.27,<0.28",
   "pytest>=8.3,<9",
   "ruff>=0.9,<1",
 ]
