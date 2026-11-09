@@ -235,14 +235,26 @@ class FoundryClient:
             ),
             raw=True,
         )
+        checksum = metadata.get("checksum")
+        if (
+            not isinstance(checksum, dict)
+            or checksum.get("algorithm") != "sha256"
+            or not isinstance(checksum.get("value"), str)
+        ):
+            raise FoundryTransportError(
+                "Artifact metadata does not contain a SHA-256 checksum."
+            )
+        expected = checksum["value"]
         actual = hashlib.sha256(body).hexdigest()
-        expected = metadata["checksum"]["value"]
         header_digest = headers.get("X-Content-SHA256")
         if actual != expected or header_digest != expected:
             raise FoundryTransportError(
                 "Downloaded Artifact failed SHA-256 verification."
             )
-        if len(body) != metadata.get("size_bytes"):
+        expected_size = metadata.get("size_bytes")
+        if type(expected_size) is not int or expected_size < 0:
+            raise FoundryTransportError("Artifact metadata contains an invalid byte length.")
+        if len(body) != expected_size:
             raise FoundryTransportError(
                 "Downloaded Artifact length differs from immutable metadata."
             )
