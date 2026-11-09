@@ -29,6 +29,10 @@ The repository follows a contracts-first implementation sequence. The first mile
 
 Items are marked complete when implementation and corresponding tests are present. Runtime and CI verification are reported separately.
 
+## End-to-end quickstart
+
+A runnable synthetic-data example demonstrates Artifact ingestion, immutable Cell/Recipe registration, isolated Docker execution, output validation, and checksum-verified export. Follow [examples/quickstart](examples/quickstart/README.md) to execute the first vector.buffer Recipe locally.
+
 ## Local operator CLI
 
 Install from a source checkout with `python -m pip install -e '.[dev,shapely]'`, then initialize a workspace:
