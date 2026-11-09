@@ -1,0 +1,6 @@
+{
+  "kind": "vector",
+  "crs": {"authority": "EPSG", "code": 32737},
+  "bbox": [500000, 9850000, 500080, 9850020],
+  "geometry_types": ["Polygon"]
+}
