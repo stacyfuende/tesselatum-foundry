@@ -30,6 +30,10 @@ The repository follows a contracts-first implementation sequence. The first mile
 
 Items are marked complete when implementation and corresponding tests are present. Runtime and CI verification are reported separately.
 
+## Launch readiness
+
+See the [launch plan](docs/LAUNCH_PLAN.md) for the private-preview verification gates and the separate requirements for a public multi-tenant release. The presence of an API, client, Console, or container image does not mean the service is production-ready.
+
 ## Browser operator console
 
 A static, same-origin Console now provides a browser workflow for Artifact intake, Cell/Recipe registration, execution, Run/report inspection, and checksum-verified output downloads. See [deploy/console](deploy/console/README.md). It is designed for the private single-tenant preview and uses the control-plane API; it is not a multi-user workflow designer.
