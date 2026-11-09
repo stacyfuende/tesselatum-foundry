@@ -56,6 +56,7 @@ class FoundryClient:
         *,
         bearer_token: str,
         timeout_seconds: float = 30,
+        execution_timeout_seconds: float = 145,
         max_request_bytes: int = 32 * 1024 * 1024,
         max_response_bytes: int = 32 * 1024 * 1024,
         allow_insecure_localhost: bool = False,
@@ -83,11 +84,17 @@ class FoundryClient:
             )
         if not isinstance(bearer_token, str) or len(bearer_token) < 32:
             raise ValueError("A Foundry API bearer token of at least 32 characters is required.")
-        if timeout_seconds <= 0 or max_request_bytes < 1 or max_response_bytes < 1:
+        if (
+            timeout_seconds <= 0
+            or execution_timeout_seconds <= 0
+            or max_request_bytes < 1
+            or max_response_bytes < 1
+        ):
             raise ValueError("Timeout and request/response limits must be positive.")
         self.base_url = base_url.rstrip("/")
         self.bearer_token = bearer_token
         self.timeout_seconds = timeout_seconds
+        self.execution_timeout_seconds = execution_timeout_seconds
         self.max_request_bytes = max_request_bytes
         self.max_response_bytes = max_response_bytes
         self._opener = build_opener(_RejectRedirects())
@@ -99,7 +106,11 @@ class FoundryClient:
         payload: dict[str, Any] | None = None,
         *,
         raw: bool = False,
+        timeout_seconds: float | None = None,
     ) -> Any:
+        timeout = self.timeout_seconds if timeout_seconds is None else timeout_seconds
+        if timeout <= 0:
+            raise ValueError("Request timeout must be positive.")
         body = None
         headers = {
             "Authorization": f"Bearer {self.bearer_token}",
@@ -123,7 +134,7 @@ class FoundryClient:
             method=method,
         )
         try:
-            with self._opener.open(request, timeout=self.timeout_seconds) as response:
+            with self._opener.open(request, timeout=timeout) as response:
                 response_body = response.read(self.max_response_bytes + 1)
                 if len(response_body) > self.max_response_bytes:
                     raise FoundryTransportError(
@@ -287,6 +298,7 @@ class FoundryClient:
                 f"{self._segment(version)}/runs"
             ),
             {"actor_id": actor_id},
+            timeout_seconds=self.execution_timeout_seconds,
         )
 
     def list_runs(
