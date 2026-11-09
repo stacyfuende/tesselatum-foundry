@@ -408,3 +408,18 @@ def test_remote_worker_child_process_receives_only_allowlisted_environment(monke
     assert "POLAR_API_KEY" not in captured
     assert captured["FOUNDRY_MAX_OUTPUT_BYTES"] == "4096"
     assert captured["PYTHONNOUSERSITE"] == "1"
+
+
+
+def test_worker_size_limit_environment_requires_positive_integers(monkeypatch):
+    assert worker_http_server._positive_int_environment("TEST_LIMIT", 17) == 17
+    monkeypatch.setenv("TEST_LIMIT", "2048")
+    assert worker_http_server._positive_int_environment("TEST_LIMIT", 17) == 2048
+
+    for invalid_value in ("0", "-1", "not-an-integer"):
+        monkeypatch.setenv("TEST_LIMIT", invalid_value)
+        try:
+            worker_http_server._positive_int_environment("TEST_LIMIT", 17)
+            raise AssertionError(f"accepted invalid limit: {invalid_value}")
+        except ValueError as error:
+            assert "TEST_LIMIT" in str(error)
