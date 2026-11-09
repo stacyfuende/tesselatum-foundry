@@ -2,7 +2,7 @@
   "capability_id": "raster.band_statistics",
   "version": "1.0.0",
   "name": "Raster band statistics",
-  "description": "Calculate exact descriptive statistics for valid stored pixel samples in selected raster bands.",
+  "description": "Calculate exhaustive descriptive statistics for valid stored pixel samples in selected raster bands.",
   "category": "raster",
   "input_ports": [
     {
