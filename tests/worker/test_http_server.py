@@ -271,3 +271,74 @@ def test_remote_worker_http_service_bounds_concurrent_requests(monkeypatch):
         server.server_close()
         server_thread.join(timeout=2)
         first_thread.join(timeout=2)
+
+
+def test_remote_worker_http_service_releases_slot_after_execution_failure(monkeypatch):
+    digest = "sha256:" + "b" * 64
+    monkeypatch.setenv("FOUNDRY_REMOTE_WORKER_TOKEN", "test-secret")
+    monkeypatch.setenv("FOUNDRY_WORKER_IMAGE_DIGEST", digest)
+    monkeypatch.setenv("FOUNDRY_MAX_INPUT_BYTES", "1048576")
+    monkeypatch.setenv("FOUNDRY_MAX_OUTPUT_BYTES", "1048576")
+
+    calls = []
+
+    def fail_once(*args, **kwargs):
+        calls.append(True)
+        if len(calls) == 1:
+            raise RuntimeError("simulated capability failure")
+        return SimpleNamespace(
+            feature_collection={"type": "FeatureCollection", "features": []}
+        )
+
+    monkeypatch.setattr(worker_http_server, "buffer_feature_collection", fail_once)
+    server = BoundedThreadingHTTPServer(
+        ("127.0.0.1", 0), WorkerHandler, max_concurrent_executions=1
+    )
+    server_thread = threading.Thread(target=server.serve_forever, daemon=True)
+    server_thread.start()
+    payload = {
+        "request_version": "0.1.0",
+        "capability_id": "vector.buffer",
+        "capability_version": "1.0.0",
+        "input_feature_collection": {"type": "FeatureCollection", "features": []},
+        "input_crs": {"authority": "EPSG", "code": 32636},
+        "measurement_crs": {"authority": "EPSG", "code": 32636},
+        "parameters": {"distance": 10, "unit": "m"},
+    }
+    request = Request(
+        f"http://127.0.0.1:{server.server_port}/v1/execute",
+        data=json.dumps(payload).encode(),
+        headers={
+            "Authorization": "Bearer test-secret",
+            "Content-Type": "application/json",
+        },
+        method="POST",
+    )
+    try:
+        try:
+            urlopen(request, timeout=2)
+            raise AssertionError("failed capability execution unexpectedly succeeded")
+        except HTTPError as error:
+            assert error.code == 422
+
+        with urlopen(request, timeout=2) as response:
+            result = json.loads(response.read())
+        assert response.status == 200
+        assert result["runtime_image_digest"] == digest
+        assert len(calls) == 2
+    finally:
+        server.shutdown()
+        server.server_close()
+        server_thread.join(timeout=2)
+
+
+def test_bounded_worker_server_rejects_invalid_execution_limits():
+    import pytest
+
+    for limit in (0, 65):
+        with pytest.raises(ValueError, match="between 1 and 64"):
+            BoundedThreadingHTTPServer(
+                ("127.0.0.1", 0),
+                WorkerHandler,
+                max_concurrent_executions=limit,
+            )
