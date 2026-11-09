@@ -216,9 +216,19 @@ def test_remote_worker_http_service_bounds_concurrent_requests(monkeypatch):
             }),
             encoding="utf-8",
         )
-        return subprocess.CompletedProcess(command, 0)
+        class FakeProcess:
+            pid = 12345
+            returncode = 0
 
-    monkeypatch.setattr(worker_http_server.subprocess, "run", slow_process)
+            def communicate(self, timeout=None):
+                return b"", b""
+
+            def kill(self):
+                pass
+
+        return FakeProcess()
+
+    monkeypatch.setattr(worker_http_server.subprocess, "Popen", slow_process)
     server = BoundedThreadingHTTPServer(
         ("127.0.0.1", 0), WorkerHandler, max_concurrent_executions=1
     )
@@ -288,10 +298,26 @@ def test_remote_worker_http_service_times_out_isolated_execution(monkeypatch):
     monkeypatch.setenv("FOUNDRY_MAX_OUTPUT_BYTES", "1048576")
     monkeypatch.setenv("FOUNDRY_EXECUTION_TIMEOUT_SECONDS", "1")
 
-    def timeout_process(command, **kwargs):
-        raise subprocess.TimeoutExpired(command, kwargs.get("timeout"))
+    killed_groups = []
+    monkeypatch.setattr(
+        worker_http_server.os, "killpg",
+        lambda pid, sig: killed_groups.append((pid, sig)),
+    )
 
-    monkeypatch.setattr(worker_http_server.subprocess, "run", timeout_process)
+    def timeout_process(command, **kwargs):
+        class FakeProcess:
+            pid = 23456
+            returncode = None
+
+            def communicate(self, timeout=None):
+                raise subprocess.TimeoutExpired(command, timeout)
+
+            def kill(self):
+                self.returncode = -9
+
+        return FakeProcess()
+
+    monkeypatch.setattr(worker_http_server.subprocess, "Popen", timeout_process)
     server = BoundedThreadingHTTPServer(
         ("127.0.0.1", 0), WorkerHandler, max_concurrent_executions=1
     )
@@ -322,6 +348,8 @@ def test_remote_worker_http_service_times_out_isolated_execution(monkeypatch):
         except HTTPError as error:
             assert error.code == 504
             assert json.loads(error.read()) == {"error": "worker_execution_timeout"}
+        assert killed_groups
+        assert killed_groups[0][0] == 23456
     finally:
         server.shutdown()
         server.server_close()
@@ -344,9 +372,19 @@ def test_remote_worker_child_process_receives_only_allowlisted_environment(monke
             }),
             encoding="utf-8",
         )
-        return subprocess.CompletedProcess(command, 0)
+        class FakeProcess:
+            pid = 34567
+            returncode = 0
 
-    monkeypatch.setattr(worker_http_server.subprocess, "run", fake_process)
+            def communicate(self, timeout=None):
+                return b"", b""
+
+            def kill(self):
+                pass
+
+        return FakeProcess()
+
+    monkeypatch.setattr(worker_http_server.subprocess, "Popen", fake_process)
     result = worker_http_server._execute_isolated(
         {
             "request_version": "0.1.0",
