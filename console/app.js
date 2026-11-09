@@ -209,6 +209,7 @@ byId("connectButton").addEventListener("click", async () => {
   try {
     apiBase = normalizeApiBase(byId("apiBase").value);
     bearerToken = byId("apiToken").value;
+    byId("apiToken").value = "";
     if (bearerToken.length < 32) {
       throw new Error("The bearer token must contain at least 32 characters.");
     }
@@ -224,6 +225,7 @@ byId("connectButton").addEventListener("click", async () => {
     await refreshRuns();
   } catch (error) {
     bearerToken = "";
+    byId("apiToken").value = "";
     setConnectionState(false, error.message, "error");
   }
 });
