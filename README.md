@@ -21,7 +21,7 @@ The repository follows a contracts-first implementation sequence. The first mile
 - [~] Execution/output validation and operation-specific methodological evidence are implemented for vector.buffer and vector.reproject. Rights provenance evidence records declarations and lineage without inferring permission. Analytical suitability, area-of-use/accuracy review, and authoritative rights/security policy evaluation remain outstanding.
 - [~] Recipe orchestration dispatches through exact capability-version runner registrations. vector.buffer@1.0.0 and vector.reproject@1.0.0 now have separate Run services and isolated local Docker workers; a mixed-capability sequential Recipe is integration-tested. Parallel scheduling remains outstanding.
 - [~] Authenticated HTTPS remote worker adapter and HTTP execution service implemented; deployment hardening and end-to-end remote Run conformance remain outstanding.
-- [ ] Initial raster capabilities implemented.
+- [~] First raster kernel and canonical contract introduced: raster.band_statistics@1.0.0 computes exact per-band statistics over valid stored samples. Run/Recipe integration and conformance CI remain outstanding.
 - [x] Dependency-free read-only Recipe DAG viewer implemented.
 - [x] Deterministic execution cache with immutable output reuse and parameter-based invalidation implemented; cache reuse requires current complete output-validation evidence.
 - [~] Local Python SDK is available; authenticated network API and generated client SDK remain outstanding.
@@ -94,7 +94,7 @@ The Validation Report is a separate evidence object. Implementations are registe
 
 `vector.buffer@1.0.0` supports Point, MultiPoint, LineString, MultiLineString, Polygon and MultiPolygon inputs. It requires an explicit projected measurement CRS equal to the input CRS, rejects invalid input geometries rather than repairing them, and returns valid Polygon/MultiPolygon outputs while preserving feature IDs and properties. Its first two independent realizations are Shapely and PostGIS; both use the same semantic request validator. The PostGIS adapter requires an unambiguous EPSG CRS and checks the output SRID. Both implementations passed the shared geometry conformance suite in [CI run 173](https://github.com/stacyfuende/tesselatum-foundry/actions/runs/42486888151). That conformance claim is limited to the declared contract and tested cases/tolerances; it does not imply byte-identical geometry encodings.
 
-Install the Shapely backend with the `shapely` extra or the PostGIS backend with the `postgis` extra. The PostGIS adapter does not import or require Shapely. Development installs both extras through `requirements-dev.txt`.
+Install the Shapely backend with the `shapely` extra or the PostGIS backend with the `postgis` extra. The PostGIS adapter does not import or require Shapely. Install raster support with the `raster` extra. Development installs all three optional backends through `requirements-dev.txt`.
 
 ## Canonical runtime data
 
