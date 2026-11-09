@@ -27,6 +27,7 @@ The existing remote workers already provide a replaceable execution boundary. Th
 - The current filesystem stores and process-local locking constrain deployment to one control-plane process and one tenant.
 - The shared bearer token is an integration credential, not a user identity or authorization system.
 - API write requests are bounded, but ingress rate limiting and remote-worker concurrency/timeouts remain necessary.
+- A dependency-free Python client provides safe URL handling, redirect rejection, bounded transport, and SHA-256 verification for downloaded Artifact bytes.
 
 ## Verification status
 
