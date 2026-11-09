@@ -18,7 +18,11 @@ __all__ = [
 ]
 
 if TYPE_CHECKING:
-    from tessellatum_foundry.client import FoundryClient
+    from tessellatum_foundry.client import (
+        FoundryAPIError,
+        FoundryClient,
+        FoundryTransportError,
+    )
     from tessellatum_foundry.local import LocalFoundry
 
 
@@ -28,7 +32,16 @@ def __getattr__(name: str) -> Any:
 
         return LocalFoundry
     if name in {"FoundryClient", "FoundryAPIError", "FoundryTransportError"}:
-        from tessellatum_foundry import client
+        from tessellatum_foundry.client import (
+            FoundryAPIError,
+            FoundryClient,
+            FoundryTransportError,
+        )
 
-        return getattr(client, name)
+        exports = {
+            "FoundryAPIError": FoundryAPIError,
+            "FoundryClient": FoundryClient,
+            "FoundryTransportError": FoundryTransportError,
+        }
+        return exports[name]
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
