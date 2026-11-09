@@ -96,35 +96,38 @@ The API rejects missing or invalid bearer tokens, non-JSON bodies, missing Conte
 The repository includes a dependency-free synchronous `FoundryClient` for this API:
 
 ```python
+import json
 import os
+from pathlib import Path
 
 from tessellatum_foundry import FoundryClient
 
+example = Path("examples/quickstart")
 client = FoundryClient(
     "https://foundry.example.internal",
     bearer_token=os.environ["FOUNDRY_API_TOKEN"],
 )
 
-capabilities = client.list_capabilities()
 artifact = client.put_artifact(
-    artifact_id="sites",
+    artifact_id="quickstart.sites",
     version="1.0.0",
-    content=open("sites.geojson", "rb").read(),
+    content=(example / "sites.geojson").read_bytes(),
     created_by="operator",
-    media_type="application/geo+json",
-    format_name="GeoJSON",
+    media_type="application/vnd.tessellatum.spatial-feature-collection+json",
+    format_name="Foundry Spatial Feature Collection JSON",
+    spatial=json.loads((example / "sites.spatial.json").read_text()),
 )
-cell = client.register_cell(cell_definition, created_by="operator")
+cell_definition = json.loads((example / "buffer.cell.json").read_text())
+recipe_definition = json.loads((example / "buffer.recipe.json").read_text())
+client.register_cell(cell_definition, created_by="operator")
 recipe = client.register_recipe(recipe_definition, created_by="operator")
 result = client.execute_recipe(
     recipe["definition_ref"]["definition_id"],
     recipe["definition_ref"]["version"],
     actor_id="operator",
 )
-verified_bytes = client.read_artifact(
-    result["outputs"]["buffered_sites"]["artifact_id"],
-    result["outputs"]["buffered_sites"]["version"],
-)
+output = result["outputs"]["buffered_sites"]
+verified_bytes = client.read_artifact(output["artifact_id"], output["version"])
 ```
 
 The client enforces HTTPS by default, rejects redirects, bounds request/response sizes, and verifies downloaded Artifact bytes against both the immutable metadata checksum and the response digest header. For local HTTP-only tests, callers must explicitly enable `allow_insecure_localhost=True`. API and client tests run with `python -m pip install -e '.[dev,shapely]'` followed by `python -m pytest tests/test_api.py tests/test_client.py`.
