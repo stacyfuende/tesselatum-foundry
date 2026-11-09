@@ -1,10 +1,26 @@
 name: CI
 
 on:
-  push:
-    branches: [main]
+  # Validate proposed changes before merge. The full integration suite is not
+  # repeated on the merge commit: that would run the same Docker/PostGIS suite
+  # twice for a normal pull-request merge.
   pull_request:
     branches: [main]
+    types: [opened, synchronize, reopened, ready_for_review]
+    paths-ignore:
+      - "**/*.md"
+      - "docs/**"
+      - "README*"
+      - "LICENSE*"
+  # Keep an explicit escape hatch for maintainers to validate main or rerun
+  # the full suite when a change requires it.
+  workflow_dispatch:
+
+# A newer commit on the same PR supersedes the older run. This prevents
+# several expensive Docker/PostGIS suites from running concurrently.
+concurrency:
+  group: foundry-ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
