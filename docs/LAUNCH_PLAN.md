@@ -15,7 +15,7 @@ This plan distinguishes a runnable demonstration from a release. Do not change a
 - A static same-origin browser Console for Artifact intake, JSON definition registration, Recipe execution, Run/report inspection, and checksum-verified output downloads.
 - Non-root container build definitions and private deployment guidance.
 
-These components are on an isolated working branch. They have not yet passed the required project test suite, Ruff, Docker builds, or end-to-end deployment verification. The branch is currently 226 commits ahead of and 16 commits behind main, so a clean integration change set and reconciliation of main's newer CI/README/status/vision updates are required before a release PR. The raster Capability remains unintegrated with the Run/Artifact/Recipe lifecycle and its implementation manifest remains `not_run`.
+These components are on an isolated working branch. They have not yet passed the required project test suite, Ruff, Docker builds, or end-to-end deployment verification. The branch is currently 231 commits ahead of and 16 commits behind main, so a clean integration change set is still required. The isolated branch's CI workflow, README status, and project vision have been reconciled with main's newer versions; the project status and launch record still need to be merged carefully. The raster Capability remains unintegrated with the Run/Artifact/Recipe lifecycle and its implementation manifest remains `not_run`.
 
 ## Gate A — verify the private-preview vertical slice
 
