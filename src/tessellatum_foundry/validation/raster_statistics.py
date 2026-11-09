@@ -158,24 +158,48 @@ def inspect_raster_band_statistics_output(
                         band_metadata_match = False
                         continue
                     band_index = indexes[position]
-                    values = dataset.read(band_index, masked=True).compressed().astype(
-                        np.float64, copy=False
-                    )
-                    values = values[np.isfinite(values)]
-                    if values.size == 0:
+                    # Deliberately recompute independently from source blocks;
+                    # do not call the capability kernel from this critic.
+                    count = 0
+                    mean = 0.0
+                    m2 = 0.0
+                    minimum = math.inf
+                    maximum = -math.inf
+                    for _, window in dataset.block_windows(band_index):
+                        masked = dataset.read(band_index, window=window, masked=True)
+                        values = masked.compressed().astype(np.float64, copy=False)
+                        values = values[np.isfinite(values)]
+                        if values.size == 0:
+                            continue
+                        batch_count = int(values.size)
+                        batch_mean = float(np.mean(values, dtype=np.float64))
+                        centered = values - batch_mean
+                        batch_m2 = float(np.dot(centered, centered))
+                        if count == 0:
+                            count, mean, m2 = batch_count, batch_mean, batch_m2
+                        else:
+                            combined = count + batch_count
+                            delta = batch_mean - mean
+                            m2 += batch_m2 + delta * delta * count * batch_count / combined
+                            mean += delta * batch_count / combined
+                            count = combined
+                        minimum = min(minimum, float(np.min(values)))
+                        maximum = max(maximum, float(np.max(values)))
+                    if count == 0:
                         numeric_results_match = False
                         pixel_counts_match = False
                         band_metadata_match = False
                         continue
+                    standard_deviation = math.sqrt(max(0.0, m2 / count))
                     pixel_counts_match = (
                         pixel_counts_match
-                        and band_result.get("valid_pixel_count") == int(values.size)
+                        and band_result.get("valid_pixel_count") == count
                     )
                     expected = {
-                        "minimum": float(np.min(values)),
-                        "maximum": float(np.max(values)),
-                        "mean": float(np.mean(values, dtype=np.float64)),
-                        "standard_deviation": float(np.std(values, dtype=np.float64)),
+                        "minimum": minimum,
+                        "maximum": maximum,
+                        "mean": mean,
+                        "standard_deviation": standard_deviation,
                     }
                     for field in numeric_fields:
                         actual = band_result.get(field)
