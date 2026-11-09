@@ -17,7 +17,8 @@ Foundry's Artifact and spatial metadata models already recognize raster data, in
 6. Report stored-value scale, offset, and unit metadata, but do not apply scale/offset to sample values. The output explicitly identifies raw stored-sample semantics.
 7. Require a resolvable source CRS. Preserve raster dimensions and identify the source CRS in the result.
 8. Use Rasterio/GDAL and NumPy for the first implementation. Keep the dependency optional through the `raster` extra.
-9. Treat the implementation's conformance state as pending until the canonical suite and installed-distribution checks pass in CI. Do not dispatch it through the Run service before its runtime, output validation, and conformance gate are integrated.
+9. Reopen the source raster in a separate output critic and recompute source-derived statistics before accepting a result. The critic is a separate code path but currently shares the Rasterio/GDAL and NumPy dependency family; it is not yet an independent-engine cross-check.
+10. Treat the implementation's conformance state as not_run until the canonical suite and installed-distribution checks pass in CI. Do not dispatch it through the Run service before its runtime, output validation, and conformance gate are integrated.
 
 ## Consequences
 
