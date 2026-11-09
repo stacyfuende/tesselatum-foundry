@@ -177,6 +177,70 @@ async function refreshRuns() {
   renderRunList(records);
 }
 
+async function downloadArtifact(artifact) {
+  const path =
+    `/v1/artifacts/${encodeURIComponent(artifact.artifact_id)}/` +
+    `${encodeURIComponent(artifact.version)}/content`;
+  const response = await fetch(`${apiBase}${path}`, {
+    headers: {Authorization: `Bearer ${bearerToken}`, Accept: "*/*"},
+    redirect: "error",
+    cache: "no-store",
+    credentials: "same-origin",
+  });
+  if (!response.ok) throw new Error(`Artifact download failed (HTTP ${response.status}).`);
+  const bytes = await response.arrayBuffer();
+  if (bytes.byteLength !== artifact.size_bytes) {
+    throw new Error("Downloaded Artifact length does not match its metadata.");
+  }
+  const digestBuffer = await crypto.subtle.digest("SHA-256", bytes);
+  const digest = Array.from(new Uint8Array(digestBuffer))
+    .map((value) => value.toString(16).padStart(2, "0"))
+    .join("");
+  if (
+    digest !== artifact.checksum.value ||
+    response.headers.get("X-Content-SHA256") !== artifact.checksum.value
+  ) {
+    throw new Error("Downloaded Artifact failed SHA-256 verification.");
+  }
+  const blob = new Blob([bytes], {
+    type: artifact.media_type || "application/octet-stream",
+  });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  const safeName = `${artifact.artifact_id}-${artifact.version}`.replace(
+    /[^a-zA-Z0-9._-]+/g,
+    "_",
+  );
+  link.href = url;
+  link.download = safeName + (artifact.media_type?.includes("json") ? ".json" : ".bin");
+  document.body.append(link);
+  link.click();
+  link.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function renderOutputDownloads(outputs) {
+  const container = byId("outputDownloads");
+  container.replaceChildren();
+  Object.entries(outputs || {}).forEach(([name, artifact]) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "secondary";
+    button.textContent = `Download ${name}`;
+    button.addEventListener("click", async () => {
+      button.disabled = true;
+      try {
+        await downloadArtifact(artifact);
+      } catch (error) {
+        setMessage("executeMessage", error.message, "error");
+      } finally {
+        button.disabled = false;
+      }
+    });
+    container.append(button);
+  });
+}
+
 async function inspectRun(runId) {
   try {
     const record = await apiRequest(`/v1/runs/${encodeURIComponent(runId)}`);
@@ -239,6 +303,7 @@ byId("disconnectButton").addEventListener("click", () => {
   byId("runList").textContent = "Connect to inspect Run history.";
   byId("recordDetail").textContent = "Select a Run to inspect its provenance and validation references.";
   byId("reportLinks").replaceChildren();
+  byId("outputDownloads").replaceChildren();
   setConnectionState(false, "Disconnected. The in-memory bearer token was cleared.");
 });
 
@@ -352,6 +417,7 @@ byId("executeForm").addEventListener("submit", async (event) => {
       },
     );
     byId("executionResult").textContent = JSON.stringify(result, null, 2);
+    renderOutputDownloads(result.outputs);
     setMessage(
       "executeMessage",
       `Recipe execution ${result.status} · ${result.execution_id}`,
