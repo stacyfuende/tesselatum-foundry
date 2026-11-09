@@ -199,3 +199,33 @@ def test_raster_statistics_preserves_large_uint64_extrema_and_variance():
         output={"statistics": result.statistics, "crs": result.crs},
     )
     assert inspection.passed
+
+def test_raster_statistics_preserves_mean_for_full_range_int64_samples():
+    minimum = np.iinfo(np.int64).min
+    maximum = np.iinfo(np.int64).max
+    source_stream = BytesIO()
+    with rasterio.open(
+        source_stream,
+        "w",
+        driver="GTiff",
+        width=2,
+        height=1,
+        count=1,
+        dtype="int64",
+        crs="EPSG:32636",
+        transform=from_origin(500000, 1000000, 10, 10),
+    ) as dataset:
+        dataset.write(np.array([[[minimum, maximum]]], dtype=np.int64))
+    source = source_stream.getvalue()
+
+    result = raster_band_statistics(source)
+    band = result.statistics["bands"][0]
+    assert band["minimum"] == int(minimum)
+    assert band["maximum"] == int(maximum)
+    assert band["mean"] == -0.5
+
+    inspection = inspect_raster_band_statistics_output(
+        input_raster_bytes=source,
+        output={"statistics": result.statistics, "crs": result.crs},
+    )
+    assert inspection.passed
