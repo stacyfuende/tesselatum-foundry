@@ -113,6 +113,27 @@ def test_api_registers_canonical_cell_and_recipe_definitions(tmp_path):
             == "buildings-buffer-recipe"
         )
 
+        listed_cells = client.get("/v1/cells", headers=_headers())
+        assert listed_cells.status_code == 200
+        assert listed_cells.json()[0]["definition_ref"]["definition_id"] == (
+            "buffer-buildings"
+        )
+        fetched_cell = client.get(
+            "/v1/cells/buffer-buildings/1.0.0",
+            headers=_headers(),
+        )
+        assert fetched_cell.status_code == 200
+        assert fetched_cell.json()["cell_id"] == "buffer-buildings"
+
+        listed_recipes = client.get("/v1/recipes", headers=_headers())
+        assert listed_recipes.status_code == 200
+        fetched_recipe = client.get(
+            "/v1/recipes/buildings-buffer-recipe/1.0.0",
+            headers=_headers(),
+        )
+        assert fetched_recipe.status_code == 200
+        assert fetched_recipe.json()["recipe_id"] == "buildings-buffer-recipe"
+
 
 def test_api_rejects_oversized_and_malformed_artifact_requests(tmp_path):
     with _client(tmp_path, maximum=1024) as client:
