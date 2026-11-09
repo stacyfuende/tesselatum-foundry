@@ -163,3 +163,36 @@ def test_raster_statistics_rejects_band_with_no_finite_valid_pixels():
 
     with pytest.raises(RasterStatisticsError, match="no finite, valid pixels"):
         raster_band_statistics(stream.getvalue())
+
+def test_raster_statistics_preserves_large_uint64_extrema_and_variance():
+    maximum = np.iinfo(np.uint64).max
+    source_stream = BytesIO()
+    with rasterio.open(
+        source_stream,
+        "w",
+        driver="GTiff",
+        width=4,
+        height=1,
+        count=1,
+        dtype="uint64",
+        crs="EPSG:32636",
+        transform=from_origin(500000, 1000000, 10, 10),
+    ) as dataset:
+        dataset.write(
+            np.array([[[maximum - 3, maximum - 2, maximum - 1, maximum]]], dtype=np.uint64)
+        )
+    source = source_stream.getvalue()
+
+    result = raster_band_statistics(source)
+    band = result.statistics["bands"][0]
+    assert band["minimum"] == int(maximum - 3)
+    assert band["maximum"] == int(maximum)
+    assert band["standard_deviation"] == pytest.approx(
+        np.std([0, 1, 2, 3], ddof=0)
+    )
+
+    inspection = inspect_raster_band_statistics_output(
+        input_raster_bytes=source,
+        output={"statistics": result.statistics, "crs": result.crs},
+    )
+    assert inspection.passed
