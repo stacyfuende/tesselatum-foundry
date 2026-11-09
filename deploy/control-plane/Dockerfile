@@ -27,4 +27,6 @@ USER 10001:10001
 VOLUME ["/var/lib/foundry"]
 EXPOSE 8000
 
-ENTRYPOINT ["uvicorn", "tessellatum_foundry.api:create_app", "--factory", "--host", "0.0.0.0", "--port", "8000", "--workers", "1", "--no-access-log", "--limit-concurrency", "16"]
+ENTRYPOINT ["uvicorn", "tessellatum_foundry.api:create_app", "--factory", \\
+    "--host", "0.0.0.0", "--port", "8000", "--workers", "1", \\
+    "--no-access-log", "--limit-concurrency", "16"]
