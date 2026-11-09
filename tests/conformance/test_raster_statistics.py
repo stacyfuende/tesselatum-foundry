@@ -7,7 +7,10 @@ import pytest
 import rasterio
 from rasterio.transform import from_origin
 
-from tessellatum_foundry.validation.raster_statistics import (\n    inspect_raster_band_statistics_output,\n)\nfrom tessellatum_foundry.capabilities.raster_statistics import (
+from tessellatum_foundry.validation.raster_statistics import (
+    inspect_raster_band_statistics_output,
+)
+from tessellatum_foundry.capabilities.raster_statistics import (
     RasterStatisticsError,
     raster_band_statistics,
 )
