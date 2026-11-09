@@ -3,7 +3,7 @@
 **Last updated:** 2026-11-09  
 **Status:** Living engineering tracker. Update this document when a capability, validation gate, PR dependency, or operational assumption changes.
 
-This page is the working hand-off for contributors and future sessions. It separates implemented behavior from work that is merely proposed, in review, or not yet verified. A checked implementation item does not imply that its current branch has passed CI or is production-ready.
+This page is the working hand-off for contributors and future sessions. It separates implemented behavior from work that is merely proposed, in review, or not yet verified. A checked implementation item does not imply that its current branch has passed CI or is production-ready. Read [Project vision](PROJECT_VISION.md) for the broader product ambition; this tracker remains the source of truth for implementation status.
 
 ## Project intent
 
@@ -45,7 +45,7 @@ PR order: resolve #13 before #15. PR #20 and #21 are independent forward workstr
 
 The proposed raster.band_statistics@1.0.0 contract describes exact per-band statistics over all valid finite stored samples. Nodata and masked pixels are excluded. Scale, offset and unit metadata are reported, not applied. Standard deviation is population standard deviation (ddof=0). A source CRS is required. The initial output includes dimensions, selected band indexes, valid pixel count, minimum, maximum, mean, standard deviation, dtype, scale, offset and unit.
 
-Important implementation observation: the current branch implementation calls dataset.read(band_index, masked=True) and compresses the entire band into a NumPy array. The independent critic similarly reads the entire selected band. This is exact for the declared statistics but memory use scales with raster dimensions. Before enabling large-raster workloads:
+Important implementation observation: the branch initially read each entire band into memory. That has been replaced by source-block iteration in both the kernel and independent critic, with a mergeable accumulator. Working memory is now bounded by a source block and accumulator state, although unusually wide striped rasters may still expose large blocks. Before enabling large-raster workloads:
 1. [x] Replace whole-band reads with block/window iteration and a numerically stable mergeable accumulator (count, min, max, mean, population variance) in the kernel.
 2. [x] Keep critic validation independently implemented and windowed; it does not call the kernel.
 3. [~] Add tiled and striped GeoTIFF tests, internal/external masks, nodata, non-finite floating samples, multiple bands, empty-valid-band behavior, and very large synthetic dimensions. A multi-tile exactness test is now present; broaden the edge-case matrix.
