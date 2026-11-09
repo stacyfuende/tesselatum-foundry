@@ -1,0 +1,40 @@
+{
+  "cell_id": "quickstart-buffer-sites",
+  "version": "1.0.0",
+  "capability": {
+    "capability_id": "vector.buffer",
+    "version": "1.0.0"
+  },
+  "inputs": {
+    "features": {
+      "source": "artifact",
+      "artifact": {
+        "artifact_id": "quickstart.sites",
+        "version": "1.0.0"
+      }
+    }
+  },
+  "parameters": {
+    "distance": 10,
+    "unit": "metre",
+    "quad_segs": 8,
+    "cap_style": "round",
+    "join_style": "round"
+  },
+  "output_contracts": {
+    "result": {
+      "data_kind": "vector",
+      "media_types": [
+        "application/vnd.tessellatum.spatial-feature-collection+json"
+      ],
+      "crs": {"authority": "EPSG", "code": 32737},
+      "geometry_types": ["Polygon", "MultiPolygon"],
+      "validation_requirements": ["valid_geometry"]
+    }
+  },
+  "constraints": {
+    "measurement_crs": {"authority": "EPSG", "code": 32737},
+    "linear_unit": "metre",
+    "required_geometry_validity": true
+  }
+}
