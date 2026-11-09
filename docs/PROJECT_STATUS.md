@@ -130,3 +130,10 @@ The current allowance notice should be checked in **Settings → Billing & licen
 - Added coverage for a GeoTIFF internal validity mask combined with NaN and positive-infinity samples. The expected result excludes the masked cell and all non-finite values; the independent critic must accept the result (commits f15fefe and db6e957).
 - Added a test that an all-non-finite float band is rejected with the documented no-finite-valid-pixels error.
 - These are source-level additions only. They have not been run locally or in Actions. The mask-writing behavior should be confirmed by executing the test in the project's supported Rasterio/GDAL environment.
+
+
+## 2026-11-09 implementation hand-off — critic robustness
+
+- Hardened numeric validation in the independent raster critic: a tampered output containing an integer too large to convert to float64 is now treated as a failed numeric result instead of risking an uncaught OverflowError (commit 9dee8c0).
+- Extended the critic tampering regression to include a 10**1000 minimum value (commit 0e99a12).
+- No local Python test run or Actions run has been performed. Keep the validation state provisional until the raster validation tests run in the supported environment.
