@@ -117,3 +117,39 @@ def test_raster_statistics_reports_scale_without_applying_it():
     assert band["offset"] == 100.0
     assert band["unit"] is None
     assert result.statistics["value_semantics"] == "raw_stored_samples"
+
+def test_raster_statistics_aggregates_multiple_tiled_windows_exactly():
+    values = np.arange(600 * 700, dtype=np.int32).reshape(1, 600, 700)
+    output = BytesIO()
+    with rasterio.open(
+        output,
+        "w",
+        driver="GTiff",
+        width=700,
+        height=600,
+        count=1,
+        dtype="int32",
+        crs="EPSG:32636",
+        transform=from_origin(500000, 1000000, 10, 10),
+        tiled=True,
+        blockxsize=256,
+        blockysize=256,
+        nodata=-1,
+    ) as dataset:
+        dataset.write(values)
+        # Include a nodata pixel in a later tile to exercise cross-window counts.
+        dataset.write(np.array([[-1]], dtype=np.int32), 1, window=((300, 301), (300, 301)))
+
+    result = raster_band_statistics(output.getvalue())
+    band = result.statistics["bands"][0]
+    expected = values.astype(np.float64)
+    expected[0, 300, 300] = np.nan
+    valid = expected[np.isfinite(expected)]
+
+    assert band["valid_pixel_count"] == valid.size
+    assert band["minimum"] == float(np.min(valid))
+    assert band["maximum"] == float(np.max(valid))
+    assert band["mean"] == pytest.approx(float(np.mean(valid)), rel=1e-12)
+    assert band["standard_deviation"] == pytest.approx(
+        float(np.std(valid, ddof=0)), rel=1e-12
+    )
