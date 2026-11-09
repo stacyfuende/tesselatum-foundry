@@ -293,7 +293,7 @@ def test_remote_worker_http_service_times_out_isolated_execution(monkeypatch):
 
     monkeypatch.setattr(worker_http_server.subprocess, "run", timeout_process)
     server = BoundedThreadingHTTPServer(
-        ("127.0.0.1", 0), WorkerHandler, max_concurrent_requests=1
+        ("127.0.0.1", 0), WorkerHandler, max_concurrent_executions=1
     )
     server_thread = threading.Thread(target=server.serve_forever, daemon=True)
     server_thread.start()
