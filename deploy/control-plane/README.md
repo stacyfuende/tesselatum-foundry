@@ -7,7 +7,7 @@ The control-plane image exposes the authenticated Foundry HTTP API. It is an ini
 From the repository root:
 
 ```bash
-python -m pip install -e '.[dev]'
+python -m pip install -e '.[dev,shapely]'
 python -m pytest tests/test_api.py
 ```
 
