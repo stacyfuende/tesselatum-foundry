@@ -76,7 +76,7 @@
         <label>Created by<input id="artifactCreator" required value="operator"></label>
         <label>Media type<input id="artifactMediaType" required value="application/vnd.tessellatum.spatial-feature-collection+json"></label>
         <label class="wide">Format<input id="artifactFormat" required value="Foundry Spatial Feature Collection JSON"></label>
-        <label class="wide">File<input id="artifactFile" type="file" required></label>
+        <label class="wide">File<input id="artifactFile" type="file" required><a class="inline-link" href="examples/quickstart/sites.geojson" download>Download synthetic quickstart input</a></label>
         <label class="wide">Spatial metadata (JSON object)
           <textarea id="artifactSpatial" rows="4" spellcheck="false" placeholder='{"kind":"vector","crs":{"authority":"EPSG","code":32737},"geometry_types":["Polygon"]}'></textarea>
         </label>
@@ -99,6 +99,7 @@
           <p class="eyebrow">Composition</p>
           <h2 id="definitions-title">Register definitions</h2>
         </div>
+        <button id="loadQuickstart" class="secondary" type="button">Load quickstart</button>
       </div>
       <form id="cellForm" class="stack-form">
         <h3>Geo-Cell</h3>
