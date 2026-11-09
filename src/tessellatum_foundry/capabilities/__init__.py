@@ -9,7 +9,7 @@ def __getattr__(name: str):
         from .vector_buffer import buffer_feature_collection
 
         return buffer_feature_collection
-    if name in {"reproject_feature_collection", "ReprojectContractError", "ReprojectOutput"}:
+    if name in {"raster_band_statistics", "RasterStatisticsError", "RasterStatisticsOutput"}:\n        from . import raster_statistics\n\n        return getattr(raster_statistics, name)\n    if name in {"reproject_feature_collection", "ReprojectContractError", "ReprojectOutput"}:
         from . import vector_reproject
 
         return getattr(vector_reproject, name)
