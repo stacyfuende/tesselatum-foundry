@@ -20,6 +20,15 @@ foundry --data-dir ./foundry-data init
 
 The workspace persists Artifact bytes, immutable Cell/Recipe definitions, Runs, and Validation Reports beneath the selected directory. Back up this directory as a unit. It is a local filesystem workspace, not a multi-user database or a network service.
 
+## Validate a contract document
+
+```bash
+foundry --data-dir ./foundry-data validate \
+  --schema cell.schema.json --file ./definitions/site-buffer.cell.json
+```
+
+This command checks the document against the named canonical JSON Schema. It does not resolve references, validate Recipe graph semantics, assess spatial suitability, or authorize execution; those checks remain in the execution preflight.
+
 ## Register definitions
 
 ```bash
