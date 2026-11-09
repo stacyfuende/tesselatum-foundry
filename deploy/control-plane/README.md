@@ -44,13 +44,15 @@ Copy `deploy/remote-worker.env.example` separately for each worker and populate 
 
 Each process advertises and executes exactly one capability. The default process semaphore allows two active executions; overload returns HTTP 503 with `Retry-After`, while a hard child-process deadline returns HTTP 504 and becomes a timed-out Run. Do not expose the worker's plain HTTP port publicly; allow inbound traffic only from the control plane through the TLS ingress.
 
+The worker distinguishes `FOUNDRY_MAX_INPUT_BYTES` (the compact serialized FeatureCollection ceiling) from `FOUNDRY_MAX_REQUEST_BYTES` (the complete HTTP JSON request ceiling). The request ceiling defaults to the input ceiling plus 1 MiB. Keep the API adapter's `FOUNDRY_REMOTE_WORKER_MAX_INPUT_BYTES` aligned with the worker's input ceiling; the checked-in environment examples use 64 MiB for both.
+
 
 Copy `deploy/control-plane/env.example` to a secret-managed location outside the repository. Set:
 - `FOUNDRY_API_TOKEN` to a random value of at least 32 characters.
 - Separate strong bearer tokens for the buffer and reprojection workers.
 - HTTPS base URLs for the corresponding worker services.
 - Request and response byte ceilings appropriate for the Artifact sizes you will accept and return.
-- The control-plane-to-worker timeout and worker input/output ceilings. The defaults are 120 seconds and 128 MiB; the remote worker's default child-process deadline is 110 seconds.
+- The control-plane-to-worker timeout and worker input/output ceilings. The checked-in examples align the raw/serialized FeatureCollection input ceiling at 64 MiB and output ceiling at 128 MiB. The worker HTTP request ceiling is 65 MiB to allow up to 1 MiB for the JSON envelope around the input; this is distinct from the FeatureCollection input ceiling. The adapter timeout example is 120 seconds and the remote worker child-process deadline is 110 seconds.
 
 For example, generate an API token with `openssl rand -hex 32`. Never commit populated environment files or put tokens in image build arguments.
 
