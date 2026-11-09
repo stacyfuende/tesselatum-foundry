@@ -48,6 +48,7 @@ This register records decisions that constrain Foundry's architecture. Each deci
 | [042](042-reprojection-operation-evidence.md) | Capture the actual PROJ operation selected by the worker | Accepted |
 | [044](044-first-raster-capability.md) | Establish raster.band_statistics as the first raster capability | Accepted for initial slice |
 | [045](045-capability-semantics-schema.md) | Declare normative capability semantics in the canonical schema | Accepted |
+| [046](046-local-operator-cli.md) | Provide a local operator CLI over the canonical SDK | Accepted |
 | [039](039-methodological-evidence.md) | Produce operation-specific methodological evidence without a generic quality score | Accepted |
 
 A decision may be superseded only by a new decision record that explains the change. Do not silently edit an accepted decision to reverse its meaning.
