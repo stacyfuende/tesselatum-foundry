@@ -42,6 +42,23 @@ def _normalize_bands(bands: Sequence[int] | None, count: int) -> tuple[int, ...]
     return tuple(normalized)
 
 
+def _exact_integer_sum(values: np.ndarray) -> int:
+    """Sum int64/uint64 samples exactly without per-pixel Python iteration."""
+    if values.dtype.itemsize < 8:
+        accumulator = np.int64 if np.issubdtype(values.dtype, np.signedinteger) else np.uint64
+        return int(np.sum(values, dtype=accumulator))
+
+    unsigned = values.astype(np.uint64, copy=False)
+    limb_sums = [
+        int(np.sum((unsigned >> shift) & np.uint64(0xFFFF), dtype=np.uint64))
+        for shift in (0, 16, 32, 48)
+    ]
+    total = sum(value << shift for value, shift in zip(limb_sums, (0, 16, 32, 48)))
+    if np.issubdtype(values.dtype, np.signedinteger):
+        total -= int(np.count_nonzero(values < 0)) * (1 << 64)
+    return total
+
+
 def _windowed_statistics(
     dataset: rasterio.io.DatasetReader, band_index: int
 ) -> dict[str, float | int]:
@@ -52,6 +69,7 @@ def _windowed_statistics(
     minimum: float | int = math.inf
     maximum: float | int = -math.inf
     integer_baseline: int | None = None
+    integer_sum = 0
 
     for _, window in dataset.block_windows(band_index):
         masked = dataset.read(band_index, window=window, masked=True)
@@ -59,6 +77,7 @@ def _windowed_statistics(
         if raw_values.size == 0:
             continue
         if np.issubdtype(raw_values.dtype, np.integer):
+            integer_sum += _exact_integer_sum(raw_values)
             if integer_baseline is None:
                 integer_baseline = int(raw_values[0])
             # Subtract as Python integers before float conversion. This avoids
@@ -100,7 +119,7 @@ def _windowed_statistics(
         )
     variance = m2 / count
     standard_deviation = math.sqrt(max(0.0, variance))
-    reported_mean = float(integer_baseline + mean) if integer_baseline is not None else mean
+    reported_mean = integer_sum / count if integer_baseline is not None else mean
     finite_outputs = (minimum, maximum, reported_mean, standard_deviation)
     if not all(math.isfinite(float(value)) for value in finite_outputs):
         raise RasterStatisticsError(
