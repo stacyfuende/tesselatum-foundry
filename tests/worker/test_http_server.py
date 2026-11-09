@@ -299,12 +299,14 @@ def test_remote_worker_http_service_times_out_isolated_execution(monkeypatch):
     monkeypatch.setenv("FOUNDRY_EXECUTION_TIMEOUT_SECONDS", "1")
 
     killed_groups = []
+    process_options = []
     monkeypatch.setattr(
         worker_http_server.os, "killpg",
         lambda pid, sig: killed_groups.append((pid, sig)),
     )
 
     def timeout_process(command, **kwargs):
+        process_options.append(kwargs)
         class FakeProcess:
             pid = 23456
             returncode = None
@@ -353,6 +355,7 @@ def test_remote_worker_http_service_times_out_isolated_execution(monkeypatch):
             assert json.loads(error.read()) == {"error": "worker_execution_timeout"}
         assert killed_groups
         assert killed_groups[0][0] == 23456
+        assert process_options[0]["start_new_session"] is True
     finally:
         server.shutdown()
         server.server_close()
