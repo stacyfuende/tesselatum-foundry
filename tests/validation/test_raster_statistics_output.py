@@ -7,7 +7,10 @@ import pytest
 import rasterio
 from rasterio.transform import from_origin
 
-from tessellatum_foundry.capabilities.raster_statistics import raster_band_statistics
+from tessellatum_foundry.capabilities.raster_statistics import (
+    RasterStatisticsError,
+    raster_band_statistics,
+)
 from tessellatum_foundry.validation.raster_statistics import (
     inspect_raster_band_statistics_output,
 )
@@ -109,3 +112,50 @@ def test_raster_statistics_preserves_large_int64_extrema_and_variance():
         output={"statistics": result.statistics, "crs": result.crs},
     )
     assert inspection.passed
+
+
+
+def test_raster_statistics_excludes_internal_mask_and_non_finite_float_samples():
+    stream = BytesIO()
+    with rasterio.open(
+        stream,
+        "w",
+        driver="GTiff",
+        width=5,
+        height=1,
+        count=1,
+        dtype="float32",
+        crs="EPSG:32636",
+        transform=from_origin(500000, 1000000, 10, 10),
+    ) as dataset:
+        dataset.write(
+            np.array([[[1.5, 100.0, np.nan, np.inf, 2.5]]], dtype=np.float32)
+        )
+        dataset.write_mask(np.array([[255, 0, 255, 255, 255]], dtype=np.uint8))
+
+    result = raster_band_statistics(stream.getvalue())
+    band = result.statistics["bands"][0]
+    assert band["valid_pixel_count"] == 2
+    assert band["minimum"] == 1.5
+    assert band["maximum"] == 2.5
+    assert band["mean"] == 2.0
+    assert band["standard_deviation"] == 0.5
+
+
+def test_raster_statistics_rejects_band_with_no_finite_valid_pixels():
+    stream = BytesIO()
+    with rasterio.open(
+        stream,
+        "w",
+        driver="GTiff",
+        width=3,
+        height=1,
+        count=1,
+        dtype="float32",
+        crs="EPSG:32636",
+        transform=from_origin(500000, 1000000, 10, 10),
+    ) as dataset:
+        dataset.write(np.array([[[np.nan, np.inf, -np.inf]]], dtype=np.float32))
+
+    with pytest.raises(RasterStatisticsError, match="no finite, valid pixels"):
+        raster_band_statistics(stream.getvalue())
