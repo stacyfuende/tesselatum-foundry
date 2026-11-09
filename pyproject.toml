@@ -13,6 +13,9 @@ dependencies = [
   "pyproj>=3.7,<4",
 ]
 
+[project.scripts]
+foundry = "tessellatum_foundry.cli:main"
+
 [project.optional-dependencies]
 dev = [
   "pytest>=8.3,<9",
