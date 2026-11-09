@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <title>Tessellatum Foundry Console</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <p class="eyebrow">Tessellatum Foundry</p>
+      <h1>Operator console</h1>
+    </div>
+    <span class="preview-label">Private preview</span>
+  </header>
+
+  <section class="connection panel" aria-labelledby="connection-title">
+    <div class="section-heading">
+      <div>
+        <p class="eyebrow">Control plane</p>
+        <h2 id="connection-title">Connect to Foundry</h2>
+      </div>
+      <span id="connectionState" class="state disconnected">Disconnected</span>
+    </div>
+    <div class="connection-fields">
+      <label>Same-origin API path
+        <input id="apiBase" value="/api" autocomplete="off" spellcheck="false">
+      </label>
+      <label>Bearer token
+        <input id="apiToken" type="password" autocomplete="off" spellcheck="false">
+      </label>
+      <div class="actions">
+        <button id="connectButton" type="button">Connect</button>
+        <button id="disconnectButton" class="secondary" type="button" disabled>Disconnect</button>
+      </div>
+    </div>
+    <p id="connectionMessage" class="message" role="status" aria-live="polite">
+      Enter the private API token supplied by your administrator. It stays in memory only.
+    </p>
+  </section>
+
+  <main class="dashboard">
+    <section class="panel" aria-labelledby="registry-title">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">Discovery</p>
+          <h2 id="registry-title">Capability registry</h2>
+        </div>
+        <button id="refreshRegistry" class="secondary" type="button" disabled>Refresh</button>
+      </div>
+      <div class="registry-grid">
+        <div>
+          <h3>Capabilities</h3>
+          <ul id="capabilityList" class="compact-list"><li class="muted">Connect to load capabilities.</li></ul>
+        </div>
+        <div>
+          <h3>Implementations</h3>
+          <ul id="implementationList" class="compact-list"><li class="muted">Connect to load implementations.</li></ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" aria-labelledby="artifact-title">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">Data</p>
+          <h2 id="artifact-title">Register an Artifact</h2>
+        </div>
+      </div>
+      <form id="artifactForm" class="form-grid">
+        <label>Artifact ID<input id="artifactId" required value="quickstart.sites"></label>
+        <label>Version<input id="artifactVersion" required value="1.0.0"></label>
+        <label>Created by<input id="artifactCreator" required value="operator"></label>
+        <label>Media type<input id="artifactMediaType" required value="application/vnd.tessellatum.spatial-feature-collection+json"></label>
+        <label class="wide">Format<input id="artifactFormat" required value="Foundry Spatial Feature Collection JSON"></label>
+        <label class="wide">File<input id="artifactFile" type="file" required></label>
+        <label class="wide">Spatial metadata (JSON object)
+          <textarea id="artifactSpatial" rows="4" spellcheck="false" placeholder='{"kind":"vector","crs":{"authority":"EPSG","code":32737},"geometry_types":["Polygon"]}'></textarea>
+        </label>
+        <label class="wide">Rights declaration (optional JSON object)
+          <textarea id="artifactRights" rows="2" spellcheck="false" placeholder='{"license_id":"...","attribution":"..."}'></textarea>
+        </label>
+        <label class="wide">Additional metadata (optional JSON object)
+          <textarea id="artifactMetadata" rows="2" spellcheck="false" placeholder='{"source":"..."}'></textarea>
+        </label>
+        <div class="wide actions">
+          <button type="submit" disabled>Upload Artifact</button>
+          <span id="artifactMessage" class="message" role="status" aria-live="polite"></span>
+        </div>
+      </form>
+    </section>
+
+    <section class="panel" aria-labelledby="definitions-title">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">Composition</p>
+          <h2 id="definitions-title">Register definitions</h2>
+        </div>
+      </div>
+      <form id="cellForm" class="stack-form">
+        <h3>Geo-Cell</h3>
+        <label>Created by<input id="cellCreator" value="operator" required></label>
+        <label>Canonical Cell JSON
+          <textarea id="cellDefinition" rows="8" spellcheck="false" placeholder="Paste a complete Cell JSON document"></textarea>
+        </label>
+        <div class="actions">
+          <button type="submit" disabled>Register Cell</button>
+          <span id="cellMessage" class="message" role="status" aria-live="polite"></span>
+        </div>
+      </form>
+      <div class="separator"></div>
+      <form id="recipeForm" class="stack-form">
+        <h3>Recipe</h3>
+        <label>Created by<input id="recipeCreator" value="operator" required></label>
+        <label>Canonical Recipe JSON
+          <textarea id="recipeDefinition" rows="8" spellcheck="false" placeholder="Paste a complete Recipe JSON document"></textarea>
+        </label>
+        <div class="actions">
+          <button type="submit" disabled>Register Recipe</button>
+          <span id="recipeMessage" class="message" role="status" aria-live="polite"></span>
+        </div>
+      </form>
+    </section>
+
+    <section class="panel" aria-labelledby="execute-title">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">Execution</p>
+          <h2 id="execute-title">Run a Recipe</h2>
+        </div>
+      </div>
+      <form id="executeForm" class="form-grid">
+        <label>Recipe ID<input id="runRecipeId" required></label>
+        <label>Version<input id="runRecipeVersion" required value="1.0.0"></label>
+        <label class="wide">Actor ID<input id="runActor" required value="operator"></label>
+        <div class="wide actions">
+          <button type="submit" disabled>Execute Recipe</button>
+          <span id="executeMessage" class="message" role="status" aria-live="polite"></span>
+        </div>
+      </form>
+      <pre id="executionResult" class="result" aria-live="polite">Execution results will appear here.</pre>
+    </section>
+
+    <section class="panel wide-panel" aria-labelledby="history-title">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">Evidence</p>
+          <h2 id="history-title">Runs and Validation Reports</h2>
+        </div>
+        <button id="refreshRuns" class="secondary" type="button" disabled>Refresh Runs</button>
+      </div>
+      <div class="history-grid">
+        <div>
+          <h3>Recent Runs</h3>
+          <ul id="runList" class="run-list"><li class="muted">Connect to inspect Run history.</li></ul>
+        </div>
+        <div>
+          <h3>Selected record</h3>
+          <div id="reportLinks" class="actions"></div>
+          <pre id="recordDetail" class="result">Select a Run to inspect its provenance and validation references.</pre>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>Foundry Console is a private-preview client. It does not grant permission to use data or establish analytical suitability.</p>
+    <p>Bearer tokens are held in page memory only and are cleared when you disconnect or reload.</p>
+  </footer>
+</body>
+</html>
