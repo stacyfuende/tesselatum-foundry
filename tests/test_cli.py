@@ -142,7 +142,7 @@ def test_cli_ingests_inspects_and_exports_checksum_verified_artifact(
     assert exported.read_bytes() == source.read_bytes()
 
 
-def test_cli_reports_invalid_artifact_metadata_without_traceback(tmp_path, capsys):
+def test_cli_reports_missing_artifact_without_traceback(tmp_path, capsys):
     status = main(
         [
             "--data-dir",
