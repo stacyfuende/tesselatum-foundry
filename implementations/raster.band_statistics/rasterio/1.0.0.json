@@ -4,7 +4,7 @@
   "capability_version": "1.0.0",
   "version": "1.0.0",
   "engine": "Rasterio / GDAL / NumPy",
-  "runtime": "Python 3.11 or later; Rasterio 1.4 or later; NumPy 2.x",
+  "runtime": "Python 3.11 or later; Rasterio 1.4 or later; NumPy 1.26 or later (below 3.0)",
   "entrypoint": "tessellatum_foundry.capabilities.raster_statistics:raster_band_statistics",
   "network_access": "none",
   "conformance": {
