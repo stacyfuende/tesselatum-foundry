@@ -23,6 +23,9 @@ class _Handler(BaseHTTPRequestHandler):
         self.wfile.write(body)
 
     def do_GET(self):
+        if self.headers.get("Authorization") != f"Bearer {TOKEN}":
+            self._send(401, b'{"detail":"unauthorized"}')
+            return
         if self.path == "/health":
             self._send(200, b'{"status":"ok"}')
             return
@@ -59,6 +62,9 @@ class _Handler(BaseHTTPRequestHandler):
         self._send(404, b'{"detail":"not_found"}')
 
     def do_POST(self):
+        if self.headers.get("Authorization") != f"Bearer {TOKEN}":
+            self._send(401, b'{"detail":"unauthorized"}')
+            return
         length = int(self.headers["Content-Length"])
         payload = json.loads(self.rfile.read(length))
         self.server.received_payload = payload
