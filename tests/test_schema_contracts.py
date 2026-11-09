@@ -86,3 +86,26 @@ def test_terminal_run_requires_finished_at(schema_context):
     )
     with pytest.raises(Exception):
         validator.validate(instance)
+
+
+def test_raster_capability_contract_accepts_normative_semantics(schema_context):
+    schemas, registry = schema_context
+    instance = json.loads(
+        (
+            ROOT / "capabilities" / "raster.band_statistics" / "1.0.0.json"
+        ).read_text(encoding="utf-8")
+    )
+    validator = Draft202012Validator(
+        schemas["capability.schema.json"],
+        registry=registry,
+        format_checker=FormatChecker(),
+    )
+    validator.validate(instance)
+
+    invalid = {**instance, "semantics": [""]}
+    with pytest.raises(ValidationError):
+        validator.validate(invalid)
+
+    duplicated = {**instance, "semantics": [instance["semantics"][0]] * 2}
+    with pytest.raises(ValidationError):
+        validator.validate(duplicated)
