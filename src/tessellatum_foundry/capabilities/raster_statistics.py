@@ -49,7 +49,6 @@ def _windowed_statistics(dataset: rasterio.io.DatasetReader, band_index: int) ->
     m2 = 0.0
     minimum: float | int = math.inf
     maximum: float | int = -math.inf
-    integer_samples = False
     integer_baseline: int | None = None
 
     for _, window in dataset.block_windows(band_index):
@@ -57,8 +56,7 @@ def _windowed_statistics(dataset: rasterio.io.DatasetReader, band_index: int) ->
         raw_values = masked.compressed()
         if raw_values.size == 0:
             continue
-        integer_samples = np.issubdtype(raw_values.dtype, np.integer)
-        if integer_samples:
+        if np.issubdtype(raw_values.dtype, np.integer):
             if integer_baseline is None:
                 integer_baseline = int(raw_values[0])
             # Subtract as Python integers before float conversion. This avoids
