@@ -269,6 +269,40 @@ async function inspectReport(reportId) {
   }
 }
 
+async function fetchQuickstartJson(name) {
+  const response = await fetch(`examples/quickstart/${name}`, {
+    credentials: "same-origin",
+    redirect: "error",
+    cache: "no-store",
+  });
+  if (!response.ok) throw new Error(`Could not load quickstart file: ${name}`);
+  return response.json();
+}
+
+byId("loadQuickstart").addEventListener("click", async () => {
+  try {
+    const [cell, recipe, spatial, metadata] = await Promise.all([
+      fetchQuickstartJson("buffer.cell.json"),
+      fetchQuickstartJson("buffer.recipe.json"),
+      fetchQuickstartJson("sites.spatial.json"),
+      fetchQuickstartJson("sites.metadata.json"),
+    ]);
+    byId("cellDefinition").value = JSON.stringify(cell, null, 2);
+    byId("recipeDefinition").value = JSON.stringify(recipe, null, 2);
+    byId("artifactSpatial").value = JSON.stringify(spatial, null, 2);
+    byId("artifactMetadata").value = JSON.stringify(metadata, null, 2);
+    byId("runRecipeId").value = recipe.recipe_id;
+    byId("runRecipeVersion").value = recipe.version;
+    setMessage(
+      "connectionMessage",
+      "Quickstart Cell, Recipe, and Artifact metadata loaded. Download the sample GeoJSON above and upload it first.",
+      "success",
+    );
+  } catch (error) {
+    setMessage("connectionMessage", error.message, "error");
+  }
+});
+
 byId("connectButton").addEventListener("click", async () => {
   try {
     apiBase = normalizeApiBase(byId("apiBase").value);
