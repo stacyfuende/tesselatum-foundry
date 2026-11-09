@@ -72,6 +72,9 @@ def test_api_ingests_reads_and_checksum_verifies_artifact_bytes(tmp_path):
         assert created.status_code == 200
         metadata = created.json()
         assert metadata["checksum"]["algorithm"] == "sha256"
+        assert metadata["storage"]["provider"] == "foundry-api"
+        assert metadata["storage"]["uri"].startswith("foundry://sha256/")
+        assert "object_key" not in metadata["storage"]
 
         fetched = client.get(
             "/v1/artifacts/api.sites/1.0.0",
