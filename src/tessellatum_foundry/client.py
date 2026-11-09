@@ -58,7 +58,7 @@ class FoundryClient:
         timeout_seconds: float = 30,
         execution_timeout_seconds: float = 145,
         max_request_bytes: int = 32 * 1024 * 1024,
-        max_response_bytes: int = 32 * 1024 * 1024,
+        max_response_bytes: int = 128 * 1024 * 1024,
         allow_insecure_localhost: bool = False,
     ) -> None:
         parsed = urlsplit(base_url)
