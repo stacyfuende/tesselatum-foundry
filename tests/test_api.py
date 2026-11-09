@@ -18,11 +18,14 @@ def _fixture(name: str) -> dict:
     return json.loads((FIXTURES / name).read_text(encoding="utf-8"))
 
 
-def _client(tmp_path, *, maximum: int = 8192) -> TestClient:
+def _client(
+    tmp_path, *, maximum: int = 8192, response_maximum: int = 8192
+) -> TestClient:
     app = create_app(
         LocalFoundry(tmp_path),
         api_token=TOKEN,
         max_request_bytes=maximum,
+        max_response_bytes=response_maximum,
     )
     return TestClient(app)
 
@@ -176,3 +179,25 @@ def test_api_rejects_immutable_definition_conflicts(tmp_path):
             json={"created_by": "api-test", "definition": changed},
         )
         assert conflict.status_code == 409
+
+def test_api_bounds_artifact_download_response_size(tmp_path):
+    content = b"x" * 2048
+    payload = {
+        "artifact_id": "large-artifact",
+        "version": "1.0.0",
+        "content_base64": base64.b64encode(content).decode("ascii"),
+        "created_by": "api-test",
+        "media_type": "application/octet-stream",
+        "format": "Binary",
+    }
+
+    with _client(tmp_path, maximum=8192, response_maximum=1024) as client:
+        created = client.post("/v1/artifacts", headers=_headers(), json=payload)
+        assert created.status_code == 200
+        downloaded = client.get(
+            "/v1/artifacts/large-artifact/1.0.0/content",
+            headers=_headers(),
+        )
+        assert downloaded.status_code == 413
+        assert downloaded.json()["detail"] == "artifact_response_size_limit_exceeded"
+
