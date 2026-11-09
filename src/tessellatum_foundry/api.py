@@ -58,6 +58,17 @@ def _require_object(value: Any, label: str) -> dict[str, Any]:
     return value
 
 
+def _public_artifact(record: dict[str, Any]) -> dict[str, Any]:
+    """Hide host filesystem paths behind an opaque API storage identifier."""
+    public = dict(record)
+    storage = dict(record["storage"])
+    storage["uri"] = f"foundry://sha256/{record['checksum']['value']}"
+    storage["provider"] = "foundry-api"
+    storage.pop("object_key", None)
+    public["storage"] = storage
+    return public
+
+
 def create_app(
     foundry: LocalFoundry | None = None,
     *,
@@ -197,7 +208,7 @@ def create_app(
                     status_code=422, detail=f"{field}_must_be_a_json_object"
                 )
         try:
-            return await run_in_threadpool(
+            record = await run_in_threadpool(
                 control_plane.store_artifact,
                 artifact_id=payload.get("artifact_id"),
                 version=payload.get("version"),
@@ -209,6 +220,7 @@ def create_app(
                 rights=payload.get("rights"),
                 metadata=payload.get("metadata"),
             )
+            return _public_artifact(record)
         except ImmutableArtifactError as error:
             raise HTTPException(status_code=409, detail=str(error)) from error
         except (ValueError, TypeError, KeyError) as error:
@@ -220,7 +232,9 @@ def create_app(
     )
     def get_artifact(artifact_id: str, version: str) -> dict[str, Any]:
         try:
-            return control_plane.get_artifact(artifact_id, version)
+            return _public_artifact(
+                control_plane.get_artifact(artifact_id, version)
+            )
         except FileNotFoundError as error:
             raise HTTPException(status_code=404, detail="artifact_not_found") from error
 
@@ -351,7 +365,10 @@ def create_app(
                 }
                 for node_id, item in result.node_results.items()
             ],
-            "outputs": result.outputs,
+            "outputs": {
+                name: _public_artifact(artifact)
+                for name, artifact in result.outputs.items()
+            },
         }
 
     @app.get("/v1/runs", dependencies=[Depends(authorize)])
