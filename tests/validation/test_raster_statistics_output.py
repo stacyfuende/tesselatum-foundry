@@ -60,6 +60,7 @@ def test_raster_statistics_output_critic_rejects_tampered_values_and_dimensions(
             "bands": [
                 {
                     **result.statistics["bands"][0],
+                    "minimum": 10**1000,
                     "mean": 12345,
                     "valid_pixel_count": 99,
                 }
