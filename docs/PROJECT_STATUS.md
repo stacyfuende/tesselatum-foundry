@@ -122,3 +122,11 @@ The current allowance notice should be checked in **Settings → Billing & licen
 - Updated ADR-044 to distinguish exhaustive pixel processing from arbitrary-precision arithmetic: mean and standard deviation remain float64 outputs.
 - Commits: kernel 8c24bdd, cleanup 72a8749, and formatting/documentation clarification 6d9c8ab; critic b72e310; regression test a924e97; ADR-044 b5b8876.
 - These changes have been committed but not executed in a local Python environment or GitHub Actions. Do not mark the test as passing or the raster implementation conformant until targeted tests and full CI pass.
+
+
+## 2026-11-09 implementation hand-off — raster validity edge cases
+
+- Corrected the int64 precision regression test's missing pytest import (commit f224713).
+- Added coverage for a GeoTIFF internal validity mask combined with NaN and positive-infinity samples. The expected result excludes the masked cell and all non-finite values; the independent critic must accept the result (commits f15fefe and db6e957).
+- Added a test that an all-non-finite float band is rejected with the documented no-finite-valid-pixels error.
+- These are source-level additions only. They have not been run locally or in Actions. The mask-writing behavior should be confirmed by executing the test in the project's supported Rasterio/GDAL environment.
