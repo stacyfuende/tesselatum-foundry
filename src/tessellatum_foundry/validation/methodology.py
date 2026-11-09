@@ -582,9 +582,7 @@ def build_methodology_report(
                     "method.input_extent_within_operation_area_of_use",
                     area_coverage_status,
                     area_coverage_message,
-                    severity=(
-                        "error" if area_coverage_status == "failed" else "warning"
-                    ),
+                    severity="warning",
                     evidence=evidence,
                 ),
                 _finding(
