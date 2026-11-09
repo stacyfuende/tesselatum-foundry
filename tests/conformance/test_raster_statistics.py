@@ -1,0 +1,91 @@
+from __future__ import annotations
+
+from io import BytesIO
+
+import numpy as np
+import pytest
+import rasterio
+from rasterio.transform import from_origin
+
+from tessellatum_foundry.capabilities.raster_statistics import (
+    RasterStatisticsError,
+    raster_band_statistics,
+)
+
+
+def _raster_bytes(values: np.ndarray, *, nodata: float | None = None) -> bytes:
+    output = BytesIO()
+    with rasterio.open(
+        output,
+        "w",
+        driver="GTiff",
+        width=values.shape[2],
+        height=values.shape[1],
+        count=values.shape[0],
+        dtype=values.dtype,
+        crs="EPSG:32636",
+        transform=from_origin(500000, 1000000, 10, 10),
+        nodata=nodata,
+    ) as dataset:
+        dataset.write(values)
+    return output.getvalue()
+
+
+def test_raster_statistics_excludes_nodata_and_reports_raw_values():
+    source = np.array(
+        [[[1, 2], [3, -9999]], [[10, 20], [30, 40]]],
+        dtype=np.int16,
+    )
+    result = raster_band_statistics(_raster_bytes(source, nodata=-9999))
+
+    assert result.statistics["width"] == 2
+    assert result.statistics["height"] == 2
+    assert result.statistics["selected_band_count"] == 2
+    first, second = result.statistics["bands"]
+    assert first["valid_pixel_count"] == 3
+    assert first["minimum"] == 1
+    assert first["maximum"] == 3
+    assert first["mean"] == 2
+    assert first["standard_deviation"] == pytest.approx(np.std([1, 2, 3]))
+    assert second["valid_pixel_count"] == 4
+    assert second["mean"] == 25
+    assert "32636" in result.crs["wkt"]
+
+
+def test_raster_statistics_selects_bands_and_rejects_invalid_indexes():
+    source = np.array([[[1, 2]], [[10, 20]]], dtype=np.uint8)
+    result = raster_band_statistics(_raster_bytes(source), bands=[2])
+    assert [band["band"] for band in result.statistics["bands"]] == [2]
+
+    for invalid in ([0], [3], [1, 1], [], ["1"]):
+        with pytest.raises(RasterStatisticsError):
+            raster_band_statistics(_raster_bytes(source), bands=invalid)
+
+
+def test_raster_statistics_rejects_empty_or_unreadable_input():
+    for invalid in (b"", b"not a raster"):
+        with pytest.raises(RasterStatisticsError):
+            raster_band_statistics(invalid)
+
+
+def test_raster_statistics_rejects_band_with_no_valid_pixels():
+    source = np.full((1, 2, 2), -9999, dtype=np.int16)
+    with pytest.raises(RasterStatisticsError, match="no finite, valid pixels"):
+        raster_band_statistics(_raster_bytes(source, nodata=-9999))
+
+
+def test_raster_statistics_requires_crs():
+    output = BytesIO()
+    with rasterio.open(
+        output,
+        "w",
+        driver="GTiff",
+        width=2,
+        height=2,
+        count=1,
+        dtype="uint8",
+        transform=from_origin(0, 2, 1, 1),
+    ) as dataset:
+        dataset.write(np.ones((1, 2, 2), dtype=np.uint8))
+    with pytest.raises(RasterStatisticsError, match="declare a CRS"):
+        raster_band_statistics(output.getvalue())
