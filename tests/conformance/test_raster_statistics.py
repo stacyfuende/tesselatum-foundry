@@ -7,7 +7,7 @@ import pytest
 import rasterio
 from rasterio.transform import from_origin
 
-from tessellatum_foundry.capabilities.raster_statistics import (
+from tessellatum_foundry.validation.raster_statistics import (\n    inspect_raster_band_statistics_output,\n)\nfrom tessellatum_foundry.capabilities.raster_statistics import (
     RasterStatisticsError,
     raster_band_statistics,
 )
@@ -153,3 +153,46 @@ def test_raster_statistics_aggregates_multiple_tiled_windows_exactly():
     assert band["standard_deviation"] == pytest.approx(
         float(np.std(valid, ddof=0)), rel=1e-12
     )
+
+def test_raster_statistics_excludes_non_finite_float_samples():
+    source = np.array(
+        [[[1.0, np.nan, np.inf], [-np.inf, 5.0, -9999.0]]],
+        dtype=np.float32,
+    )
+    result = raster_band_statistics(_raster_bytes(source, nodata=-9999.0))
+    band = result.statistics["bands"][0]
+
+    assert band["valid_pixel_count"] == 2
+    assert band["minimum"] == 1.0
+    assert band["maximum"] == 5.0
+    assert band["mean"] == 3.0
+    assert band["standard_deviation"] == 2.0
+
+
+def test_raster_statistics_windowed_output_passes_independent_critic():
+    source = np.arange(600 * 700, dtype=np.int32).reshape(1, 600, 700)
+    raster = BytesIO()
+    with rasterio.open(
+        raster,
+        "w",
+        driver="GTiff",
+        width=700,
+        height=600,
+        count=1,
+        dtype="int32",
+        crs="EPSG:32636",
+        transform=from_origin(500000, 1000000, 10, 10),
+        tiled=True,
+        blockxsize=256,
+        blockysize=256,
+    ) as dataset:
+        dataset.write(source)
+
+    raster_bytes = raster.getvalue()
+    result = raster_band_statistics(raster_bytes)
+    inspection = inspect_raster_band_statistics_output(
+        input_raster_bytes=raster_bytes,
+        output={"statistics": result.statistics, "crs": result.crs},
+    )
+
+    assert inspection.passed, inspection.findings
