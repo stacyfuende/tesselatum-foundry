@@ -5,8 +5,9 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+from collections.abc import Sequence
 from pathlib import Path
-from typing import Any, Sequence
+from typing import Any
 
 from tessellatum_foundry import __version__
 from tessellatum_foundry.local import LocalFoundry
@@ -22,7 +23,10 @@ def _json_file(path: Path | None) -> dict[str, Any] | None:
 
 
 def _emit(value: Any) -> None:
-    print(json.dumps(value, ensure_ascii=False, allow_nan=False, indent=2, sort_keys=True))
+    rendered = json.dumps(
+        value, ensure_ascii=False, allow_nan=False, indent=2, sort_keys=True
+    )
+    print(rendered)
 
 
 def _workspace(args: argparse.Namespace) -> LocalFoundry:
@@ -32,7 +36,9 @@ def _workspace(args: argparse.Namespace) -> LocalFoundry:
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="foundry",
-        description="Create, inspect, and execute local Tessellatum Foundry workspaces.",
+        description=(
+            "Create, inspect, and execute local Tessellatum Foundry workspaces."
+        ),
     )
     parser.add_argument(
         "--data-dir",
@@ -44,7 +50,9 @@ def _build_parser() -> argparse.ArgumentParser:
 
     commands.add_parser("init", help="Initialize or open a local workspace.")
 
-    artifact = commands.add_parser("artifact", help="Store, inspect, and export Artifacts.")
+    artifact = commands.add_parser(
+        "artifact", help="Store, inspect, and export Artifacts."
+    )
     artifact_commands = artifact.add_subparsers(dest="artifact_command", required=True)
     put = artifact_commands.add_parser("put", help="Register immutable Artifact bytes.")
     put.add_argument("--id", required=True, dest="artifact_id")
@@ -66,17 +74,21 @@ def _build_parser() -> argparse.ArgumentParser:
     export.add_argument("--version", required=True)
     export.add_argument("--output", required=True, type=Path)
 
-    register_cell = commands.add_parser("cell", help="Register an immutable Cell definition.")
+    register_cell = commands.add_parser(
+        "cell", help="Register an immutable Cell definition."
+    )
     register_cell.add_argument("register", choices=["register"])
     register_cell.add_argument("--file", required=True, type=Path)
     register_cell.add_argument("--created-by", required=True)
 
     recipe = commands.add_parser("recipe", help="Validate and execute registered Recipes.")
     recipe_commands = recipe.add_subparsers(dest="recipe_command", required=True)
-    recipe_commands.add_parser("register", help="Register a Recipe JSON document.").add_argument(
+    recipe_register = recipe_commands.add_parser(
+        "register", help="Register a Recipe JSON document."
+    )
+    recipe_register.add_argument(
         "--file", required=True, type=Path
     )
-    recipe_register = recipe_commands.choices["register"]
     recipe_register.add_argument("--created-by", required=True)
     execute = recipe_commands.add_parser("run", help="Execute an exact registered Recipe.")
     execute.add_argument("--id", required=True, dest="recipe_id")
