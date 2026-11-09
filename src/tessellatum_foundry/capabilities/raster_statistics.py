@@ -42,8 +42,10 @@ def _normalize_bands(bands: Sequence[int] | None, count: int) -> tuple[int, ...]
     return tuple(normalized)
 
 
-def _windowed_statistics(dataset: rasterio.io.DatasetReader, band_index: int) -> dict[str, float | int]:
-    """Compute exact count/min/max/mean/population SD with bounded window memory."""
+def _windowed_statistics(
+    dataset: rasterio.io.DatasetReader, band_index: int
+) -> dict[str, float | int]:
+    """Exhaustively compute count/min/max/mean/population SD with bounded memory."""
     count = 0
     mean = 0.0
     m2 = 0.0
@@ -99,7 +101,8 @@ def _windowed_statistics(dataset: rasterio.io.DatasetReader, band_index: int) ->
     variance = m2 / count
     standard_deviation = math.sqrt(max(0.0, variance))
     reported_mean = float(integer_baseline + mean) if integer_baseline is not None else mean
-    if not all(math.isfinite(float(value)) for value in (minimum, maximum, reported_mean, standard_deviation)):
+    finite_outputs = (minimum, maximum, reported_mean, standard_deviation)
+    if not all(math.isfinite(float(value)) for value in finite_outputs):
         raise RasterStatisticsError(
             f"Band {band_index} statistics exceed finite float64 output range."
         )
@@ -131,7 +134,9 @@ def raster_band_statistics(
         with rasterio.MemoryFile(raster_bytes) as memory_file:
             with memory_file.open() as dataset:
                 if dataset.width < 1 or dataset.height < 1 or dataset.count < 1:
-                    raise RasterStatisticsError("Raster dimensions and band count must be positive.")
+                    raise RasterStatisticsError(
+                        "Raster dimensions and band count must be positive."
+                    )
                 selected = _normalize_bands(bands, dataset.count)
                 crs = dataset.crs
                 if crs is None:
