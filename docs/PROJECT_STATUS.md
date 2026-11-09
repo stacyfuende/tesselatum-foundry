@@ -143,4 +143,5 @@ The current allowance notice should be checked in **Settings → Billing & licen
 
 - Aligned the raster implementation manifest's declared NumPy runtime with the package's optional dependency range (`numpy>=1.26,<3`) rather than claiming only NumPy 2.x (commit 63598ba).
 - Reworded the Capability description and ADR-044 from “exact statistics” to “exhaustive statistics”. The operation processes every valid pixel, but mean and standard deviation are float64 results, not arbitrary-precision real-number calculations (commits e647552 and 3f41f3b).
+- Normalized regression-test spacing to avoid Ruff E303 (commit df70a89).
 - The implementation manifest remains `conformance.status: not_run`. No local tests or GitHub Actions were run.
