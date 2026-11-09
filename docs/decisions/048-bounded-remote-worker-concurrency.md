@@ -29,4 +29,4 @@ The HTTP service uses `ThreadingHTTPServer`, so it must parse a request before r
 
 ## Known limitation
 
-This decision bounds active operations, not the total number of lightweight HTTP handler threads under a connection flood. Ingress connection/rate limits are still required. Per-execution wall-clock termination is addressed separately by ADR-040.
+This decision bounds active operations, not the total number of lightweight HTTP handler threads under a connection flood. Ingress connection/rate limits are still required. Per-execution wall-clock termination is addressed separately by ADR-049.
