@@ -30,6 +30,10 @@ The repository follows a contracts-first implementation sequence. The first mile
 
 Items are marked complete when implementation and corresponding tests are present. Runtime and CI verification are reported separately.
 
+## Browser operator console
+
+A static, same-origin Console now provides a browser workflow for Artifact intake, Cell/Recipe registration, execution, Run/report inspection, and checksum-verified output downloads. See [deploy/console](deploy/console/README.md). It is designed for the private single-tenant preview and uses the control-plane API; it is not a multi-user workflow designer.
+
 ## Private control-plane API
 
 An optional FastAPI service provides bearer-authenticated Artifact, Cell, Recipe, Run, Validation Report, and registry endpoints. Build and deployment instructions are in [deploy/control-plane](deploy/control-plane/README.md). This is a controlled single-tenant private-preview boundary; it is not production multi-tenant hosting.
