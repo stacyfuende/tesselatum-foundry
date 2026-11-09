@@ -75,3 +75,36 @@ def test_raster_statistics_output_critic_rejects_tampered_values_and_dimensions(
         "raster_output.valid_pixel_counts",
         "raster_output.numeric_statistics",
     } <= failed_codes
+
+
+
+def test_raster_statistics_preserves_large_int64_extrema_and_variance():
+    base = 2**60
+    source_stream = BytesIO()
+    with rasterio.open(
+        source_stream,
+        "w",
+        driver="GTiff",
+        width=4,
+        height=1,
+        count=1,
+        dtype="int64",
+        crs="EPSG:32636",
+        transform=from_origin(500000, 1000000, 10, 10),
+    ) as dataset:
+        dataset.write(
+            np.array([[[base, base + 1, base + 2, base + 3]]], dtype=np.int64)
+        )
+    source = source_stream.getvalue()
+
+    result = raster_band_statistics(source)
+    band = result.statistics["bands"][0]
+    assert band["minimum"] == base
+    assert band["maximum"] == base + 3
+    assert band["standard_deviation"] == pytest.approx(np.std([0, 1, 2, 3], ddof=0))
+
+    inspection = inspect_raster_band_statistics_output(
+        input_raster_bytes=source,
+        output={"statistics": result.statistics, "crs": result.crs},
+    )
+    assert inspection.passed
