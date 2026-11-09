@@ -166,14 +166,33 @@ def inspect_raster_band_statistics_output(
                     count = 0
                     mean = 0.0
                     m2 = 0.0
-                    minimum = math.inf
-                    maximum = -math.inf
+                    minimum: float | int = math.inf
+                    maximum: float | int = -math.inf
+                    integer_baseline: int | None = None
                     for _, window in dataset.block_windows(band_index):
                         masked = dataset.read(band_index, window=window, masked=True)
-                        values = masked.compressed().astype(np.float64, copy=False)
-                        values = values[np.isfinite(values)]
-                        if values.size == 0:
+                        raw_values = masked.compressed()
+                        if raw_values.size == 0:
                             continue
+                        if np.issubdtype(raw_values.dtype, np.integer):
+                            if integer_baseline is None:
+                                integer_baseline = int(raw_values[0])
+                            # Independent critic: compute integer deltas before
+                            # float conversion to retain precision above 2**53.
+                            values = np.fromiter(
+                                (int(value) - integer_baseline for value in raw_values),
+                                dtype=np.float64,
+                                count=int(raw_values.size),
+                            )
+                            batch_min = int(np.min(raw_values))
+                            batch_max = int(np.max(raw_values))
+                        else:
+                            values = raw_values.astype(np.float64, copy=False)
+                            values = values[np.isfinite(values)]
+                            if values.size == 0:
+                                continue
+                            batch_min = float(np.min(values))
+                            batch_max = float(np.max(values))
                         batch_count = int(values.size)
                         batch_mean = float(np.mean(values, dtype=np.float64))
                         centered = values - batch_mean
@@ -186,14 +205,19 @@ def inspect_raster_band_statistics_output(
                             m2 += batch_m2 + delta * delta * count * batch_count / combined
                             mean += delta * batch_count / combined
                             count = combined
-                        minimum = min(minimum, float(np.min(values)))
-                        maximum = max(maximum, float(np.max(values)))
+                        minimum = min(minimum, batch_min)
+                        maximum = max(maximum, batch_max)
                     if count == 0:
                         numeric_results_match = False
                         pixel_counts_match = False
                         band_metadata_match = False
                         continue
                     standard_deviation = math.sqrt(max(0.0, m2 / count))
+                    reported_mean = (
+                        float(integer_baseline + mean)
+                        if integer_baseline is not None
+                        else mean
+                    )
                     pixel_counts_match = (
                         pixel_counts_match
                         and type(band_result.get("valid_pixel_count")) is int
@@ -202,7 +226,7 @@ def inspect_raster_band_statistics_output(
                     expected = {
                         "minimum": minimum,
                         "maximum": maximum,
-                        "mean": mean,
+                        "mean": reported_mean,
                         "standard_deviation": standard_deviation,
                     }
                     for field in numeric_fields:
@@ -211,11 +235,16 @@ def inspect_raster_band_statistics_output(
                             isinstance(actual, bool)
                             or not isinstance(actual, (int, float))
                             or not math.isfinite(actual)
-                            or not math.isclose(
-                                float(actual),
-                                expected[field],
-                                rel_tol=1e-12,
-                                abs_tol=1e-12,
+                            or (
+                                actual != expected[field]
+                                if field in {"minimum", "maximum"}
+                                and isinstance(expected[field], int)
+                                else not math.isclose(
+                                    float(actual),
+                                    float(expected[field]),
+                                    rel_tol=1e-12,
+                                    abs_tol=1e-12,
+                                )
                             )
                         ):
                             numeric_results_match = False
