@@ -145,3 +145,11 @@ The current allowance notice should be checked in **Settings → Billing & licen
 - Reworded the Capability description and ADR-044 from “exact statistics” to “exhaustive statistics”. The operation processes every valid pixel, but mean and standard deviation are float64 results, not arbitrary-precision real-number calculations (commits e647552 and 3f41f3b).
 - Normalized regression-test spacing to avoid Ruff E303 (commit df70a89).
 - The implementation manifest remains `conformance.status: not_run`. No local tests or GitHub Actions were run.
+
+## 2026-11-09 implementation hand-off — uint64 precision and wording
+
+- Corrected the raster kernel docstring to say “exhaustive statistics”, matching ADR-044 and the Capability description; the scan covers every valid pixel, while mean and population standard deviation remain float64.
+- Added a uint64 regression case using four adjacent values at the upper end of the uint64 range. It checks exact Python-integer extrema, population standard deviation of the small offsets, and independent-critic acceptance.
+- Commits: kernel wording `bcc2d7b`; uint64 test `411c04d`.
+- This test has not been executed. Confirm UInt64 GeoTIFF read/write support and run the raster validation tests under the project's supported Rasterio/GDAL versions before treating it as verified.
+- No Actions run or PR was started.
