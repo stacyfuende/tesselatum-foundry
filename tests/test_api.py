@@ -4,9 +4,6 @@ import base64
 import json
 from pathlib import Path
 
-import pytest
-
-pytest.importorskip("fastapi")
 from fastapi.testclient import TestClient
 
 from tessellatum_foundry.api import create_app
