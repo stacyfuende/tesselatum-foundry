@@ -126,7 +126,9 @@ def test_remote_worker_http_service_executes_vector_reproject(monkeypatch):
     )
     monkeypatch.setenv("FOUNDRY_MAX_INPUT_BYTES", "1048576")
     monkeypatch.setenv("FOUNDRY_MAX_OUTPUT_BYTES", "1048576")
-    server = ThreadingHTTPServer(("127.0.0.1", 0), WorkerHandler)
+    server = BoundedThreadingHTTPServer(
+        ("127.0.0.1", 0), WorkerHandler, max_concurrent_executions=2
+    )
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
     base_url = f"http://127.0.0.1:{server.server_port}"
