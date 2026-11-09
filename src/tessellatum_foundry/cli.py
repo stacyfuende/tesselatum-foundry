@@ -81,7 +81,13 @@ def _build_parser() -> argparse.ArgumentParser:
     register_cell.add_argument("--file", required=True, type=Path)
     register_cell.add_argument("--created-by", required=True)
 
-    recipe = commands.add_parser("recipe", help="Validate and execute registered Recipes.")
+    validate = commands.add_parser(
+        "validate", help="Validate one JSON document against a canonical schema."
+    )
+    validate.add_argument("--schema", required=True)
+    validate.add_argument("--file", required=True, type=Path)
+
+    recipe = commands.add_parser("recipe", help="Register and execute Recipes.")
     recipe_commands = recipe.add_subparsers(dest="recipe_command", required=True)
     recipe_register = recipe_commands.add_parser(
         "register", help="Register a Recipe JSON document."
@@ -130,6 +136,11 @@ def main(argv: Sequence[str] | None = None) -> int:
             return 0
 
         foundry = _workspace(args)
+        if args.command == "validate":
+            foundry.contracts.validate(args.schema, _json_file(args.file))
+            _emit({"status": "valid", "schema": args.schema, "file": str(args.file)})
+            return 0
+
         if args.command == "artifact":
             if args.artifact_command == "put":
                 record = foundry.store_artifact(
