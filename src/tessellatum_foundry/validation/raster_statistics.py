@@ -89,7 +89,9 @@ def inspect_raster_band_statistics_output(
                     "/crs/wkt",
                 )
                 dimensions_match = (
-                    statistics.get("width") == dataset.width
+                    type(statistics.get("width")) is int
+                    and statistics.get("width") == dataset.width
+                    and type(statistics.get("height")) is int
                     and statistics.get("height") == dataset.height
                 )
                 add(
@@ -125,7 +127,8 @@ def inspect_raster_band_statistics_output(
                 )
                 add(
                     "raster_output.selected_band_count",
-                    statistics.get("selected_band_count") == len(bands),
+                    type(statistics.get("selected_band_count")) is int
+                    and statistics.get("selected_band_count") == len(bands),
                     "Selected band count matches the result list."
                     if statistics.get("selected_band_count") == len(bands)
                     else "Selected band count does not match the result list.",
@@ -193,6 +196,7 @@ def inspect_raster_band_statistics_output(
                     standard_deviation = math.sqrt(max(0.0, m2 / count))
                     pixel_counts_match = (
                         pixel_counts_match
+                        and type(band_result.get("valid_pixel_count")) is int
                         and band_result.get("valid_pixel_count") == count
                     )
                     expected = {
