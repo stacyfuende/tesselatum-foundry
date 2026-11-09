@@ -411,7 +411,6 @@ def test_remote_worker_child_process_receives_only_allowlisted_environment(monke
     assert captured["PYTHONNOUSERSITE"] == "1"
 
 
-
 def test_worker_size_limit_environment_requires_positive_integers(monkeypatch):
     assert worker_http_server._positive_int_environment("TEST_LIMIT", 17) == 17
     monkeypatch.setenv("TEST_LIMIT", "2048")
