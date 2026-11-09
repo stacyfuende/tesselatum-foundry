@@ -154,3 +154,12 @@ The current allowance notice should be checked in **Settings → Billing & licen
 - This test has not been executed. Confirm UInt64 GeoTIFF read/write support and run the raster validation tests under the project's supported Rasterio/GDAL versions before treating it as verified.
 - No Actions run or PR was started.
 - Applied a follow-up line-wrap cleanup to the new uint64 fixture to keep it within the repository's expected lint width (commit `c5ff4c7`).
+
+## 2026-11-09 implementation hand-off — integer mean cancellation fix
+
+- Further numerical review identified a real mean error for full-range signed integer samples: converting large baseline-relative offsets to float64 before adding the baseline can turn the representable mean of `[-2**63, 2**63 - 1]` (which is `-0.5`) into `0.0`.
+- The kernel now accumulates integer sample sums exactly per source block and converts only the final integer quotient to the float64 mean. For int64/uint64 blocks, the sum uses four 16-bit limb reductions plus a signed two's-complement correction, avoiding per-pixel Python iteration. Smaller integer types use a sufficiently wide NumPy accumulator for practical block sizes.
+- The independent critic implements the exact-sum calculation separately and derives the expected mean from the exact sum. Population variance remains float64 and still uses baseline-relative deltas; this does not claim arbitrary-precision variance for all possible integer distributions.
+- Added a full-range int64 regression test asserting exact extrema, mean `-0.5`, and critic acceptance. Existing adjacent int64 and uint64 tests cover precision around large positive values.
+- Commits: kernel `18ac678`; critic `e46e3d2`; regression test `5074726`; ADR-044 numerical clarification `1ddb7f6`.
+- Arithmetic was independently exercised in the available Python environment, including signed int64 extrema and uint64 endpoints. The actual project test suite and GeoTIFF regression tests have not been run. The implementation manifest remains `not_run`; no Actions run or PR was started.
