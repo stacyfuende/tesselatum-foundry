@@ -140,6 +140,11 @@ def test_raster_statistics_excludes_internal_mask_and_non_finite_float_samples()
     assert band["maximum"] == 2.5
     assert band["mean"] == 2.0
     assert band["standard_deviation"] == 0.5
+    inspection = inspect_raster_band_statistics_output(
+        input_raster_bytes=stream.getvalue(),
+        output={"statistics": result.statistics, "crs": result.crs},
+    )
+    assert inspection.passed
 
 
 def test_raster_statistics_rejects_band_with_no_finite_valid_pixels():
