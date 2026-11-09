@@ -170,3 +170,39 @@ def test_client_enforces_request_size_limit(api_server):
             media_type="application/geo+json",
             format_name="GeoJSON",
         )
+
+def test_client_uses_longer_timeout_for_recipe_execution():
+    class FakeResponse:
+        status = 200
+        headers = {}
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            return None
+
+        def read(self, size=-1):
+            return b'{"status":"succeeded","execution_id":"exec-1"}'
+
+    class RecordingOpener:
+        timeout = None
+
+        def open(self, request, timeout):
+            self.timeout = timeout
+            return FakeResponse()
+
+    client = FoundryClient(
+        "https://foundry.example.test",
+        bearer_token=TOKEN,
+        timeout_seconds=30,
+        execution_timeout_seconds=145,
+    )
+    opener = RecordingOpener()
+    client._opener = opener
+
+    result = client.execute_recipe("demo", "1.0.0", actor_id="client-test")
+
+    assert result["status"] == "succeeded"
+    assert opener.timeout == 145
+
