@@ -63,10 +63,10 @@ Open [viewer/index.html](viewer/index.html) in a browser, then paste a canonical
 1. [Project vision](docs/PROJECT_VISION.md) — the long-term Tessellatum ambition and how Foundry contributes to it.
 2. [Living project status and collaboration guide](docs/PROJECT_STATUS.md) — current implementation, open work, verification gates, and hand-off notes.
 3. [Workflow Distribution Package proposal](docs/WORKFLOW-DISTRIBUTION-PACKAGE-PROPOSAL.md) — proposed portable, versioned bundle for distributing and licensing validated Recipes.
-2. [Architecture](ARCHITECTURE.md)
-3. [Decision register](docs/decisions/README.md)
-4. [Schemas](schema/)
-5. [v0.1 acceptance criteria](tests/acceptance/README.md)
+4. [Architecture](ARCHITECTURE.md)
+5. [Decision register](docs/decisions/README.md)
+6. [Schemas](schema/)
+7. [v0.1 acceptance criteria](tests/acceptance/README.md)
 
 ## Foundational model
 
