@@ -5,7 +5,6 @@ from __future__ import annotations
 import math
 from collections.abc import Sequence
 from dataclasses import dataclass
-from io import BytesIO
 from typing import Any
 
 import numpy as np
@@ -42,7 +41,9 @@ def _normalize_bands(bands: Sequence[int] | None, count: int) -> tuple[int, ...]
     return tuple(normalized)
 
 
-def _windowed_statistics(dataset: rasterio.io.DatasetReader, band_index: int) -> dict[str, float | int]:
+def _windowed_statistics(
+    dataset: rasterio.io.DatasetReader, band_index: int
+) -> dict[str, float | int]:
     """Compute exact count/min/max/mean/population SD with bounded window memory."""
     count = 0
     mean = 0.0
@@ -113,7 +114,9 @@ def raster_band_statistics(
         with rasterio.MemoryFile(raster_bytes) as memory_file:
             with memory_file.open() as dataset:
                 if dataset.width < 1 or dataset.height < 1 or dataset.count < 1:
-                    raise RasterStatisticsError("Raster dimensions and band count must be positive.")
+                    raise RasterStatisticsError(
+                        "Raster dimensions and band count must be positive."
+                    )
                 selected = _normalize_bands(bands, dataset.count)
                 crs = dataset.crs
                 if crs is None:
