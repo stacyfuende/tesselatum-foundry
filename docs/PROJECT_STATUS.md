@@ -101,3 +101,21 @@ The workflow ignores documentation-only changes and uses a concurrency group wit
 For local verification, contributors can run the same component checks and test suite from the repository environment. A self-hosted Actions runner is a possible later option for a trusted, privately controlled machine; do not expose a self-hosted runner to untrusted pull-request code, especially from forks. GitHub documents self-hosted runner usage as not consuming the included hosted-runner minutes, while standard hosted runner usage is free for public repositories. Billing allowances are account-level and may be shared across private repositories owned by the same account.
 
 The current allowance notice should be checked in **Settings → Billing & licensing → Usage** to confirm whether it refers to included compute, legacy minute quota, or storage. Do not infer remaining minutes from an email percentage alone.
+
+
+## Temporary GitHub Actions budget constraint
+
+**Recorded:** 2026-11-10  
+**Source:** User-reported account allowance; fewer than 200 Actions remain before the end of November 2026.
+
+Until the monthly allowance resets:
+
+- Treat the remaining Actions budget as scarce; do not spend it on routine confirmation or convenience reruns.
+- Prefer local lint, schema validation, unit tests, targeted integration tests, Docker checks, and direct inspection where the required dependencies are available.
+- Batch related source and test changes before requesting hosted verification.
+- Do not use `workflow_dispatch` for routine checks. Use it only when a specific release, integration, or safety gate cannot be established locally and the result justifies the cost.
+- Avoid unnecessary PR commits that each supersede an in-progress full integration run. Finish a coherent review batch before pushing.
+- Preserve the pull-request-first CI policy and documentation-only path exclusions. Documentation updates should not consume a hosted run under the current workflow filters.
+- Before any deliberate hosted run, inspect the current PR head and existing checks to avoid duplicating a run already in progress or completed.
+
+This is an operational budget constraint, not a change to the quality gate: required verification must still be completed before merge or release. If the remaining allowance becomes insufficient, defer non-critical merges rather than treating missing CI as a pass.
