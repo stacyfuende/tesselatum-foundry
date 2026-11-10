@@ -12,6 +12,10 @@ def main() -> None:
     if len(contracts.schemas) != 9:
         raise SystemExit(f"Expected 9 installed schemas, found {len(contracts.schemas)}.")
     capabilities.get("vector.buffer", "1.0.0")
+    capabilities.get("raster.band_statistics", "1.0.0")
+    raster_manifest = implementations.get("raster-band-statistics-rasterio", "1.0.0")
+    if raster_manifest["conformance"]["status"] != "not_run":
+        raise SystemExit("Raster implementation must remain gated until conformance passes.")
     implementations.require_conformant(
         implementation_id="vector-buffer-shapely",
         version="1.0.0",

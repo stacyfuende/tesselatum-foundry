@@ -47,6 +47,6 @@ This register records decisions that constrain Foundry's architecture. Each deci
 | [041](041-buffer-arc-tolerance.md) | Declare a purpose-specific buffer arc approximation tolerance | Accepted |
 | [042](042-reprojection-operation-evidence.md) | Capture the actual PROJ operation selected by the worker | Accepted |
 | [043](043-reprojection-area-of-use-coverage.md) | Compare geographic input extents with operation area of use | Accepted |
-| [039](039-methodological-evidence.md) | Produce operation-specific methodological evidence without a generic quality score | Accepted |
+| [044](044-first-raster-capability.md) | Establish raster.band_statistics as the first raster capability | Accepted for initial slice |
 
 A decision may be superseded only by a new decision record that explains the change. Do not silently edit an accepted decision to reverse its meaning.

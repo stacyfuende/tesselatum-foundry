@@ -1,0 +1,61 @@
+{
+  "capability_id": "raster.band_statistics",
+  "version": "1.0.0",
+  "name": "Raster band statistics",
+  "description": "Calculate exact descriptive statistics for valid stored pixel samples in selected raster bands.",
+  "category": "raster",
+  "input_ports": [
+    {
+      "port_id": "raster",
+      "data_kind": "raster",
+      "required": true,
+      "accepted_media_types": ["image/tiff", "image/geotiff"]
+    }
+  ],
+  "parameter_schema": {
+    "type": "object",
+    "properties": {
+      "bands": {
+        "type": "array",
+        "items": {"type": "integer", "minimum": 1},
+        "minItems": 1,
+        "uniqueItems": true,
+        "description": "Optional 1-based band indexes; omitted means every band."
+      }
+    },
+    "additionalProperties": false
+  },
+  "output_ports": [
+    {
+      "port_id": "statistics",
+      "data_kind": "table",
+      "media_types": ["application/vnd.tessellatum.raster-band-statistics+json"]
+    }
+  ],
+  "determinism": "deterministic",
+  "preconditions": [
+    "Input is a readable raster supported by the installed GDAL drivers.",
+    "Input declares a CRS.",
+    "Selected band indexes are unique 1-based indexes within the dataset band count.",
+    "Every selected band contains at least one finite, non-nodata pixel.",
+    "Nodata and masked pixels are excluded.",
+    "Statistics describe raw stored samples; scale and offset metadata are reported but not applied.",
+    "Population standard deviation (ddof=0) is used.",
+    "Every valid pixel is processed without sampling or approximation."
+  ],
+  "semantics": [
+    "Nodata and masked pixels are excluded.",
+    "Statistics describe raw stored sample values; GDAL scale and offset are reported but not applied.",
+    "Standard deviation is the population standard deviation (ddof=0).",
+    "All valid pixels are processed; no sampling or approximation is performed."
+  ],
+  "validation_requirements": [
+    "Each selected band appears exactly once in the result.",
+    "Valid pixel counts are positive.",
+    "Standard deviation is the population standard deviation (ddof=0).",
+    "Statistics describe raw stored sample values; scale and offset metadata are not applied.",
+    "All reported statistics are finite.",
+    "Reported dimensions match the source raster."
+  ],
+  "cache_policy": "allowed"
+}

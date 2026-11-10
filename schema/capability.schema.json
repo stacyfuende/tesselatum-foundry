@@ -226,6 +226,13 @@
         "type": "string"
       }
     },
+    "semantics": {
+      "type": "array",
+      "description": "Explicit semantic statements that define the operation independently of any implementation.",
+      "items": {
+        "type": "string"
+      }
+    },
     "validation_requirements": {
       "type": "array",
       "items": {
