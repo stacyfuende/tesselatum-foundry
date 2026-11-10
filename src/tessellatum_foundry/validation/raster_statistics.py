@@ -136,7 +136,10 @@ def inspect_raster_band_statistics_output(
                         "/statistics/bands",
                     )
                     return RasterOutputInspection(tuple(findings))
-                indexes = [item.get("band") if isinstance(item, Mapping) else None for item in bands]
+                indexes = [
+                    item.get("band") if isinstance(item, Mapping) else None
+                    for item in bands
+                ]
                 indexes_valid = (
                     all(type(index) is int and 1 <= index <= dataset.count for index in indexes)
                     and len(set(indexes)) == len(indexes)
