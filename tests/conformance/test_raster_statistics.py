@@ -57,8 +57,26 @@ def test_raster_statistics_excludes_nodata_and_reports_raw_values():
 
 def test_raster_statistics_selects_bands_and_rejects_invalid_indexes():
     source = np.array([[[1, 2]], [[10, 20]]], dtype=np.uint8)
-    result = raster_band_statistics(_raster_bytes(source), bands=[2])
+    raster_bytes = _raster_bytes(source)
+    result = raster_band_statistics(raster_bytes, bands=[2])
     assert [band["band"] for band in result.statistics["bands"]] == [2]
+
+    accepted = inspect_raster_band_statistics_output(
+        input_raster_bytes=raster_bytes,
+        output={"statistics": result.statistics, "crs": result.crs},
+        requested_bands=[2],
+    )
+    assert accepted.passed, accepted.findings
+
+    rejected = inspect_raster_band_statistics_output(
+        input_raster_bytes=raster_bytes,
+        output={"statistics": result.statistics, "crs": result.crs},
+        requested_bands=[1],
+    )
+    assert not rejected.passed
+    assert "raster_output.band_selection_matches_request" in {
+        finding.code for finding in rejected.findings if finding.status == "failed"
+    }
 
     for invalid in ([0], [3], [1, 1], [], ["1"]):
         with pytest.raises(RasterStatisticsError):
