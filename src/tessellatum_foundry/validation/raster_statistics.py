@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import math
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any
 
@@ -35,6 +35,7 @@ def inspect_raster_band_statistics_output(
     *,
     input_raster_bytes: bytes,
     output: Any,
+    requested_bands: Sequence[int] | None = None,
 ) -> RasterOutputInspection:
     """Recompute source-derived facts and compare them with a worker result.
 
@@ -103,6 +104,29 @@ def inspect_raster_band_statistics_output(
                     "/statistics",
                 )
 
+                if requested_bands is None:
+                    expected_indexes = list(range(1, dataset.count + 1))
+                    request_selection_valid = True
+                else:
+                    request_selection_valid = (
+                        isinstance(requested_bands, Sequence)
+                        and not isinstance(requested_bands, (str, bytes))
+                        and len(requested_bands) > 0
+                        and all(
+                            type(index) is int and 1 <= index <= dataset.count
+                            for index in requested_bands
+                        )
+                        and len(set(requested_bands)) == len(requested_bands)
+                    )
+                    expected_indexes = list(requested_bands) if request_selection_valid else []
+                add(
+                    "raster_output.requested_band_selection",
+                    request_selection_valid,
+                    "Requested band selection is valid."
+                    if request_selection_valid
+                    else "Requested band selection is invalid.",
+                    "/parameters/bands",
+                )
                 bands = statistics.get("bands")
                 if not isinstance(bands, list) or not bands:
                     add(
@@ -116,6 +140,15 @@ def inspect_raster_band_statistics_output(
                 indexes_valid = (
                     all(type(index) is int and 1 <= index <= dataset.count for index in indexes)
                     and len(set(indexes)) == len(indexes)
+                )
+                selection_matches_request = indexes == expected_indexes
+                add(
+                    "raster_output.band_selection_matches_request",
+                    selection_matches_request,
+                    "Returned band indexes match the requested selection."
+                    if selection_matches_request
+                    else "Returned band indexes differ from the requested selection.",
+                    "/statistics/bands",
                 )
                 add(
                     "raster_output.band_indexes",
