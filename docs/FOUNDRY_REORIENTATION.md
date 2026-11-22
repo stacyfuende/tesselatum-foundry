@@ -1,232 +1,122 @@
-# Foundry reorientation: spatial information infrastructure
+# Foundry architecture: spatial computation infrastructure
 
-**Status:** Proposed architectural direction for Foundry 0.1  
+**Status:** Accepted direction for ongoing implementation  
 **Date:** 2026-11-22  
-**Supersedes:** The assumption that Foundry's primary purpose is a general spatial-computation engine. Existing computation work is retained as a subsystem unless a later decision demonstrates that a component should be replaced.
+**Supersedes:** The storage-centric direction proposed in ADR-045 and ADR-046.
 
 ## 1. Decision
 
-Tessellatum Foundry is to become the engineering foundation for **unified infrastructure for spatial data**.
+Tessellatum Foundry is the engineering foundation for **unified infrastructure for spatial data**. Its job is to make spatial data computable, composable, validated, reproducible and accessible to applications.
 
-Its primary responsibility is to make spatial information persistently identifiable, structured, versioned, connected, traceable, queryable, and usable by software.
+Foundry is not intended to become the permanent owner, warehouse or global catalogue of all spatial datasets. Data ownership remains with its source provider, customer, or chosen storage platform. Foundry connects to those sources through explicit interfaces and processes only the data required for a declared computation.
 
-Foundry must support the lifecycle of spatial information:
+## 2. What Foundry owns
 
-1. Acquire source material and record where it came from.
-2. Preserve source material without silently overwriting it.
-3. Identify real-world or modeled geographic entities.
-4. Represent observations and assertions about those entities.
-5. Maintain versioned geometries, attributes, and relationships.
-6. Record temporal validity and the time at which information entered the system.
-7. Expose validated spatial information through stable interfaces.
-8. Apply spatial computations to information and preserve the lineage of resulting outputs.
-9. Allow applications, analysts, and eventually agents to use the same governed foundation.
+Foundry owns the computational system and its contracts:
 
-Foundry is not defined by a particular GIS engine, file format, database vendor, user interface, or AI model.
+- versioned, engine-independent Capability contracts;
+- conformance-tested, replaceable Implementations;
+- declarative and versioned Geo-Cells;
+- composable, validated Recipe graphs;
+- Run lifecycle, events, retry identity and execution provenance;
+- isolated worker dispatch and resource enforcement;
+- independent input/output validation and methodological evidence;
+- immutable definitions and computational artifacts;
+- SDK/API contracts for applications and services.
 
-## 2. The key architectural correction
+Foundry may persist definitions, Run records, validation reports, caches and derived outputs. Such persistence is scoped to the computational product and has explicit lifecycle/retention semantics. It does not imply bulk ownership of source datasets.
 
-A computation engine is necessary, but it is not the whole infrastructure.
+## 3. External data boundary
 
-The current repository is strongest in declarative computation: Capabilities, Geo-Cells, Recipes, Runs, Artifacts, conformance, execution isolation, and validation evidence. Those components are useful and should not be discarded merely because the primary product responsibility is being clarified.
+External spatial data may be accessed through:
 
-However, a spatial information platform must distinguish at least these concepts:
+- local paths and mounted volumes;
+- customer-controlled object storage;
+- provider APIs and query services;
+- customer databases and spatial databases;
+- remote file and tile services;
+- explicitly supplied immutable artifacts.
 
-| Concept | Meaning | Identity/lifecycle |
-|---|---|---|
-| Geographic entity | The thing being represented: road segment, junction, building, parcel, place, network, or modeled object | Stable identity across source changes where identity can be established |
-| Observation | A source-backed assertion about an entity at a time or over an interval | Independently identified, attributable, time-qualified, and revisable by supersession—not silent mutation |
-| Representation | A particular geometry, attribute state, or structured depiction of an entity | Versioned; may vary by source, scale, purpose, or time |
-| Source record | What an upstream dataset or provider actually supplied | Preserved with source identity, retrieval context, and provenance |
-| Artifact | An immutable data payload or file used, produced, or exchanged by the system | Content/version identity and checksum |
-| Computation | A declared operation applied to explicit inputs | Capability and implementation versions |
-| Run | One execution attempt with resolved inputs and recorded outputs | Append-only execution history |
-| Relationship | A typed connection between entities or records | Versioned or time-qualified where its meaning changes |
-| Validation evidence | A record of what was checked and what was found | Bound to the exact subject and version assessed |
+The connector boundary should expose metadata and bounded access, not force every source into a Foundry database. Prefer windowed reads, streaming, pagination, spatial/temporal filters and provider-side pushdown. A computation must declare what subset it needs and fail clearly when the source cannot satisfy the request.
 
-These concepts must not be collapsed into one universal Cell, Feature, or Artifact record.
+A source reference should capture as available:
+- provider and dataset identity;
+- resource locator (without embedding credentials or expiring signed secrets);
+- provider version, object version, ETag or checksum;
+- retrieval/query parameters and filters;
+- observed time and relevant temporal coverage;
+- format, CRS and schema metadata;
+- licensing/attribution declarations and known access constraints.
 
-In particular:
-- An Artifact is not a geographic entity.
-- A geometry is not the identity of the entity it depicts.
-- An observation is not necessarily the current truth.
-- A source identifier is not automatically a durable Foundry identifier.
-- A successful computation does not establish that its inputs are authoritative or its result is suitable for every purpose.
+A locator alone is not a reproducibility guarantee. If a source is mutable and supplies no immutable version or checksum, the Run must record that limitation. A customer may choose to supply or retain an immutable snapshot, but Foundry must not silently copy the entire source to achieve this.
 
-## 3. Foundry's architectural layers
+## 4. Computation lifecycle
 
-### 3.1 Spatial information core
+The canonical flow is:
 
-Owns canonical identity and the persistent information model:
+1. **Describe** — declare the source reference and the exact data requirement.
+2. **Resolve** — verify access, metadata, schema, CRS, temporal/spatial coverage and version evidence.
+3. **Read** — stream or window the required data into a bounded worker working set.
+4. **Execute** — run the selected conformant implementation using a resolved Geo-Cell/Recipe.
+5. **Inspect** — independently validate output and record limitations.
+6. **Register** — persist derived artifacts and Run evidence according to retention policy.
+7. **Reuse** — reuse cache entries only when source identity/version evidence and all other cache-relevant inputs match.
 
-- entity identity and entity types;
-- versioned entity state and representations;
-- source records and source-to-entity mappings;
-- observations and assertions;
-- typed entity relationships;
-- spatial and temporal metadata;
-- provenance and lineage;
-- validation state and evidence references.
+The control plane must not assume every worker can reach every source. Access must be explicit, scoped, auditable and passed through a secure credential mechanism; credentials must never be written into definitions, Run manifests or logs.
 
-This is the foundational layer. It must remain useful even when no computation is running.
+## 5. Persistence policy
 
-### 3.2 Ingestion and reconciliation
+| Data class | Default treatment |
+|---|---|
+| Source datasets | Remain external; do not bulk-ingest by default |
+| Source metadata and references | Record only the minimum needed for resolution and provenance |
+| Temporary working data | Worker-local or customer-controlled scratch; bounded and cleaned by policy |
+| Cell and Recipe definitions | Persist immutably |
+| Run events and provenance | Persist as execution records |
+| Validation reports | Persist with exact subject identity |
+| Derived outputs | Register as immutable Artifacts when the workflow requires them |
+| Cache entries | Optional, bounded, validation-gated and evictable |
+| Large output files | May use a customer-selected object store or artifact backend; not a Foundry-owned source-data lake |
 
-Responsible for bringing external and user-supplied information into the core without destroying source meaning:
+The existing filesystem Artifact store is a local adapter, not a claim that all data belongs on one machine. Storage backends can evolve independently of computation contracts.
 
-- source registration and dataset snapshots;
-- adapters and import jobs;
-- format and schema validation;
-- coordinate reference and dimensionality checks;
-- normalization that preserves original values;
-- entity matching and identity resolution;
-- conflict handling and review queues;
-- explicit acceptance, rejection, or supersession of observations.
+## 6. Architecture planes
 
-Ingestion must preserve raw inputs and record transformations. It must not silently convert a source claim into canonical truth.
+- **Control plane:** contracts, definitions, graph validation, source references, authorization, scheduling, Run lifecycle, provenance and cache policy.
+- **Compute plane:** isolated workers, capability implementations, bounded reads, temporary scratch, output staging and resource accounting.
+- **Data plane:** the provider/customer systems that already own the spatial data. Foundry adapters connect to them without requiring central ingestion.
+- **Artifact plane:** optional persistence for immutable computational outputs and definitions, with explicit ownership and retention.
 
-### 3.3 Spatial query and service layer
+These planes are logical boundaries, not a requirement to deploy four separate services.
 
-Provides stable ways to retrieve and inspect information:
+## 7. Engineering sequence
 
-- entity lookup and source crosswalks;
-- geometry and attribute retrieval by version or time;
-- spatial predicates and bounded spatial search;
-- relationship traversal;
-- provenance and history inspection;
-- filtered exports and interoperable representations.
+1. Keep the proven Capability/Geo-Cell/Recipe/Run/Artifact contracts intact.
+2. Finish execution hardening: concurrency limits, process isolation, timeouts, resource accounting and cancellation.
+3. Integrate raster operations into the Run and Recipe lifecycle.
+4. Define a minimal external-data source protocol and local adapter, then test bounded reads and failure behavior.
+5. Add source-reference provenance to Run specifications and cache keys.
+6. Build authenticated project/Cell/Recipe/Run/Artifact APIs and generated client SDK.
+7. Build a usable workspace and Recipe Studio.
+8. Expand adapters and capabilities only against real use cases.
 
-The first service boundary can be a single API backed by one managed PostgreSQL/PostGIS database. Distributed services are not a starting requirement.
+## 8. Explicit non-goals
 
-### 3.4 Computation and transformation layer
+- A universal global spatial database.
+- A mandatory copy of customer or provider datasets.
+- A general-purpose source-data ingestion and reconciliation platform.
+- A permanent archive of every input.
+- A forced universal spatial file format.
+- A distributed database or compute cluster before workload evidence.
+- Arbitrary user code in the trusted worker path.
+- An AI system that can bypass contracts, authorization or validation.
 
-This is where the repository's existing engineering belongs.
+## 9. Relationship to Spatial Methods and products
 
-Retain and evolve the existing:
-- Artifact model;
-- Capability contracts and conformance suites;
-- Geo-Cell declarations;
-- Recipe graphs;
-- Run lifecycle and immutable lineage;
-- independent validation reports;
-- replaceable Shapely/PostGIS and other workers;
-- local SDK and execution isolation.
+Spatial Methods remains the knowledge and methods foundation. Foundry turns methods into executable, testable, reusable computational capabilities. Tessellatum products consume these capabilities where useful; they retain responsibility for their own domain-specific data ownership and customer commitments.
 
-The computation layer consumes explicit source or canonical information snapshots and produces new versioned outputs. It must never silently mutate canonical entity history.
+## 10. Definition of success
 
-The existing computation contracts should be integrated through adapters and explicit references, not forced to become the identity model for all spatial information.
+A user can connect spatial data where it already lives, declare a computation, validate its requirements, execute it on a compatible worker without loading the whole dataset unnecessarily, inspect the result, and trace the Run to the source evidence, exact capability and implementation versions, parameters, runtime and validation report.
 
-### 3.5 Application and agent interfaces
-
-Applications, services, notebooks, and agents use Foundry through the same explicit contracts and service boundaries.
-
-Natural-language planning and autonomous agents are optional clients. They must not become trusted sources of truth or bypass validation, authorization, provenance, or human review gates.
-
-## 4. Initial bounded domain: road networks
-
-Foundry 0.1 should prove the information model on one useful, understandable domain: **road-network information**.
-
-The first implementation should be deliberately bounded to a defined study area and a declared source set. It should not attempt to build a universal global geographic database.
-
-Initial entity types:
-- RoadSegment
-- Junction
-- RoadNetwork
-
-Initial capabilities:
-- preserve imported source records;
-- assign durable Foundry entity IDs;
-- maintain source identifier crosswalks;
-- store versioned road geometries and selected attributes;
-- represent segment-to-junction and network membership relationships;
-- retain observations from multiple sources without overwriting conflicts;
-- query by ID, bounding box, and spatial relationship;
-- inspect entity history and provenance;
-- export a reproducible snapshot.
-
-The first domain model should explicitly address split/merge identity changes, source ID changes, geometry edits, one-way/direction attributes, network connectivity, and temporal changes. It must not assume that a road segment's identity is equivalent to a row ID or a geometry hash.
-
-The study area and initial sources are to be selected after inspecting the available source data and the existing Spatial Methods repository. The system must not hardcode a particular city or provider into its foundational abstractions.
-
-## 5. Persistence and deployment posture
-
-The initial production-shaped architecture should remain small:
-
-- **GitHub:** source code, schemas, migrations, tests, documentation, CI, review, and release history.
-- **PostgreSQL/PostGIS:** canonical structured spatial information and transactional metadata.
-- **Object storage:** immutable source files, large artifacts, exports, and content-addressed payloads where appropriate.
-- **One API service:** authenticated access to the core model and query operations.
-- **Background worker process:** ingestion and computation jobs that need asynchronous execution.
-
-Local development may use Docker Compose. A managed Postgres/PostGIS service and modest object storage can be introduced when the first end-to-end slice is ready. Do not provision a fleet of services, Kubernetes, a global event bus, or a distributed database for 0.1.
-
-Database migrations, backup/restore, access control, retention, and storage lifecycle must be designed before real customer data is treated as safely persisted.
-
-## 6. Data and identity principles
-
-1. **Stable internal identity:** Foundry IDs identify Foundry entities, not source rows or geometry encodings.
-2. **Source fidelity:** preserve original source records or immutable source snapshots and their identifiers.
-3. **No silent overwrite:** new information creates a new observation or version with explicit provenance.
-4. **Temporal clarity:** distinguish when a fact is valid in the represented world from when Foundry learned or recorded it. Adopt bitemporal fields where the domain requires them; do not pretend one timestamp answers both questions.
-5. **Multiple representations:** an entity may have different geometries or representations by source, scale, purpose, or time.
-6. **Explicit uncertainty:** identity matches, positional accuracy, completeness, and source authority are not assumed.
-7. **Typed relationships:** relationships have defined semantics and direction; topology is not inferred solely from visual proximity.
-8. **Reproducible computation:** every derived result points to exact input versions, capability and implementation versions, parameters, and execution evidence.
-9. **Rights-aware use:** provenance records are not legal authorization. Policy decisions must be explicit and evidence-based.
-10. **Human-authored truth remains intact:** AI may assist with interpretation or proposals, but cannot silently replace original human or source information.
-
-## 7. What Foundry is not
-
-Foundry 0.1 is not:
-- a new desktop GIS;
-- a universal global map or complete digital twin;
-- a replacement for every upstream authoritative data provider;
-- a general-purpose arbitrary-code execution service;
-- a marketplace or social network;
-- an autonomous AI geographer;
-- a collection of unrelated microservices;
-- a requirement that every Tessellatum product use every Foundry capability.
-
-## 8. First end-to-end milestone
-
-The first milestone is not "support every spatial data type." It is a working, testable road-network information slice:
-
-1. Define the minimum entity, source-record, observation, representation, relationship, and provenance schemas.
-2. Create PostgreSQL/PostGIS migrations and integrity constraints.
-3. Import one bounded road dataset while preserving its source identity and snapshot.
-4. Assign Foundry IDs and create explicit source crosswalks.
-5. Store versioned geometries and attributes.
-6. Represent network connectivity and validate topology with declared tolerances/rules.
-7. Expose read APIs for entity lookup, spatial query, provenance, and history.
-8. Export a deterministic snapshot.
-9. Demonstrate a computation using the existing Capability/Recipe/Run subsystem and trace its output back to exact source and entity versions.
-10. Test ingestion repeatability, updates, source conflicts, identity changes, temporal queries, and backup/restore.
-
-A milestone is complete only when the data survives process restarts, can be queried through the service boundary, retains its provenance, and can be independently tested. A schema document or in-memory demo is not sufficient.
-
-## 9. Relationship to Spatial Methods
-
-Spatial Methods remains the knowledge and methods foundation: concepts, mathematical foundations, algorithms, data acquisition methods, implementation references, and tested recipes.
-
-Foundry is the operational information and computation infrastructure that applies, stores, connects, and serves spatial information.
-
-The boundary is complementary:
-- Spatial Methods explains and develops methods.
-- Foundry manages persistent spatial information and executes governed computations.
-- Applications use the resulting services to solve customer problems.
-
-Foundry may reference Spatial Methods records and implementations, but it must not duplicate the repository's entire knowledge catalogue or turn itself into a second methods encyclopedia.
-
-## 10. Reorientation policy
-
-This document establishes a proposed direction, not permission to disregard evidence or break working behavior casually.
-
-Before replacing existing components:
-- inspect their code, tests, interfaces, and consumers;
-- identify whether they can serve as the computation layer;
-- preserve useful contracts and historical provenance;
-- write a superseding ADR for any accepted decision whose meaning changes;
-- make changes on a dedicated branch;
-- keep the main branch stable until the new foundation is reviewed and verified.
-
-The old concept is not sacred. The working software is valuable only insofar as it serves the new purpose.
+Foundry succeeds by making spatial computation dependable—not by accumulating the world's spatial data.
