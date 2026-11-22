@@ -9,7 +9,8 @@ The repository already contains a substantial contracts-first spatial computatio
 **Strategic direction:** [Foundry reorientation](docs/FOUNDRY_REORIENTATION.md)  
 **Project vision:** [Unified spatial information infrastructure](docs/PROJECT_VISION.md)  
 **Initial spatial information model:** [Entity, source, observation, representation, and relationship model](docs/SPATIAL_INFORMATION_MODEL.md)  
-**Initial database migration:** [PostgreSQL/PostGIS migration 0001](db/migrations/0001_spatial_information_core.sql)  
+**Initial database migrations:** [PostgreSQL/PostGIS migrations](db/README.md)  
+**Large-data architecture:** [Storage and processing architecture](docs/STORAGE_AND_PROCESSING_ARCHITECTURE.md)  
 **Python information adapter:** [PostGIS repository package](src/tessellatum_foundry/information/)
 
 ## Architectural layers
@@ -30,7 +31,7 @@ Foundry 0.1 is not a universal global database, a new desktop GIS, a general arb
 
 ## Initial information model status
 
-The first PostGIS migration and data-model specification are present on the reorientation branch. They are **proposed and not yet runtime-verified**. They do not alter the existing filesystem Artifact, definition, or Run stores. See [ADR-045](docs/decisions/045-spatial-information-core.md).
+The first PostGIS migrations, data-model specification, and large-data storage boundary are present on the reorientation branch. They are **proposed and not yet runtime-verified**. They do not alter the existing filesystem Artifact, definition, or Run stores. See [ADR-045](docs/decisions/045-spatial-information-core.md).
 
 ## Existing computation foundation
 
