@@ -27,6 +27,19 @@ The reorientation branch introduces the first database model in [SPATIAL_INFORMA
 
 **Important:** the migration is not yet runtime-verified. Do not apply it to production or claim that the information core is operational. It is additive and does not alter existing filesystem Artifact, definition, or Run stores.
 
+## Large geospatial data architecture
+
+[ADR-046](decisions/046-bulk-geospatial-storage.md) and [STORAGE_AND_PROCESSING_ARCHITECTURE.md](STORAGE_AND_PROCESSING_ARCHITECTURE.md) establish the bulk-data boundary. Migration 0002 and the Python adapter now support snapshot object references and source-record locators. This is schema/repository groundwork only: object upload/download, immutable manifest publication, bounded streaming ingestion, COPY-based staging, resumable checkpoints, and large-data benchmarks are not implemented yet.
+
+| Concern | Current state | Next evidence |
+|---|---|---|
+| Bulk object identity | Migration 0002 adds snapshot object URI/version/format | Verify migration on disposable PostGIS |
+| Source feature locator | Source record supports compact JSON or object locator | Test real GeoParquet/other reader locators |
+| Storage formats | Workload-specific formats documented | Select formats from actual road/raster/point-cloud use cases |
+| Streaming ingestion | Architecture specified, not implemented | Build bounded reader and retry-safe batch runner |
+| Database bulk load | Not implemented | COPY-based staging and set-based merge |
+| Scale validation | No large-data benchmarks | Benchmark regional/national road-network slices |
+
 ## Existing computation principles
 
 - Capability contracts are canonical and engine-independent; implementations are registered separately.
