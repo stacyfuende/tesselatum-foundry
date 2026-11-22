@@ -11,6 +11,7 @@ from tessellatum_foundry.sources import (
     SourceIntegrityError,
     SourceLimitExceeded,
 )
+from tessellatum_foundry.validation.contracts import ContractRegistry
 
 
 def reference(path: Path, **kwargs) -> ExternalDataReference:
@@ -91,3 +92,13 @@ def test_reference_rejects_invalid_checksum() -> None:
             uri="https://example.test/roads",
             checksum_sha256="not-a-digest",
         )
+
+
+def test_external_reference_matches_canonical_schema(tmp_path: Path) -> None:
+    source = tmp_path / "roads.parquet"
+    source.write_bytes(b"fixture")
+    reference_value = reference(source, media_type="application/vnd.apache.parquet")
+
+    ContractRegistry().validate(
+        "external-data-reference.schema.json", reference_value.to_dict()
+    )
