@@ -11,6 +11,7 @@ The repository already contains a substantial contracts-first spatial computatio
 **Initial spatial information model:** [Entity, source, observation, representation, and relationship model](docs/SPATIAL_INFORMATION_MODEL.md)  
 **Initial database migrations:** [PostgreSQL/PostGIS migrations](db/README.md)  
 **Large-data architecture:** [Storage and processing architecture](docs/STORAGE_AND_PROCESSING_ARCHITECTURE.md)  
+**Object storage adapter:** [Streaming object storage package](src/tessellatum_foundry/storage/)  
 **Python information adapter:** [PostGIS repository package](src/tessellatum_foundry/information/)
 
 ## Architectural layers
