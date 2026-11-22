@@ -21,7 +21,7 @@ These planes are logically separate even if early deployment runs them in one re
 ## Data lifecycle
 
 1. **Capture:** stream provider bytes to a temporary object key while computing SHA-256 and byte count. Do not load the entire file into memory.
-2. **Seal:** finalize an immutable object version and write a snapshot manifest containing source identity, checksum, size, media type, format, CRS declarations, time range, and license/rights declarations.
+2. **Seal:** finalize an immutable object version and write a snapshot manifest containing source identity, required SHA-256 checksum, size, media type, format, CRS declarations, time range, and license/rights declarations.
 3. **Register:** create the source snapshot record with its durable object URI/version. A snapshot is not considered available until its object checksum has been verified.
 4. **Inspect:** read metadata and sample/scan the source using streaming/windowed readers. Record schema, CRS, geometry type, extent, counts where available, and inspection evidence.
 5. **Transform:** process bounded features/tiles/windows. Write curated partitions to temporary object keys; never accumulate an entire national extract in RAM.
