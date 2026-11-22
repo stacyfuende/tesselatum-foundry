@@ -27,10 +27,10 @@ Foundry is Tessellatum's spatial computation infrastructure. It makes spatial da
 
 | Concern | Intended behavior | Status |
 |---|---|---|
-| Source access | Adapters connect to local files, customer storage, APIs and databases | Protocol not yet implemented |
-| Bounded reads | Window, stream, paginate or push down filters; never require whole-source loading | Not yet implemented as a shared contract |
-| Source identity | Record provider/dataset/resource identity and available version/checksum/ETag | Run provenance extension pending |
-| Credentials | Scoped runtime injection; never persist secrets in definitions or logs | Security design and implementation pending |
+| Source access | Provider-neutral `SourceAdapter` protocol and `LocalFileSourceAdapter` implemented | Remote/provider adapters and Run input integration pending |
+| Bounded reads | Local adapter streams bounded byte chunks and enforces optional byte budgets | Format-aware feature windows, pagination and provider-side pushdown pending |
+| Source identity | `ExternalDataReference` records provider/dataset/resource URI and optional version/ETag/SHA-256 evidence | Run provenance and cache-key integration pending |
+| Credentials | Source references reject URI userinfo, query strings and fragments | Scoped runtime credential injection and authorization policy pending |
 | Source custody | Remains with provider/customer by default | Architectural rule |
 | Snapshots | Optional customer-controlled snapshot, not mandatory Foundry ingestion | Policy only; no snapshot service planned as core |
 
