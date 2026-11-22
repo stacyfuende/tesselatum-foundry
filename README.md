@@ -7,7 +7,9 @@ Foundry's primary responsibility is to make spatial information persistently ide
 The repository already contains a substantial contracts-first spatial computation system. That work is retained as Foundry's computation and transformation layer; it is not the whole definition of Foundry.
 
 **Strategic direction:** [Foundry reorientation](docs/FOUNDRY_REORIENTATION.md)  
-**Project vision:** [Unified spatial information infrastructure](docs/PROJECT_VISION.md)
+**Project vision:** [Unified spatial information infrastructure](docs/PROJECT_VISION.md)  
+**Initial spatial information model:** [Entity, source, observation, representation, and relationship model](docs/SPATIAL_INFORMATION_MODEL.md)  
+**Initial database migration:** [PostgreSQL/PostGIS migration 0001](db/migrations/0001_spatial_information_core.sql)
 
 ## Architectural layers
 
@@ -25,6 +27,10 @@ The first end-to-end milestone will preserve a source snapshot, assign durable F
 
 Foundry 0.1 is not a universal global database, a new desktop GIS, a general arbitrary-code execution service, or an autonomous AI system. It should begin as a small, testable system with one PostgreSQL/PostGIS database, one API, object storage when required, and background workers where needed.
 
+## Initial information model status
+
+The first PostGIS migration and data-model specification are present on the reorientation branch. They are **proposed and not yet runtime-verified**. They do not alter the existing filesystem Artifact, definition, or Run stores. See [ADR-045](docs/decisions/045-spatial-information-core.md).
+
 ## Existing computation foundation
 
 The current computation subsystem is implemented around these concepts:
@@ -39,7 +45,7 @@ The current computation subsystem is implemented around these concepts:
 
 The current repository includes JSON Schema and semantic validation, vector.buffer and vector.reproject implementations, Shapely/PostGIS conformance, immutable Cell and Recipe definition storage, isolated Docker execution, sequential mixed-capability Recipe execution, a local Python SDK, a read-only Recipe viewer, deterministic caching, and authenticated remote worker transport.
 
-This is valuable infrastructure, but it is not yet the persistent geographic entity platform described by the new direction. The authenticated multi-tenant network API, generated client SDK, persistent entity/observation model, and production service boundary remain to be built.
+This is valuable infrastructure, but it is not yet the persistent geographic entity platform described by the new direction. The authenticated multi-tenant network API, generated client SDK, persistent entity/observation repositories, ingestion pipeline, and production service boundary remain to be built.
 
 ## Current computation status
 
@@ -99,11 +105,12 @@ Open [viewer/index.html](viewer/index.html) in a browser, then paste a canonical
 
 1. [Foundry reorientation](docs/FOUNDRY_REORIENTATION.md) — the new architectural direction and first end-to-end milestone.
 2. [Project vision](docs/PROJECT_VISION.md) — the role of Foundry in Tessellatum's unified spatial information infrastructure.
-3. [Project status](docs/PROJECT_STATUS.md) — current implementation, open work, verification gates, and hand-off notes.
-4. [Architecture](ARCHITECTURE.md) — current computation architecture; subject to alignment with the reorientation.
-5. [Decision register](docs/decisions/README.md) — accepted technical decisions and their rationale.
-6. [Schemas](schema/) — current computation contracts.
-7. [v0.1 acceptance criteria](tests/acceptance/README.md).
+3. [Spatial information model](docs/SPATIAL_INFORMATION_MODEL.md) — initial persistent entity and provenance model.
+4. [Project status](docs/PROJECT_STATUS.md) — current implementation, open work, verification gates, and hand-off notes.
+5. [Architecture](ARCHITECTURE.md) — current computation architecture; subject to alignment with the reorientation.
+6. [Decision register](docs/decisions/README.md) — accepted technical decisions and their rationale.
+7. [Schemas](schema/) — current computation contracts.
+8. [v0.1 acceptance criteria](tests/acceptance/README.md).
 
 ## Development principles
 
