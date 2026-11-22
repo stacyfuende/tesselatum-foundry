@@ -8,13 +8,15 @@ The spatial information core uses PostgreSQL and PostGIS. Its first migration is
 - PostGIS 3.3 or newer recommended.
 - A database role permitted to create the PostGIS extension and schema objects.
 
-## Apply the initial migration
+## Apply migrations in order
 
 Use a disposable database first:
 
 ```bash
 psql "$FOUNDRY_DATABASE_URL" -v ON_ERROR_STOP=1 \
   -f db/migrations/0001_spatial_information_core.sql
+psql "$FOUNDRY_DATABASE_URL" -v ON_ERROR_STOP=1 \
+  -f db/migrations/0002_bulk_object_storage_boundary.sql
 ```
 
 ## Python repository adapter
@@ -46,6 +48,14 @@ Use `add_representation` with WKB bytes and an explicit positive SRID. The adapt
 
 The first adapter exposes focused writes for entities, source datasets/snapshots/records, source crosswalks, observations, representations, and relationships, plus exact entity lookup. It is an initial persistence interface—not yet a complete ingestion pipeline, query API, authentication boundary, or production service.
 
+## Large source data
+
+Migration 0002 adds durable object references to source snapshots and lets a source record contain either compact inline JSON or a locator into the immutable snapshot object. For large data, upload and checksum the source object first, register its stable object URI/version, then store feature/row locators rather than copying full geometries into JSONB.
+
+The object URI must not contain credentials or expiring signed query parameters. Store only non-secret storage metadata in the database. Migration 0002 is additive and preserves existing inline source-record payloads.
+
+See [storage and processing architecture](../docs/STORAGE_AND_PROCESSING_ARCHITECTURE.md) and [ADR-046](../docs/decisions/046-bulk-geospatial-storage.md).
+
 ## Run the integration smoke test
 
 After applying the migration:
@@ -57,7 +67,7 @@ psql "$FOUNDRY_DATABASE_URL" -v ON_ERROR_STOP=1 \
 
 The test creates representative source, entity, observation, representation, and relationship records inside a transaction and rolls them back. It checks source-key uniqueness, same-entity representation supersession, positive geometry SRIDs, and the GiST geometry index.
 
-These SQL files have not yet been executed against a live PostgreSQL/PostGIS instance. Do not mark the migration verified until both commands complete successfully on a disposable database.
+Apply both migrations before running the SQL smoke tests. The migration 0001 SQL file has not yet been executed against a live PostgreSQL/PostGIS instance; migration 0002 and its new storage-boundary test are also unverified. Do not mark the migration verified until both commands complete successfully on a disposable database.
 
 ## Migration discipline
 
