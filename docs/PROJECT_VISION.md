@@ -1,102 +1,79 @@
 # Project vision
 
-**Status:** Proposed strategic direction — Foundry spatial information infrastructure  
+**Status:** Current strategic direction  
 **Date:** 2026-11-22
 
 ## The ambition
 
 Tessellatum's north star is **unified infrastructure for spatial data**.
 
-Tessellatum Foundry is the engineering foundation for that ambition: a system through which spatial information can be acquired, preserved, identified, structured, versioned, connected, queried, transformed, validated, and served to applications and people.
+Tessellatum Foundry is the computational foundation for that ambition. It makes spatial data usable across providers, formats, engines, workflows, applications and teams. It supplies the contracts and runtime through which spatial operations can be declared, composed, executed, validated and reproduced.
 
-The objective is larger than running GIS algorithms. Spatial information must remain meaningful and usable across datasets, providers, time periods, computational engines, applications, and teams. Foundry therefore needs both a persistent information foundation and a governed computation system.
+The ambition is not to centralize every spatial dataset. The world's spatial data is too large, distributed, dynamic, licensed and operationally diverse for a single platform to own sensibly. Foundry should connect to data where it already lives and make it computable.
 
 ## What Foundry owns
 
-Foundry owns the operational lifecycle of spatial information and the reusable computation that acts on it.
+- Versioned, engine-independent spatial Capability contracts.
+- Conformant implementations across suitable computational engines.
+- Declarative Geo-Cells and composable Recipe graphs.
+- Execution planning, worker dispatch and resource controls.
+- Run lifecycle, immutable provenance and retry history.
+- Independent validation and methodological evidence.
+- Definitions, execution records, cache metadata and derived Artifacts.
+- Stable APIs and SDKs for products, analysts and other software.
 
-Its responsibilities include:
+Foundry does not own source datasets by default. Source providers, customers or their chosen storage systems retain custody, access control and retention responsibility.
 
-- durable identity for geographic and modeled entities;
-- source records, observations, assertions, and provenance;
-- versioned geometries, attributes, and representations;
-- typed spatial, network, and domain relationships;
-- temporal history and explicit uncertainty;
-- ingestion, reconciliation, and source-to-entity crosswalks;
-- spatial querying, retrieval, and interoperable exports;
-- versioned computational capabilities and implementations;
-- reproducible workflows, execution records, and validation evidence;
-- stable service interfaces for applications, analysts, and agents.
+## What Foundry does with external data
 
-Foundry does not assume that one source is authoritative, one geometry is the entity, one observation is the truth, or one successful computation proves suitability.
+Foundry connects to local, customer-controlled or provider-hosted sources. It resolves the requested data, checks access and metadata, reads bounded windows or streams into workers, and records source references and reproducibility evidence. It should use provider-side filtering and query pushdown where possible.
 
-## The conceptual model
+If a source cannot provide an immutable version or checksum, Foundry records that limitation rather than pretending that a URL is a reproducible snapshot. Customers may choose to retain snapshots under their own storage policy. Foundry does not silently mirror entire datasets.
 
-The information model distinguishes:
-- **Geographic entity:** the thing being represented.
-- **Observation:** a source-backed assertion about an entity.
-- **Representation:** a versioned geometry or attribute depiction.
-- **Source record:** what an upstream source supplied.
-- **Artifact:** an immutable payload or file.
-- **Relationship:** a typed connection between entities or records.
-- **Capability:** a versioned contract for a computation.
-- **Geo-Cell:** a declarative instance of a computation.
-- **Recipe:** a versioned composition of computations.
-- **Run:** an immutable execution attempt and its lineage.
-- **Validation evidence:** a record of what was assessed and what remains unknown.
+## The computational model
 
-These concepts have different identities and lifecycles. They must not be collapsed into one universal record type.
+- **Capability:** a versioned contract defining an operation's semantics and constraints.
+- **Implementation:** a replaceable engine-specific realization that passes conformance.
+- **Geo-Cell:** a declarative, versioned instance of a computation.
+- **Recipe:** a directed graph composing Geo-Cells and their data dependencies.
+- **Run:** an immutable execution attempt with resolved inputs, outputs and lineage.
+- **Artifact:** an immutable computational input or output payload managed under an explicit policy.
+- **Validation Report:** evidence about the exact subject assessed, including limitations and unknowns.
+- **External Data Reference:** a locator and provenance description for source data that remains outside Foundry's custody.
 
-## Architectural layers
+These concepts have different identities and lifecycles. A source reference is not a source copy; an Artifact is not a geographic entity; and a successful Run is not proof of authoritative inputs or universal suitability.
 
-1. **Spatial information core:** identity, versions, observations, representations, relationships, temporal state, and provenance.
-2. **Ingestion and reconciliation:** source registration, import, normalization, entity matching, conflict handling, and controlled acceptance of information.
-3. **Spatial query and services:** entity retrieval, spatial search, history, relationship traversal, and exports.
-4. **Computation and transformation:** Capabilities, Geo-Cells, Recipes, Runs, workers, Artifacts, and independent validation.
-5. **Application and agent interfaces:** products, APIs, SDKs, analytical tools, and optional AI-assisted workflows.
+## Architecture
 
-The current repository's contracts-first computation system is a substantial foundation for layer four. It remains valuable, but it is no longer the entire definition of Foundry.
+1. **Control plane:** contracts, definitions, graph validation, source resolution, authorization, scheduling, Run lifecycle, provenance and cache decisions.
+2. **Compute plane:** isolated workers, capability implementations, bounded data reads, temporary scratch, output staging and resource accounting.
+3. **External data plane:** providers, customer databases, object stores, local files and query services that retain ownership of their data.
+4. **Artifact plane:** optional storage for definitions, execution evidence, cache entries and derived outputs under explicit lifecycle policies.
+5. **Application interfaces:** APIs, SDKs, products, analytical tools and optional agents.
 
-## First bounded proof: road-network information
-
-Foundry should prove its persistent information model in one bounded domain before attempting universal coverage.
-
-The initial domain is road networks, with a small entity vocabulary such as RoadSegment, Junction, and RoadNetwork. The first study area and source set will be chosen after inspecting available data and the methods already documented in Spatial Methods.
-
-The first end-to-end system should preserve an imported source snapshot, assign durable Foundry identities, maintain source crosswalks, store versioned geometries and attributes, represent network relationships, retain conflicting observations, expose query/history/provenance APIs, and export reproducible snapshots.
-
-A computation using the existing Recipe and Run machinery should then demonstrate lineage from source records through entity versions to derived outputs.
+The planes describe responsibilities; they do not require a distributed deployment.
 
 ## Relationship to Spatial Methods and products
 
-**Spatial Methods** is the knowledge and methods foundation: mathematical and theoretical foundations, data acquisition, algorithms, implementations, and recipes.
+**Spatial Methods** is the knowledge and methods repository: theory, algorithms, acquisition methods, implementations, experiments and tested recipes.
 
-**Foundry** is the operational infrastructure that persists and connects spatial information and executes governed computations.
+**Foundry** is the computational substrate that makes those methods executable, composable, testable and reusable against external spatial data.
 
-**Tessellatum products** solve specific customer problems using these capabilities. They should consume Foundry services where doing so creates real value; they should not be forced to adopt the entire platform.
+**Tessellatum products** solve specific customer problems. They should consume Foundry capabilities when doing so creates real value, not be forced to adopt every platform feature.
 
 ## Principles
 
-1. Preserve original source material and human-authored inputs.
-2. Separate identity from geometry, observations, and files.
-3. Never silently overwrite information or erase provenance.
-4. Distinguish valid time from recorded time where the domain requires it.
-5. Make uncertainty, missing evidence, and source limitations visible.
-6. Separate data validity, computational correctness, methodological suitability, positional accuracy, and legal permission.
-7. Keep computation explicit, versioned, and reproducible.
-8. Keep AI outside the trusted core; AI may propose, explain, and assist, but cannot silently rewrite source information or bypass validation.
-9. Prefer one well-bounded vertical slice over a universal platform design.
-10. Scale infrastructure only when workload, reliability, or customer demand requires it.
+1. External data stays external by default.
+2. Read only what a computation needs; prefer streaming, windows, pagination and pushdown.
+3. Never silently copy, mutate or claim ownership of source data.
+4. Record source identity, version evidence, query parameters and limitations.
+5. Separate data validity, computational correctness, methodological suitability, accuracy, authority and legal permission.
+6. Keep computation explicit, versioned and reproducible.
+7. Validate outputs independently before artifact registration or cache reuse.
+8. Keep AI optional and outside the trusted execution core.
+9. Build one useful vertical workflow before generalizing.
+10. Scale compute and artifact storage based on measured workloads and customer requirements.
 
 ## What this vision does not claim
 
-Foundry does not yet provide a universal global spatial database, complete digital twin, fully federated execution fabric, autonomous spatial agent, production marketplace, or production-grade multi-tenant hosted service. These are not prerequisites for the first useful system.
-
-## Source of truth
-
-- [Foundry reorientation](FOUNDRY_REORIENTATION.md) defines the proposed architecture and first milestone.
-- [Project status](PROJECT_STATUS.md) records implemented behavior and verification evidence.
-- [Architecture](../ARCHITECTURE.md) and [decision records](decisions/README.md) describe current technical constraints and why they exist.
-- Capability contracts, tests, pull requests, and release evidence establish what actually works.
-
-The vision describes direction; it does not override implementation evidence.
+Foundry is not yet a production-grade multi-tenant service, universal connector fabric, federated query engine, general-purpose GIS replacement, global data warehouse or autonomous spatial agent. These are not prerequisites for proving the computational foundation.
