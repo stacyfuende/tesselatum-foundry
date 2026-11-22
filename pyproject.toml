@@ -24,6 +24,10 @@ shapely = [
 postgis = [
   "psycopg[binary]>=3.2,<4",
 ]
+raster = [
+  "numpy>=1.26,<3",
+  "rasterio>=1.4,<2",
+]
 
 [tool.setuptools.packages.find]
 where = ["src"]
@@ -32,9 +36,11 @@ where = ["src"]
 "share/tessellatum-foundry/schema" = ["schema/*.schema.json"]
 "share/tessellatum-foundry/capabilities/vector.buffer" = ["capabilities/vector.buffer/1.0.0.json"]
 "share/tessellatum-foundry/capabilities/vector.reproject" = ["capabilities/vector.reproject/1.0.0.json"]
+"share/tessellatum-foundry/capabilities/raster.band_statistics" = ["capabilities/raster.band_statistics/1.0.0.json"]
 "share/tessellatum-foundry/implementations/vector.buffer/shapely" = ["implementations/vector.buffer/shapely/1.0.0.json"]
 "share/tessellatum-foundry/implementations/vector.buffer/postgis" = ["implementations/vector.buffer/postgis/1.0.0.json"]
 "share/tessellatum-foundry/implementations/vector.reproject/pyproj-shapely" = ["implementations/vector.reproject/pyproj-shapely/1.0.0.json"]
+"share/tessellatum-foundry/implementations/raster.band_statistics/rasterio" = ["implementations/raster.band_statistics/rasterio/1.0.0.json"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
