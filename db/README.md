@@ -63,9 +63,11 @@ After applying the migration:
 ```bash
 psql "$FOUNDRY_DATABASE_URL" -v ON_ERROR_STOP=1 \
   -f db/tests/0001_spatial_information_core.sql
+psql "$FOUNDRY_DATABASE_URL" -v ON_ERROR_STOP=1 \
+  -f db/tests/0002_bulk_object_storage_boundary.sql
 ```
 
-The test creates representative source, entity, observation, representation, and relationship records inside a transaction and rolls them back. It checks source-key uniqueness, same-entity representation supersession, positive geometry SRIDs, and the GiST geometry index.
+The migration 0001 test creates representative source, entity, observation, representation, and relationship records inside a transaction and rolls them back. It checks source-key uniqueness, same-entity representation supersession, positive geometry SRIDs, and the GiST geometry index. The migration 0002 test checks both compact inline payloads and object locators, including rejection of missing or ambiguous payload forms.
 
 Apply both migrations before running the SQL smoke tests. The migration 0001 SQL file has not yet been executed against a live PostgreSQL/PostGIS instance; migration 0002 and its new storage-boundary test are also unverified. Do not mark the migration verified until both commands complete successfully on a disposable database.
 
