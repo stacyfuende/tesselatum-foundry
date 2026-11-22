@@ -15,6 +15,8 @@ ALTER TABLE foundry.source_snapshot
         CHECK (jsonb_typeof(storage_options) = 'object'),
     ADD CONSTRAINT source_snapshot_object_uri_nonblank
         CHECK (object_uri IS NULL OR length(btrim(object_uri)) > 0),
+    ADD CONSTRAINT source_snapshot_object_checksum_required
+        CHECK (object_uri IS NULL OR checksum_hex IS NOT NULL),
     ADD CONSTRAINT source_snapshot_storage_format_nonblank
         CHECK (storage_format IS NULL OR length(btrim(storage_format)) > 0);
 
