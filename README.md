@@ -9,7 +9,8 @@ The repository already contains a substantial contracts-first spatial computatio
 **Strategic direction:** [Foundry reorientation](docs/FOUNDRY_REORIENTATION.md)  
 **Project vision:** [Unified spatial information infrastructure](docs/PROJECT_VISION.md)  
 **Initial spatial information model:** [Entity, source, observation, representation, and relationship model](docs/SPATIAL_INFORMATION_MODEL.md)  
-**Initial database migration:** [PostgreSQL/PostGIS migration 0001](db/migrations/0001_spatial_information_core.sql)
+**Initial database migration:** [PostgreSQL/PostGIS migration 0001](db/migrations/0001_spatial_information_core.sql)  
+**Python information adapter:** [PostGIS repository package](src/tessellatum_foundry/information/)
 
 ## Architectural layers
 
@@ -45,7 +46,7 @@ The current computation subsystem is implemented around these concepts:
 
 The current repository includes JSON Schema and semantic validation, vector.buffer and vector.reproject implementations, Shapely/PostGIS conformance, immutable Cell and Recipe definition storage, isolated Docker execution, sequential mixed-capability Recipe execution, a local Python SDK, a read-only Recipe viewer, deterministic caching, and authenticated remote worker transport.
 
-This is valuable infrastructure, but it is not yet the persistent geographic entity platform described by the new direction. The authenticated multi-tenant network API, generated client SDK, persistent entity/observation repositories, ingestion pipeline, and production service boundary remain to be built.
+This is valuable infrastructure, but it is not yet the persistent geographic entity platform described by the new direction. The first optional PostgreSQL information repository adapter now exists on the reorientation branch. The authenticated multi-tenant network API, generated client SDK, ingestion pipeline, and production service boundary remain to be built.
 
 ## Current computation status
 
