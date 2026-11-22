@@ -89,30 +89,46 @@ class PostgresInformationStore:
         checksum_hex: str | None = None, captured_at: Any | None = None,
         source_uri: str | None = None, media_type: str | None = None,
         byte_size: int | None = None, metadata: dict[str, Any] | None = None,
+        object_uri: str | None = None, object_version: str | None = None,
+        storage_format: str | None = None,
+        storage_options: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         """Record one captured state of a source dataset."""
         return self._one(
             """INSERT INTO foundry.source_snapshot
                    (source_dataset_id, snapshot_key, captured_at, source_uri,
-                    checksum_hex, media_type, byte_size, metadata)
-               VALUES (%s, %s, %s, %s, %s, %s, %s, %s) RETURNING *""",
+                    checksum_hex, media_type, byte_size, metadata, object_uri,
+                    object_version, storage_format, storage_options)
+               VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+               RETURNING *""",
             (source_dataset_id, snapshot_key, captured_at, source_uri,
-             checksum_hex, media_type, byte_size, self._json(metadata or {})),
+             checksum_hex, media_type, byte_size, self._json(metadata or {}),
+             object_uri, object_version, storage_format,
+             self._json(storage_options or {})),
         )
 
     def insert_source_record(
         self, *, source_snapshot_id: str, source_record_key: str,
-        payload: dict[str, Any], source_layer: str | None = None,
-        source_ordinal: int | None = None, payload_checksum: str | None = None,
+        payload: dict[str, Any] | None = None, payload_ref: dict[str, Any] | None = None,
+        source_layer: str | None = None, source_ordinal: int | None = None,
+        payload_checksum: str | None = None,
     ) -> dict[str, Any]:
-        """Preserve a provider row/feature as received, without assigning identity."""
+        """Preserve a compact payload or a locator into the immutable source object.
+
+        Exactly one of payload and payload_ref is required by migration 0002.
+        Large feature bodies belong in object storage, not duplicated in JSONB.
+        """
+        if (payload is None) == (payload_ref is None):
+            raise ValueError("Provide exactly one of payload or payload_ref.")
         return self._one(
             """INSERT INTO foundry.source_record
                    (source_snapshot_id, source_record_key, source_layer,
-                    source_ordinal, payload, payload_checksum)
-               VALUES (%s, %s, %s, %s, %s, %s) RETURNING *""",
-            (source_snapshot_id, source_record_key, source_layer,
-             source_ordinal, self._json(payload), payload_checksum),
+                    source_ordinal, payload, payload_ref, payload_checksum)
+               VALUES (%s, %s, %s, %s, %s, %s, %s) RETURNING *""",
+            (source_snapshot_id, source_record_key, source_layer, source_ordinal,
+             self._json(payload) if payload is not None else None,
+             self._json(payload_ref) if payload_ref is not None else None,
+             payload_checksum),
         )
 
     def link_source_record(
