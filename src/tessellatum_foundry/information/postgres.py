@@ -94,6 +94,8 @@ class PostgresInformationStore:
         storage_options: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         """Record one captured state of a source dataset."""
+        if object_uri is not None and not checksum_hex:
+            raise ValueError("checksum_hex is required when object_uri is provided.")
         return self._one(
             """INSERT INTO foundry.source_snapshot
                    (source_dataset_id, snapshot_key, captured_at, source_uri,
