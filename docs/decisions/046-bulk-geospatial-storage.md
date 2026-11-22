@@ -16,7 +16,7 @@ The architecture therefore needs a deliberate split between bulk bytes and the i
 
 Adopt a provider-neutral, object-first storage architecture with PostGIS as the operational spatial information index and transaction store.
 
-1. **Object storage is the durable bulk-data plane.** Preserve original source snapshots and large derived datasets as immutable objects. Use S3-compatible APIs initially, without coupling domain contracts to one vendor. Store object URI, object version/generation where available, media/storage format, byte size, SHA-256 checksum, and non-secret storage metadata.
+1. **Object storage is the durable bulk-data plane.** Preserve original source snapshots and large derived datasets as immutable objects. Use S3-compatible APIs initially, without coupling domain contracts to one vendor. Store object URI, object version/generation where available, media/storage format, byte size, required SHA-256 checksum, and non-secret storage metadata.
 2. **PostgreSQL/PostGIS is the information and serving index.** Store stable entity IDs, source dataset/snapshot metadata, compact source-record locators, source crosswalks, observations, entity relationships, selected queryable geometries, and spatial indexes. Do not treat it as the universal blob store.
 3. **Use columnar geospatial formats for bulk analytical interchange.** Prefer GeoParquet/Parquet for large vector batches and tabular analytical scans; use Cloud Optimized GeoTIFF for suitable raster access; use COPC/LAZ for point clouds; use PMTiles or tiled object layouts for distribution when appropriate. Format choice is workload-specific, not a universal canonical format.
 4. **Separate preservation, curation, and serving.**
