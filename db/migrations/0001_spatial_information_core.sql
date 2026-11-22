@@ -89,7 +89,7 @@ CREATE TABLE foundry.entity_source_link (
     CHECK (
         (link_state = 'proposed' AND decided_at IS NULL)
         OR
-        (link_state <> 'proposed' AND decided_at IS NOT NULL)
+        (link_state <> 'proposed' AND decided_at IS NOT NULL AND decided_by IS NOT NULL)
     )
 );
 
@@ -110,12 +110,14 @@ CREATE TABLE foundry.observation (
     assertion jsonb NOT NULL,
     confidence numeric(5,4)
         CHECK (confidence IS NULL OR confidence BETWEEN 0 AND 1),
-    supersedes_observation_id uuid
-        REFERENCES foundry.observation(observation_id) ON DELETE RESTRICT,
+    supersedes_observation_id uuid,
     provenance jsonb NOT NULL DEFAULT '{}'::jsonb,
     CHECK (jsonb_typeof(assertion) = 'object'),
     CHECK (jsonb_typeof(provenance) = 'object'),
-    CHECK (valid_time IS NULL OR NOT isempty(valid_time))
+    CHECK (valid_time IS NULL OR NOT isempty(valid_time)),
+    UNIQUE (observation_id, entity_id),
+    FOREIGN KEY (supersedes_observation_id, entity_id)
+        REFERENCES foundry.observation(observation_id, entity_id) ON DELETE RESTRICT
 );
 
 CREATE INDEX observation_entity_recorded_idx
@@ -128,22 +130,25 @@ CREATE TABLE foundry.entity_representation (
     entity_id uuid NOT NULL
         REFERENCES foundry.entity(entity_id) ON DELETE RESTRICT,
     representation_version integer NOT NULL CHECK (representation_version > 0),
-    observation_id uuid
-        REFERENCES foundry.observation(observation_id) ON DELETE RESTRICT,
+    observation_id uuid,
     geometry geometry(Geometry) NOT NULL,
     attributes jsonb NOT NULL DEFAULT '{}'::jsonb,
     valid_time tstzrange,
     recorded_at timestamptz NOT NULL DEFAULT now(),
     recorded_by text NOT NULL CHECK (length(btrim(recorded_by)) > 0),
-    supersedes_representation_id uuid
-        REFERENCES foundry.entity_representation(representation_id) ON DELETE RESTRICT,
+    supersedes_representation_id uuid,
     metadata jsonb NOT NULL DEFAULT '{}'::jsonb,
     UNIQUE (entity_id, representation_version),
+    UNIQUE (representation_id, entity_id),
     CHECK (ST_SRID(geometry) > 0),
     CHECK (NOT ST_IsEmpty(geometry)),
     CHECK (jsonb_typeof(attributes) = 'object'),
     CHECK (jsonb_typeof(metadata) = 'object'),
-    CHECK (valid_time IS NULL OR NOT isempty(valid_time))
+    CHECK (valid_time IS NULL OR NOT isempty(valid_time)),
+    FOREIGN KEY (observation_id, entity_id)
+        REFERENCES foundry.observation(observation_id, entity_id) ON DELETE RESTRICT,
+    FOREIGN KEY (supersedes_representation_id, entity_id)
+        REFERENCES foundry.entity_representation(representation_id, entity_id) ON DELETE RESTRICT
 );
 
 CREATE INDEX entity_representation_entity_version_idx
@@ -160,15 +165,16 @@ CREATE TABLE foundry.entity_relationship (
     relationship_type text NOT NULL CHECK (length(btrim(relationship_type)) > 0),
     object_entity_id uuid NOT NULL
         REFERENCES foundry.entity(entity_id) ON DELETE RESTRICT,
-    observation_id uuid
-        REFERENCES foundry.observation(observation_id) ON DELETE RESTRICT,
+    observation_id uuid,
     valid_time tstzrange,
     recorded_at timestamptz NOT NULL DEFAULT now(),
     recorded_by text NOT NULL CHECK (length(btrim(recorded_by)) > 0),
     metadata jsonb NOT NULL DEFAULT '{}'::jsonb,
     CHECK (subject_entity_id <> object_entity_id),
     CHECK (jsonb_typeof(metadata) = 'object'),
-    CHECK (valid_time IS NULL OR NOT isempty(valid_time))
+    CHECK (valid_time IS NULL OR NOT isempty(valid_time)),
+    FOREIGN KEY (observation_id, subject_entity_id)
+        REFERENCES foundry.observation(observation_id, entity_id) ON DELETE RESTRICT
 );
 
 CREATE INDEX entity_relationship_subject_idx
