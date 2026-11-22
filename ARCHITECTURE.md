@@ -32,7 +32,7 @@ The v0.1 objective is narrower: establish a dependable spatial computation engin
 
 An Artifact is a logical data object with one or more immutable versions. A version identifies a specific content snapshot and carries its checksum, media type, storage reference, metadata, spatial characteristics where applicable, and rights information.
 
-The same artifact version can be consumed by many cells and recipes. A computation does not own or mutate its input artifact. An artifact reference MUST identify both artifact ID and version. A moving alias such as latest is not a resolved run input.
+The same artifact version can be consumed by many cells and recipes. A computation does not own or mutate its input artifact. An artifact reference MUST identify both artifact ID and version. A moving alias such as latest is not a resolved run input. Artifact persistence is for computational inputs/outputs deliberately registered with Foundry; it does not imply that upstream datasets must be copied into Foundry.
 
 ### 3.2 Capability
 
@@ -82,7 +82,15 @@ A Validation Report is an evidence object produced by a validator. It identifies
 
 Finding statuses distinguish passed, failed, warning, not_assessed, and requires_review. An overall report MUST NOT imply that an unassessed dimension passed.
 
-### 3.7 Capability implementation
+### 3.7 External Data Reference
+
+An External Data Reference identifies a provider-controlled or customer-controlled resource without taking custody of its bytes. It records the provider and dataset identity, resource URI, optional resource/version/ETag/checksum evidence, media type, retrieval time, and non-secret selection parameters. Credentials MUST be injected at runtime and MUST NOT appear in the URI, Cell/Recipe definitions, Run manifests, or logs.
+
+Source adapters MUST expose bounded access (for example byte streams, windows, pagination, or provider-side query pushdown) and close resources on completion or cancellation. A locator without immutable version evidence is not a reproducible snapshot; the Run MUST record that limitation. Foundry MUST NOT silently mirror a complete external dataset merely to make a Run appear reproducible.
+
+An external reference is not an Artifact copy. A workflow may deliberately materialize a bounded or derived payload as an immutable Artifact when required, subject to explicit retention and access policy.
+
+### 3.8 Capability implementation
 
 A capability implementation is a separately versioned realization of a capability contract. It records engine, runtime, implementation version, supported platforms, resource requirements, and conformance status. It is not the capability itself and is not embedded in a Geo-Cell.
 
@@ -218,8 +226,8 @@ A planner may translate natural language or templates into a proposed Recipe. It
 ## 13. v0.1 demonstrator
 
 The first end-to-end demonstrator will:
-1. ingest a real vector dataset;
-2. create immutable artifact metadata and checksum;
+1. resolve a real vector dataset through an external source adapter or an explicitly supplied immutable Artifact;
+2. record available source version/checksum evidence and any reproducibility limitations without requiring a Foundry-owned source copy;
 3. declare a Geo-Cell using vector.buffer;
 4. compose a valid Recipe;
 5. validate schema, references, graph, and spatial constraints;
