@@ -1,7 +1,7 @@
 # Spatial information core: initial data model
 
 **Status:** Initial implementation contract for Foundry 0.1  
-**Migration:** `db/migrations/0001_spatial_information_core.sql`
+**Migrations:** `db/migrations/0001_spatial_information_core.sql`, then `db/migrations/0002_bulk_object_storage_boundary.sql`
 
 ## Purpose
 
@@ -34,8 +34,8 @@ The model therefore preserves the distinction between valid time and transaction
 
 - `foundry.entity`: stable identity and broad type, initially including RoadSegment, Junction, and RoadNetwork.
 - `foundry.source_dataset`: registered source identity and descriptive/rights declarations.
-- `foundry.source_snapshot`: immutable capture metadata and optional content checksum.
-- `foundry.source_record`: source-native key, source layer/order, and preserved JSON payload for a record.
+- `foundry.source_snapshot`: immutable capture metadata, optional content checksum, and durable object-store URI/version.
+- `foundry.source_record`: source-native key and either compact inline JSON or a locator into the immutable snapshot object; do not duplicate large feature bodies in JSONB.
 - `foundry.entity_source_link`: explicit source-to-entity crosswalk with state, method, confidence, and decision provenance.
 - `foundry.observation`: assertion about an entity, optionally tied to a source record, with observed/valid/recorded time and supersession.
 - `foundry.entity_representation`: versioned geometry and attributes, linked to an observation where available.
@@ -70,6 +70,10 @@ Automated matching may propose links, but ambiguous identity decisions require a
 The intended lifecycle is append-only for source snapshots, source records, observations, representations, and relationships. The initial SQL establishes foreign keys and version keys, but application-level append-only behavior and database-role enforcement are follow-on hardening. Do not claim the initial migration alone prevents a privileged database user from updating or deleting rows.
 
 Entity lifecycle state and proposed/accepted source links are controlled state, not evidence that source history may be overwritten. Any future mutation policy must preserve an audit trail.
+
+## Bulk data boundary
+
+Migration 0002 separates large source bytes from the relational index. The source snapshot stores a durable object URI/version and checksum; each source record can store a compact inline payload or a locator into that object. This preserves exact source access without forcing every feature body into PostgreSQL. See [Storage and processing architecture](STORAGE_AND_PROCESSING_ARCHITECTURE.md) for the object/data, information, and compute planes and the bounded-import model.
 
 ## Deliberate limitations
 
