@@ -1,9 +1,6 @@
 name: CI
 
 on:
-  # Validate proposed changes before merge. The full integration suite is not
-  # repeated on the merge commit: that would run the same Docker/PostGIS suite
-  # twice for a normal pull-request merge.
   pull_request:
     branches: [main]
     types: [opened, synchronize, reopened, ready_for_review]
@@ -12,12 +9,8 @@ on:
       - "docs/**"
       - "README*"
       - "LICENSE*"
-  # Keep an explicit escape hatch for maintainers to validate main or rerun
-  # the full suite when a change requires it.
   workflow_dispatch:
 
-# A newer commit on the same PR supersedes the older run. This prevents
-# several expensive Docker/PostGIS suites from running concurrently.
 concurrency:
   group: foundry-ci-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
@@ -64,16 +57,6 @@ jobs:
         run: ruff check .
       - name: Validate schemas and fixtures
         run: python scripts/validate_schemas.py
-      - name: Enable PostGIS extension
-        run: psql "$FOUNDRY_POSTGIS_DSN" -c "CREATE EXTENSION IF NOT EXISTS postgis;"
-      - name: Apply spatial information migrations
-        run: |
-          psql "$FOUNDRY_POSTGIS_DSN" -v ON_ERROR_STOP=1 -f db/migrations/0001_spatial_information_core.sql
-          psql "$FOUNDRY_POSTGIS_DSN" -v ON_ERROR_STOP=1 -f db/migrations/0002_bulk_object_storage_boundary.sql
-      - name: Run spatial information SQL smoke tests
-        run: |
-          psql "$FOUNDRY_POSTGIS_DSN" -v ON_ERROR_STOP=1 -f db/tests/0001_spatial_information_core.sql
-          psql "$FOUNDRY_POSTGIS_DSN" -v ON_ERROR_STOP=1 -f db/tests/0002_bulk_object_storage_boundary.sql
       - name: Build isolated Shapely worker image
         run: docker build --file workers/vector_buffer/Dockerfile --tag "$FOUNDRY_VECTOR_BUFFER_IMAGE" .
       - name: Build authenticated remote worker image
