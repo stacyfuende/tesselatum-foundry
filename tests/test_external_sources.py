@@ -64,9 +64,8 @@ def test_local_source_verifies_declared_checksum_at_eof(tmp_path: Path) -> None:
     chunks = LocalFileSourceAdapter().iter_chunks(
         reference(source, checksum_sha256=expected), chunk_size=2
     )
-    assert b"".join(chunks) == b"roads"
     with pytest.raises(SourceIntegrityError):
-        list(chunks)
+        b"".join(chunks)
 
 
 def test_reference_rejects_embedded_credentials_and_signed_query() -> None:
