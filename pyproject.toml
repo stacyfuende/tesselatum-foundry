@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "tessellatum-foundry"
 version = "0.1.0"
-description = "Unified spatial information and deterministic spatial computation infrastructure for Tessellatum Foundry."
+description = "Composable, validated and reproducible spatial computation infrastructure."
 requires-python = ">=3.11"
 dependencies = [
   "jsonschema>=4.26,<5",
