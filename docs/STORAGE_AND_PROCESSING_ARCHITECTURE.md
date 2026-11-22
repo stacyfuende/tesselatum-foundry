@@ -73,4 +73,4 @@ Set explicit workload budgets and service objectives, not a free-tier ceiling. K
 
 ## Current implementation boundary
 
-Migration 0002 creates the initial source snapshot object reference and source record locator fields. The Python repository adapter can register these references. Object upload/download, manifests, batch staging/COPY, orchestration, and end-to-end large-data benchmarks are subsequent implementation work; they are not claimed complete by this document.
+Migration 0002 creates the initial source snapshot object reference and source record locator fields. The Python repository adapter can register these references. A bounded-memory S3-compatible streaming uploader now supports single-part and multipart uploads with SHA-256 receipts; it accepts an injected client and leaves credentials/policy to the deployment. Object download, manifest publication, batch staging/COPY, orchestration, and end-to-end large-data benchmarks remain subsequent work.
