@@ -16,13 +16,13 @@ The reorientation branch introduces the first database model in [SPATIAL_INFORMA
 | Component | Current state | Qualification / next step |
 |---|---|---|
 | Entity identity | SQL table proposed | Validate UUID identity and entity type semantics against road-network cases |
-| Source registration and snapshots | SQL tables proposed | Decide immutable object storage integration and snapshot checksum policy |
-| Source records | SQL table proposed | Define import adapters and payload retention/size limits |
+| Source registration and snapshots | Migrations 0001/0002 present; object URI/version and checksum fields added | Runtime-verify migrations; implement object download, manifest publication, and retention policy |
+| Source records | Inline payload or object locator supported by migration 0002 | Implement format-aware feature locators and bounded batch ingestion |
 | Source-to-entity crosswalk | SQL table proposed | Design reconciliation states and split/merge handling |
 | Observations | SQL table proposed | Review temporal semantics and source/user-authored provenance |
 | Spatial representations | PostGIS geometry table and GiST index proposed | Test mixed SRIDs, dimensionality, geometry types, and version lineage |
 | Entity relationships | Typed directed table proposed | Define road topology conventions and validation rules |
-| Repository/API | Not implemented | Build transaction-safe repository layer and service interface |
+| Python repository | Initial optional psycopg adapter added for core writes and entity lookup | Runtime-test against PostGIS; add query/history APIs and ingestion service boundary |
 | Runtime verification | Not run | Apply migration to disposable PostgreSQL/PostGIS and test constraints/indexes |
 
 **Important:** the migration is not yet runtime-verified. Do not apply it to production or claim that the information core is operational. It is additive and does not alter existing filesystem Artifact, definition, or Run stores.
