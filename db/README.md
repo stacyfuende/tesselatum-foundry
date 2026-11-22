@@ -56,6 +56,25 @@ The object URI must not contain credentials or expiring signed query parameters.
 
 See [storage and processing architecture](../docs/STORAGE_AND_PROCESSING_ARCHITECTURE.md) and [ADR-046](../docs/decisions/046-bulk-geospatial-storage.md).
 
+## Stream source objects
+
+The core package includes an S3-compatible streaming uploader that accepts an injected client, so credentials, endpoint configuration, retries, and SDK lifecycle remain with the deployment. It reads bounded chunks, switches to multipart upload for large streams, and returns a SHA-256 checksum, byte count, object URI, and provider version/ETag when supplied:
+
+```python
+from tessellatum_foundry.storage import S3ObjectStore
+
+objects = S3ObjectStore(s3_client, bucket="foundry-data", part_size=16 * 1024 * 1024)
+with open("roads.parquet", "rb") as source:
+    receipt = objects.upload_stream(
+        source,
+        key="landing/import-2026-001/roads.parquet",
+        content_type="application/vnd.apache.parquet",
+    )
+# Register receipt.object_uri and receipt.checksum_sha256 on the source snapshot.
+```
+
+The key must be unique for each immutable snapshot attempt. Enforce versioning/no-overwrite and lifecycle rules in the object-store bucket policy; the adapter does not pretend to enforce cloud IAM or bucket policy.
+
 ## Run the integration smoke test
 
 After applying the migration:
