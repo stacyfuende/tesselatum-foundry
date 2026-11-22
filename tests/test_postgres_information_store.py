@@ -45,7 +45,7 @@ def test_representation_rejects_invalid_geometry_inputs(
         ({"name": "A"}, {"object_uri": "s3://bucket/data.parquet", "feature_id": "A"}),
     ],
 )
-def test_source_record_requires_exactly_one_payload_form(
+def test_source_record_rejects_missing_or_ambiguous_payload_forms(
     payload: dict[str, object] | None,
     payload_ref: dict[str, object] | None,
 ) -> None:
@@ -58,14 +58,3 @@ def test_source_record_requires_exactly_one_payload_form(
             payload_ref=payload_ref,
         )
 
-
-def test_source_record_accepts_object_locator_before_database_access() -> None:
-    store = PostgresInformationStore(connection=object())
-    # Supplying both forms is rejected locally before driver or connection use.
-    with pytest.raises(ValueError, match="exactly one"):
-        store.insert_source_record(
-            source_snapshot_id="00000000-0000-0000-0000-000000000001",
-            source_record_key="record-1",
-            payload={"id": "x"},
-            payload_ref={"object_uri": "s3://bucket/source.parquet", "feature_id": "x"},
-        )
