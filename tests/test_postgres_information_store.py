@@ -58,3 +58,13 @@ def test_source_record_rejects_missing_or_ambiguous_payload_forms(
             payload_ref=payload_ref,
         )
 
+
+
+def test_object_snapshot_requires_checksum_before_database_access() -> None:
+    store = PostgresInformationStore(connection=object())
+    with pytest.raises(ValueError, match="checksum_hex is required"):
+        store.create_source_snapshot(
+            source_dataset_id="00000000-0000-0000-0000-000000000001",
+            snapshot_key="snapshot-1",
+            object_uri="s3://foundry/source.parquet",
+        )
