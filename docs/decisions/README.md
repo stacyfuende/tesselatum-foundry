@@ -48,5 +48,6 @@ This register records decisions that constrain Foundry's architecture. Each deci
 | [042](042-reprojection-operation-evidence.md) | Capture the actual PROJ operation selected by the worker | Accepted |
 | [043](043-reprojection-area-of-use-coverage.md) | Compare geographic input extents with operation area of use | Accepted |
 | [045](045-spatial-information-core.md) | Introduce a persistent PostGIS spatial information core | Proposed |
+| [046](046-bulk-geospatial-storage.md) | Separate bulk geospatial bytes from the PostGIS information index | Proposed |
 
 A decision may be superseded only by a new decision record that explains the change. Do not silently edit an accepted decision to reverse its meaning.
