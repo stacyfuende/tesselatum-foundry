@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:tessellatum-foundry:schema:external-data-reference:1.0.0",
+  "title": "External Data Reference",
+  "description": "A provenance-bearing locator for spatial data whose custody remains outside Foundry.",
+  "type": "object",
+  "required": ["provider", "dataset_id", "uri"],
+  "properties": {
+    "provider": {"type": "string", "minLength": 1},
+    "dataset_id": {"type": "string", "minLength": 1},
+    "resource_id": {"type": "string", "minLength": 1},
+    "uri": {"type": "string", "format": "uri"},
+    "version": {"type": "string", "minLength": 1},
+    "etag": {"type": "string", "minLength": 1},
+    "checksum_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "media_type": {"type": "string", "minLength": 3},
+    "retrieved_at": {"type": "string", "format": "date-time"},
+    "selection": {"type": "object", "additionalProperties": true}
+  },
+  "additionalProperties": false
+}
