@@ -153,8 +153,8 @@ class PostgresInformationStore:
                 (entity_id, source_record_id, observation_kind, observed_at, valid_time,
                  recorded_by, assertion, confidence, supersedes_observation_id, provenance)
                VALUES (%s, %s, %s, %s,
-                 CASE WHEN %s IS NULL AND %s IS NULL THEN NULL
-                      ELSE tstzrange(%s, %s, '[)') END,
+                 CASE WHEN %s::timestamptz IS NULL AND %s::timestamptz IS NULL THEN NULL
+                      ELSE tstzrange(%s::timestamptz, %s::timestamptz, '[)') END,
                  %s, %s, %s, %s, %s) RETURNING *""",
             (entity_id, source_record_id, observation_kind, observed_at,
              lower, upper, lower, upper, recorded_by, self._json(assertion),
@@ -180,8 +180,8 @@ class PostgresInformationStore:
                 (entity_id, representation_version, observation_id, geometry,
                  attributes, valid_time, recorded_by, supersedes_representation_id, metadata)
                VALUES (%s, %s, %s, ST_SetSRID(ST_GeomFromWKB(%s), %s), %s,
-                 CASE WHEN %s IS NULL AND %s IS NULL THEN NULL
-                      ELSE tstzrange(%s, %s, '[)') END, %s, %s, %s)
+                 CASE WHEN %s::timestamptz IS NULL AND %s::timestamptz IS NULL THEN NULL
+                      ELSE tstzrange(%s::timestamptz, %s::timestamptz, '[)') END, %s, %s, %s)
                RETURNING representation_id, entity_id, representation_version,
                  observation_id, ST_SRID(geometry) AS srid, ST_AsBinary(geometry) AS geometry_wkb,
                  attributes, valid_time, recorded_at, recorded_by,
@@ -205,8 +205,8 @@ class PostgresInformationStore:
                 (subject_entity_id, relationship_type, object_entity_id,
                  observation_id, valid_time, recorded_by, metadata)
                VALUES (%s, %s, %s, %s,
-                 CASE WHEN %s IS NULL AND %s IS NULL THEN NULL
-                      ELSE tstzrange(%s, %s, '[)') END, %s, %s) RETURNING *""",
+                 CASE WHEN %s::timestamptz IS NULL AND %s::timestamptz IS NULL THEN NULL
+                      ELSE tstzrange(%s::timestamptz, %s::timestamptz, '[)') END, %s, %s) RETURNING *""",
             (subject_entity_id, relationship_type, object_entity_id, observation_id,
              lower, upper, lower, upper, recorded_by, self._json(metadata or {})),
         )
