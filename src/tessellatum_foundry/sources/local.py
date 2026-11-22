@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import hashlib
 from datetime import UTC, datetime
+from collections.abc import Iterator
 from pathlib import Path
-from typing import Iterator
 from urllib.parse import unquote, urlsplit
 
 from .models import (
