@@ -74,7 +74,8 @@ The current system is a useful local computation platform. It is not yet a produ
 
 1. [Foundry architecture](docs/FOUNDRY_REORIENTATION.md)
 2. [Project vision](docs/PROJECT_VISION.md)
-3. [Current project status](docs/PROJECT_STATUS.md)
+3. [External data source contract](docs/EXTERNAL_DATA_SOURCES.md)
+4. [Current project status](docs/PROJECT_STATUS.md)
 4. [Architecture](ARCHITECTURE.md)
 5. [Decision register](docs/decisions/README.md)
 6. [Schemas](schema/)
