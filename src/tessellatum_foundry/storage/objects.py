@@ -46,6 +46,8 @@ class S3ObjectStore:
     """
 
     MIN_PART_SIZE = 5 * 1024 * 1024
+    MAX_PART_SIZE = 5 * 1024 * 1024 * 1024
+    MAX_PARTS = 10_000
 
     def __init__(self, client: Any, bucket: str, *, part_size: int = 16 * 1024 * 1024):
         if not bucket or not bucket.strip():
@@ -54,6 +56,8 @@ class S3ObjectStore:
             raise TypeError("part_size must be an integer.")
         if part_size < self.MIN_PART_SIZE:
             raise ValueError(f"part_size must be at least {self.MIN_PART_SIZE} bytes.")
+        if part_size > self.MAX_PART_SIZE:
+            raise ValueError(f"part_size must not exceed {self.MAX_PART_SIZE} bytes.")
         self.client = client
         self.bucket = bucket
         self.part_size = part_size
@@ -120,6 +124,10 @@ class S3ObjectStore:
         chunk = first
         try:
             while chunk:
+                if part_number > self.MAX_PARTS:
+                    raise ValueError(
+                        "S3 multipart upload exceeds 10,000 parts; increase part_size."
+                    )
                 digest.update(chunk)
                 byte_size += len(chunk)
                 response = self.client.upload_part(
