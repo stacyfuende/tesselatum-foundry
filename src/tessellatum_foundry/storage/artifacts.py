@@ -162,7 +162,9 @@ class FileSystemArtifactStore:
 
             checksum = digest.hexdigest()
             if expected_checksum_sha256 is not None and checksum != expected_checksum_sha256:
-                raise ArtifactIntegrityError("Staged Artifact checksum does not match the expected checksum.")
+                raise ArtifactIntegrityError(
+                    "Staged Artifact checksum does not match the expected checksum."
+                )
 
             object_key = f"objects/sha256/{checksum[:2]}/{checksum}"
             object_path = self.root / object_key
@@ -183,7 +185,9 @@ class FileSystemArtifactStore:
                         existing_digest.update(chunk)
                         existing_size += len(chunk)
                 if existing_digest.hexdigest() != checksum or existing_size != size_bytes:
-                    raise ArtifactIntegrityError(f"Content-addressed object {checksum} is corrupted.")
+                    raise ArtifactIntegrityError(
+                        f"Content-addressed object {checksum} is corrupted."
+                    )
 
             record: dict[str, Any] = {
                 "artifact_id": artifact_id,
@@ -223,7 +227,8 @@ class FileSystemArtifactStore:
                 )
                 if any(existing.get(field) != record.get(field) for field in stable_fields):
                     raise ImmutableArtifactError(
-                        f"Artifact {artifact_id}@{version} already exists with different content or metadata."
+                        f"Artifact {artifact_id}@{version} already exists with different "
+                        "content or metadata."
                     )
                 return existing
             return record
@@ -265,7 +270,8 @@ class FileSystemArtifactStore:
             or size_bytes != artifact.get("size_bytes")
         ):
             raise ArtifactIntegrityError(
-                f"Artifact {artifact['artifact_id']}@{artifact['version']} failed checksum verification."
+                f"Artifact {artifact['artifact_id']}@{artifact['version']} "
+                "failed checksum verification."
             )
 
     def read_bytes(self, artifact: dict[str, Any]) -> bytes:
