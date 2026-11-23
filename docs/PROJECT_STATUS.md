@@ -61,7 +61,7 @@ The current filesystem Artifact store is a local adapter. A future artifact back
 
 ## Verification status
 
-PR #24 CI run #722 passed on commit `b06ed5fb423bcce0cc20a4606bf1b391f145693b`, including installed-package/schema checks, lint, both worker-image builds and the full Docker/PostGIS test suite. This verifies the batch-worker adapter and its tests. ADR-048 now defines the streamed Artifact transaction boundary; its implementation remains pending.
+PR #24 CI run #722 passed on commit `b06ed5fb423bcce0cc20a4606bf1b391f145693b`, including installed-package/schema checks, lint, both worker-image builds and the full Docker/PostGIS test suite. The provisional streaming writer and transaction tests are newer commits and require fresh CI verification.
 
 For each subsequent commit, record the exact head SHA and final checks. Do not claim a CI pass without a completed successful run on the current head.
 
