@@ -319,7 +319,15 @@ def test_run_records_external_source_evidence_immutably(tmp_path):
     assert runs.get_run(result.run["run_id"])["source_references"] == source_references
 
 
-def test_run_rejects_signed_external_source_urls_before_creation(tmp_path):
+@pytest.mark.parametrize(
+    "uri",
+    [
+        "https://data.example.test/roads?token=secret",
+        "https://user:secret@data.example.test/roads",
+        "https://data.example.test/roads#credentials",
+    ],
+)
+def test_run_rejects_credential_bearing_external_source_urls_before_creation(tmp_path, uri):
     store, runs, service = make_service(tmp_path, WrongCrsWorker())
     input_artifact = make_input(store)
     cell = bind_cell_to_input(input_artifact)
@@ -336,7 +344,7 @@ def test_run_rejects_signed_external_source_urls_before_creation(tmp_path):
                     "reference": {
                         "provider": "customer-catalog",
                         "dataset_id": "roads-current",
-                        "uri": "https://data.example.test/roads?token=secret",
+                        "uri": uri,
                     },
                 }
             ],
