@@ -211,6 +211,68 @@ class RunRepository:
             self._write_atomic(self._run_path(run_id), updated, replace=True)
             return updated
 
+    def reconcile_committed_output(
+        self,
+        run_id: str,
+        *,
+        artifact_store: Any,
+        artifact_id: str,
+        artifact_version: str,
+        output_port: str,
+        validation_report_id: str,
+        resource_usage: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        """Complete a running Run after independently verifying committed output.
+
+        Safe to call after restart: an already-succeeded Run is returned only
+        when its output and validation references exactly match this request.
+        """
+        artifact = artifact_store.get_artifact(artifact_id, artifact_version)
+        artifact_store.verify_artifact(artifact)
+        report = self.get_validation_report(validation_report_id)
+        if (
+            report.get("subject") != {"kind": "run", "id": run_id}
+            or report.get("stage") != "execution_output"
+            or report.get("overall_status") != "passed"
+        ):
+            raise RunStateError("A passing execution-output report for this Run is required.")
+
+        output = {
+            "output_port": output_port,
+            "artifact": {"artifact_id": artifact_id, "version": artifact_version},
+        }
+        current = self.get_run(run_id)
+        if current["status"] == "succeeded":
+            if (
+                current.get("outputs") == [output]
+                and validation_report_id in current.get("validation_report_ids", [])
+            ):
+                return current
+            raise RunStateError("Succeeded Run does not match the committed output being reconciled.")
+        if current["status"] != "running":
+            raise RunStateError("Only a running Run can be reconciled to succeeded.")
+
+        fields: dict[str, Any] = {
+            "finished_at": utc_timestamp(),
+            "outputs": [output],
+            "validation_report_ids": [validation_report_id],
+        }
+        if resource_usage is not None:
+            fields["resource_usage"] = resource_usage
+        return self.transition(
+            run_id,
+            expected_status="running",
+            new_status="succeeded",
+            fields=fields,
+            event_type="run_output_reconciled",
+            event_detail={
+                "artifact_id": artifact_id,
+                "artifact_version": artifact_version,
+                "artifact_checksum_sha256": artifact["checksum"]["value"],
+                "validation_report_id": validation_report_id,
+            },
+        )
+
     def save_validation_report(self, report: dict[str, Any]) -> dict[str, Any]:
         self.contracts.validate("validation-report.schema.json", report)
         path = self._report_path(report["report_id"])
