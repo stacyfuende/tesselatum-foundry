@@ -39,10 +39,10 @@ def _atomic_json(path: Path, value: dict[str, Any]) -> None:
 
 
 class StreamingFeatureCollectionTransaction:
-    """Append verified processed batches to a private, bounded staging file.
+    """Stage, validate and publish streamed derived FeatureCollection output.
 
-    The file is a provisional GeoJSON FeatureCollection, not a published
-    Artifact. Only one writer is supported per transaction in this process.
+    Staging remains private until a validated transaction publishes an
+    immutable Artifact. Only one writer is supported per transaction in this process.
     """
 
     def __init__(
@@ -97,6 +97,19 @@ class StreamingFeatureCollectionTransaction:
     @property
     def state(self) -> str:
         return self._state
+
+    @property
+    def run_id(self) -> str:
+        return self._record["run_id"]
+
+    @property
+    def attempt(self) -> int:
+        return self._record["attempt"]
+
+    @property
+    def artifact_identity(self) -> dict[str, str] | None:
+        identity = self._record.get("published_artifact") or self._record.get("publication_intent")
+        return dict(identity) if isinstance(identity, dict) else None
 
     def append(self, batch: Any) -> None:
         with self._lock:
