@@ -307,7 +307,7 @@ class StreamingFeatureCollectionTransaction:
         root: Path,
         transaction_id: str,
         artifact_store: Any,
-    ) -> "StreamingFeatureCollectionTransaction":
+    ) -> StreamingFeatureCollectionTransaction:
         """Reconcile a journal after process restart without guessing at resume.
 
         A durable matching Artifact metadata record proves publication committed,
