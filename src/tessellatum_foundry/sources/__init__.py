@@ -14,7 +14,11 @@ from .models import (
     SourceLimitExceeded,
 )
 from .protocols import FeatureReader, SourceAdapter
-from .readers import FeatureReaderError, NdjsonFeatureReader
+from .readers import (
+    FeatureReaderError,
+    GeoJsonFeatureCollectionReader,
+    NdjsonFeatureReader,
+)
 from .stream import ExternalFeatureStreamError, iter_external_feature_batches
 
 __all__ = [
@@ -25,6 +29,7 @@ __all__ = [
     "FeatureReader",
     "FeatureReaderError",
     "ExternalFeatureStreamError",
+    "GeoJsonFeatureCollectionReader",
     "LocalFileSourceAdapter",
     "NdjsonFeatureReader",
     "SourceAdapter",
