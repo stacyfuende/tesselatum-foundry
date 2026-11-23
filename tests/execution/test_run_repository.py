@@ -182,3 +182,48 @@ def test_run_creation_sequence_continues_after_repository_reopen(tmp_path):
     second = reopened.create_queued_run(run_id="run:after-reopen", **common)
 
     assert second["creation_sequence"] == 2
+
+
+def test_external_source_evidence_is_persisted_and_immutable(tmp_path):
+    repository = RunRepository(tmp_path)
+    source_references = [
+        {
+            "input_port": "features",
+            "reference": {
+                "provider": "customer-catalog",
+                "dataset_id": "roads-current",
+                "uri": "https://data.example.test/roads",
+                "version": "2026-11-22",
+                "media_type": "application/geo+json",
+            },
+        }
+    ]
+    queued = repository.create_queued_run(
+        run_id="run:external-source-evidence",
+        cell={"cell_id": "buffer-buildings", "version": "1.0.0"},
+        capability={"capability_id": "vector.buffer", "version": "1.0.0"},
+        input_snapshots=[
+            {
+                "input_port": "features",
+                "artifact": {"artifact_id": "dataset.buildings", "version": "1.0.0"},
+                "checksum": _DIGEST,
+            }
+        ],
+        normalized_parameters={"distance": 100, "unit": "metre"},
+        source_references=source_references,
+    )
+
+    assert queued["source_references"] == source_references
+    with pytest.raises(RunStateError, match="source_references.*immutable"):
+        repository.transition(
+            queued["run_id"],
+            expected_status="queued",
+            new_status="failed",
+            fields={
+                "source_references": [],
+                "finished_at": utc_timestamp(),
+                "error": {"code": "test.failure", "message": "test"},
+            },
+            event_type="run_failed",
+        )
+    assert repository.get_run(queued["run_id"]) == queued
