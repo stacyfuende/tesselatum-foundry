@@ -7,6 +7,9 @@ from copy import deepcopy
 from typing import Any
 from urllib.parse import urlsplit
 
+from pyproj import CRS
+from pyproj.exceptions import CRSError
+
 from tessellatum_foundry.execution.capabilities import CapabilityRegistry, CapabilityRegistryError
 from tessellatum_foundry.execution.runs import RunRepository
 from tessellatum_foundry.execution.service import ExecutionPreconditionError, VectorBufferRunService
@@ -113,6 +116,23 @@ class ExternalVectorBufferRunFactory:
                 "External source geometry types exceed the Capability input contract."
             )
         parameters = VectorBufferRunService._normalize_parameters(cell, canonical)
+        try:
+            source_crs = self._resolve_crs(spatial["crs"])
+            measurement_crs = self._resolve_crs(cell["constraints"]["measurement_crs"])
+        except (CRSError, KeyError, TypeError, ValueError) as error:
+            raise ExecutionPreconditionError(
+                "External source and measurement CRS declarations must be resolvable."
+            ) from error
+        if not measurement_crs.is_projected or not source_crs.equals(
+            measurement_crs, ignore_axis_order=True
+        ):
+            raise ExecutionPreconditionError(
+                "vector.buffer requires the external source CRS to match its projected measurement CRS."
+            )
+        if parameters.get("single_sided", False) and declared_types != {"LineString"}:
+            raise ExecutionPreconditionError(
+                "Single-sided vector.buffer requires only LineString source geometry."
+            )
         source_references = [{
             "input_port": "features",
             "reference": reference,
