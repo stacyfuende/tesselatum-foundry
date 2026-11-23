@@ -11,6 +11,7 @@ from tessellatum_foundry.sources import (
     LocalFileSourceAdapter,
     SourceIntegrityError,
     SourceLimitExceeded,
+    iter_external_feature_batches,
 )
 from tessellatum_foundry.sources.readers import FeatureReaderError
 from tessellatum_foundry.validation.contracts import ContractRegistry
@@ -109,7 +110,7 @@ def test_external_reference_matches_canonical_schema(tmp_path: Path) -> None:
 def test_geojson_feature_collection_reader_handles_arbitrary_chunk_boundaries() -> None:
     payload = (
         b'{"type":"FeatureCollection","features":['
-        b'{"type":"Feature","properties":{"name":"caf\xc3\xa9"},"geometry":null},'
+        b'{"type":"Feature","properties":{"name":"caf\\xc3\\xa9"},"geometry":null},'
         b'{"type":"Feature","properties":{"n":2},"geometry":null}]}'
     )
     chunks = (payload[index : index + 3] for index in range(0, len(payload), 3))
@@ -170,3 +171,31 @@ def test_geojson_reader_rejects_selection() -> None:
                 selection={"bbox": [0, 0, 1, 1]},
             )
         )
+
+
+def test_external_geojson_source_flows_into_bounded_feature_batches(tmp_path: Path) -> None:
+    source = tmp_path / "roads.geojson"
+    source.write_bytes(
+        b'{"type":"FeatureCollection","features":['
+        b'{"type":"Feature","properties":{"id":1},"geometry":null},'
+        b'{"type":"Feature","properties":{"id":2},"geometry":null}]}'
+    )
+    ref = reference(
+        source,
+        media_type="application/vnd.tessellatum.spatial-feature-collection+json",
+    )
+
+    batches = list(
+        iter_external_feature_batches(
+            ref,
+            adapter=LocalFileSourceAdapter(),
+            reader=GeoJsonFeatureCollectionReader(),
+            chunk_size=7,
+            max_batch_features=1,
+            max_batch_bytes=1024,
+        )
+    )
+
+    assert [batch.sequence for batch in batches] == [0, 1]
+    assert [batch.first_feature_offset for batch in batches] == [0, 1]
+    assert [batch.feature_count for batch in batches] == [1, 1]
