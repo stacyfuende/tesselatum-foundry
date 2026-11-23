@@ -110,7 +110,7 @@ def test_external_reference_matches_canonical_schema(tmp_path: Path) -> None:
 def test_geojson_feature_collection_reader_handles_arbitrary_chunk_boundaries() -> None:
     payload = (
         b'{"type":"FeatureCollection","features":['
-        b'{"type":"Feature","properties":{"name":"caf\\xc3\\xa9"},"geometry":null},'
+        b'{"type":"Feature","properties":{"name":"caf\xc3\xa9"},"geometry":null},'
         b'{"type":"Feature","properties":{"n":2},"geometry":null}]}'
     )
     chunks = (payload[index : index + 3] for index in range(0, len(payload), 3))
