@@ -1,6 +1,6 @@
 # External spatial data sources
 
-**Status:** External source adapter and Run provenance contracts implemented. Bounded feature-batch transport is implemented as a standalone primitive; direct external worker execution remains pending.
+**Status:** External source adapter, Run provenance, incremental NDJSON reader and bounded feature-batch pipeline implemented. Direct external worker execution remains pending.
 
 Foundry does not take custody of source datasets by default. A source reference identifies where data lives and records the evidence available to reproduce access. An adapter describes and reads that resource without requiring it to be copied into the Foundry Artifact store.
 
@@ -46,4 +46,32 @@ for batch in iter_feature_batches(feature_reader.iter_features(source), max_feat
     process_bounded_batch(batch.payload, batch.checksum_sha256)
 ```
 
-This is a transport primitive, not yet an end-to-end streaming execution path. It does not implement format readers, provider pagination/window queries, restartable source cursors, worker dispatch, streaming output writers, or Run-level checkpoint/retry semantics. In particular, the current `vector.buffer` Run service still resolves and parses a complete Artifact before invoking its whole-FeatureCollection worker. Run records retain validated source references alongside immutable Artifact snapshots; retries preserve identical source evidence. Direct bounded worker input, authorization and source-aware cache keys remain future integration gates.
+`NdjsonFeatureReader` is the first concrete incremental format reader. It decodes one GeoJSON Feature per line, handles chunk boundaries and CRLF, caps individual record size, preserves order, and rejects non-empty selections because it does not implement filtering or query pushdown. `iter_external_feature_batches` composes the source adapter, reader and batcher into a single lazy pipeline.
+
+Example:
+
+```python
+from tessellatum_foundry.sources import (
+    ExternalDataReference,
+    LocalFileSourceAdapter,
+    NdjsonFeatureReader,
+    iter_external_feature_batches,
+)
+
+source = ExternalDataReference(
+    provider="customer-filesystem",
+    dataset_id="roads.ndjson",
+    uri=roads_path.as_uri(),
+    media_type="application/x-ndjson",
+)
+for batch in iter_external_feature_batches(
+    source,
+    adapter=LocalFileSourceAdapter(),
+    reader=NdjsonFeatureReader(),
+    max_batch_features=2_000,
+    max_batch_bytes=16 * 1024 * 1024,
+):
+    stage_batch_for_worker(batch.payload, batch.checksum_sha256)
+```
+
+This is a bounded source-to-batch data path, not yet a complete Run execution path. Adapters and readers are lazy; the pipeline does not warehouse the source. A source checksum is verified only when the byte stream reaches EOF, so consumers MUST stage provisional batch results and MUST NOT publish output Artifacts or mark a Run successful until the iterator is exhausted without error. The current `vector.buffer` Run service still resolves and parses a complete Artifact before invoking its whole-FeatureCollection worker. Provider pagination/window pushdown, restartable source cursors, batch-aware worker dispatch, streaming output writers, Run-level checkpoint/retry semantics, runtime authorization and source-aware cache keys remain future integration gates.
