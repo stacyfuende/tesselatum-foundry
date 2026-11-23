@@ -26,6 +26,7 @@ class ProcessedFeatureBatch:
     input_checksum_sha256: str
     payload: bytes
     output_checksum_sha256: str
+    output_crs: dict[str, Any]
     duration_ms: int
     runtime_image_digest: str
 
@@ -134,6 +135,7 @@ class VectorBufferBatchExecutor:
             input_checksum_sha256=batch.checksum_sha256,
             payload=payload,
             output_checksum_sha256=hashlib.sha256(payload).hexdigest(),
+            output_crs=result.crs,
             duration_ms=result.duration_ms,
             runtime_image_digest=result.runtime_image_digest,
         )
