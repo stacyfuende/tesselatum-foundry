@@ -229,6 +229,12 @@ class RunRepository:
         """
         artifact = artifact_store.get_artifact(artifact_id, artifact_version)
         artifact_store.verify_artifact(artifact)
+        current = self.get_run(run_id)
+        if (
+            artifact.get("metadata", {}).get("producer_run_id") != run_id
+            or artifact.get("metadata", {}).get("producer_run_attempt") != current["attempt"]
+        ):
+            raise RunStateError("Artifact producer identity does not match this Run attempt.")
         report = self.get_validation_report(validation_report_id)
         if (
             report.get("subject") != {"kind": "run", "id": run_id}
@@ -241,7 +247,6 @@ class RunRepository:
             "output_port": output_port,
             "artifact": {"artifact_id": artifact_id, "version": artifact_version},
         }
-        current = self.get_run(run_id)
         if current["status"] == "succeeded":
             if (
                 current.get("outputs") == [output]
