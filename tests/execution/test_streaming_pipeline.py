@@ -115,7 +115,6 @@ def make_batch(sequence: int = 0, offset: int = 0) -> FeatureBatch:
         feature_count=1,
         payload=payload,
         checksum_sha256=hashlib.sha256(payload).hexdigest(),
-        byte_size=len(payload),
     )
 
 
