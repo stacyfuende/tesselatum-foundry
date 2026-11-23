@@ -89,7 +89,10 @@ class _IncrementalJson:
                     ) from error
                 # An error before the final buffered character cannot be fixed
                 # by appending more bytes and is therefore malformed JSON.
-                if self.eof or error.pos < len(self.buffer) - 1:
+                if self.eof or (
+                    error.pos < len(self.buffer) - 1
+                    and not error.msg.startswith("Unterminated string")
+                ):
                     raise FeatureReaderError(f"{label} is malformed JSON.") from error
                 self._read_more()
 
