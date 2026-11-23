@@ -71,6 +71,7 @@ class StreamingVectorBufferPipeline:
         output_port: str,
         created_by: str,
         output_crs: dict[str, Any],
+        media_type: str = "application/geo+json",
         rights: dict[str, Any] | None = None,
         metadata: dict[str, Any] | None = None,
     ) -> StreamingExecutionResult:
@@ -82,11 +83,20 @@ class StreamingVectorBufferPipeline:
             "version": capability_version,
         }:
             raise RunStateError("Run Capability does not match the streaming worker contract.")
-        if not isinstance(source_completion, dict):
-            raise StreamingTransactionError("Source completion evidence must be an object.")
-        if "eof_verified" in source_completion:
+        safe_completion_fields = {
+            "provider",
+            "dataset_id",
+            "resource_id",
+            "version",
+            "etag",
+            "checksum_sha256",
+            "media_type",
+            "byte_count",
+            "source_modified_at",
+        }
+        if not isinstance(source_completion, dict) or set(source_completion) - safe_completion_fields:
             raise StreamingTransactionError(
-                "EOF verification is established by exhausting the source iterator, not caller input."
+                "Source completion evidence contains unsupported or potentially sensitive fields."
             )
 
         batch_count = 0
@@ -158,7 +168,7 @@ class StreamingVectorBufferPipeline:
                 output_port=output_port,
                 validation_report_id=report["report_id"],
                 created_by=created_by,
-                media_type="application/vnd.tessellatum.spatial-feature-collection+json",
+                media_type=media_type,
                 format_name="geojson",
                 spatial={
                     "kind": "vector",
