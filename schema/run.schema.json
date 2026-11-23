@@ -163,6 +163,23 @@
         ]
       }
     },
+    "source_references": {
+      "type": "array",
+      "description": "External provider/customer resources that contributed to the declared input snapshots; references do not imply that Foundry stores source bytes.",
+      "items": {
+        "type": "object",
+        "required": ["input_port", "reference"],
+        "properties": {
+          "input_port": {
+            "$ref": "urn:tessellatum-foundry:schema:common:1.0.0#/$defs/identifier"
+          },
+          "reference": {
+            "$ref": "urn:tessellatum-foundry:schema:external-data-reference:1.0.0"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
     "normalized_parameters": {
       "type": "object",
       "additionalProperties": true
