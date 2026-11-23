@@ -1,8 +1,4 @@
-"""Private bounded staging for streamed derived FeatureCollection outputs.
-
-This is deliberately not an Artifact publisher. A later commit step must verify
-source EOF evidence and independent whole-output validation before publication.
-"""
+"""Private bounded staging and recoverable publication for streamed outputs."""
 from __future__ import annotations
 
 import hashlib
@@ -250,6 +246,99 @@ class StreamingFeatureCollectionTransaction:
             self._persist()
             self._state = "committed"
             return artifact
+
+    @classmethod
+    def recover(
+        cls,
+        root: Path,
+        transaction_id: str,
+        artifact_store: Any,
+    ) -> "StreamingFeatureCollectionTransaction":
+        """Reconcile a journal after process restart without guessing at resume.
+
+        A durable matching Artifact metadata record proves publication committed,
+        even if the process died before the final journal update. All other
+        nonterminal states are aborted; batch-level resume is intentionally not
+        attempted because the current journal is not a durable source checkpoint.
+        """
+        directory = Path(root).resolve() / "staging" / transaction_id
+        journal_path = directory / "journal.json"
+        payload_path = directory / "output.geojson"
+        if not journal_path.is_file():
+            raise FileNotFoundError("Streaming transaction journal was not found.")
+        try:
+            record = json.loads(journal_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as error:
+            raise StreamingTransactionError("Streaming transaction journal is unreadable.") from error
+        if record.get("transaction_id") != transaction_id:
+            raise StreamingTransactionError("Transaction journal identity does not match its directory.")
+
+        transaction = cls.__new__(cls)
+        transaction.root = Path(root).resolve()
+        transaction.transaction_id = transaction_id
+        transaction.directory = directory
+        transaction.payload_path = payload_path
+        transaction.journal_path = journal_path
+        transaction._stream = None
+        transaction._lock = threading.Lock()
+        transaction._bytes = record.get("staged_bytes", 0)
+        transaction._feature_count = record.get("feature_count", 0)
+        transaction._next_sequence = record.get("next_batch_sequence", 0)
+        transaction._next_offset = record.get("next_feature_offset", 0)
+        transaction._max_output_bytes = record.get("max_output_bytes", 0)
+        transaction._max_batches = record.get("max_batches", 0)
+        transaction._has_feature = transaction._feature_count > 0
+        transaction._record = record
+        transaction._state = record.get("state")
+
+        if transaction._state in _TERMINAL:
+            if transaction._state == "committed":
+                transaction._verify_committed_artifact(artifact_store)
+            return transaction
+
+        intent = record.get("publication_intent")
+        if intent is not None:
+            try:
+                artifact = artifact_store.get_artifact(
+                    intent["artifact_id"], intent["version"]
+                )
+            except FileNotFoundError:
+                artifact = None
+            if artifact is not None:
+                expected = record.get("output_checksum_sha256")
+                if (
+                    artifact.get("checksum", {}).get("value") != expected
+                    or artifact.get("size_bytes") != record.get("staged_bytes")
+                ):
+                    raise StreamingTransactionError(
+                        "Published Artifact does not match the transaction journal."
+                    )
+                transaction._record.update({
+                    "state": "committed",
+                    "published_artifact": intent,
+                    "published_checksum_sha256": expected,
+                })
+                transaction._persist()
+                transaction._state = "committed"
+                return transaction
+
+        transaction.abort("recovery.incomplete_or_unpublished")
+        return transaction
+
+    def _verify_committed_artifact(self, artifact_store: Any) -> None:
+        identity = self._record.get("published_artifact") or self._record.get("publication_intent")
+        if not isinstance(identity, dict):
+            raise StreamingTransactionError("Committed transaction has no Artifact identity.")
+        try:
+            artifact = artifact_store.get_artifact(identity["artifact_id"], identity["version"])
+        except FileNotFoundError as error:
+            raise StreamingTransactionError("Committed transaction Artifact metadata is missing.") from error
+        if (
+            artifact.get("checksum", {}).get("value") != self._record.get("published_checksum_sha256")
+            or artifact.get("checksum", {}).get("value") != self._record.get("output_checksum_sha256")
+            or artifact.get("size_bytes") != self._record.get("staged_bytes")
+        ):
+            raise StreamingTransactionError("Committed Artifact metadata fails transaction reconciliation.")
 
     def abort(self, reason_code: str) -> None:
         with self._lock:
