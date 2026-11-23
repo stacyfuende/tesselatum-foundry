@@ -38,10 +38,22 @@ class ExternalVectorBufferRunFactory:
 
     @staticmethod
     def _resolve_crs(value: Any) -> CRS:
-        """Resolve a declared CRS using pyproj without guessing missing values."""
-        if not isinstance(value, (str, int)) or isinstance(value, bool):
-            raise ValueError("CRS must be an authority string or integer EPSG code.")
-        return CRS.from_user_input(value)
+        """Resolve the CRS object used by the Geo-Cell contract."""
+        if isinstance(value, dict):
+            authority = value.get("authority")
+            code = value.get("code")
+            if (
+                not isinstance(authority, str)
+                or not authority.strip()
+                or not isinstance(code, (str, int))
+                or isinstance(code, bool)
+                or not str(code).strip()
+            ):
+                raise ValueError("CRS authority objects require a valid authority and code.")
+            return CRS.from_authority(authority, str(code))
+        if isinstance(value, (str, int)) and not isinstance(value, bool):
+            return CRS.from_user_input(value)
+        raise ValueError("CRS must be an authority object, authority string, or integer code.")
 
     def create_queued_run(
         self,
