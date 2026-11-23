@@ -18,6 +18,7 @@ from .protocol import (
 from .batches import BatchExecutionError, ProcessedFeatureBatch, VectorBufferBatchExecutor
 from .remote_worker import RemoteVectorBufferWorker, RemoteVectorReprojectWorker
 from .runs import RunRepository, RunStateError
+from .streaming import StreamingFinalizationResult, StreamingRunFinalizer
 from .service import (
     ExecutionPreconditionError,
     ExecutionResult,
@@ -47,6 +48,8 @@ __all__ = [
     "RemoteVectorBufferWorker",
     "RemoteVectorReprojectWorker",
     "RunRepository",
+    "StreamingFinalizationResult",
+    "StreamingRunFinalizer",
     "SpatialWorkerIdentity",
     "RunStateError",
     "VectorBufferBatchExecutor",
