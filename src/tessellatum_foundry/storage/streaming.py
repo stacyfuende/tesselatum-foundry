@@ -54,7 +54,13 @@ class StreamingFeatureCollectionTransaction:
         max_output_bytes: int,
         max_batches: int,
     ) -> None:
-        if not isinstance(run_id, str) or not run_id or isinstance(attempt, bool) or not isinstance(attempt, int) or attempt < 1:
+        if (
+            not isinstance(run_id, str)
+            or not run_id
+            or isinstance(attempt, bool)
+            or not isinstance(attempt, int)
+            or attempt < 1
+        ):
             raise ValueError("A Run ID and positive attempt are required.")
         if max_output_bytes < 1 or max_batches < 1:
             raise ValueError("Transaction limits must be positive.")
@@ -120,7 +126,9 @@ class StreamingFeatureCollectionTransaction:
             payload = getattr(batch, "payload", None)
             expected_checksum = getattr(batch, "output_checksum_sha256", None)
             if sequence != self._next_sequence or offset != self._next_offset:
-                raise StreamingTransactionError("Batch sequence or feature offset is not contiguous.")
+                raise StreamingTransactionError(
+                    "Batch sequence or feature offset is not contiguous."
+                )
             if isinstance(count, bool) or not isinstance(count, int) or count < 1:
                 raise StreamingTransactionError("Batch feature count is invalid.")
             if self._record["batch_count"] >= self._max_batches:
@@ -135,12 +143,25 @@ class StreamingFeatureCollectionTransaction:
             except (UnicodeDecodeError, json.JSONDecodeError) as error:
                 raise StreamingTransactionError("Processed batch is not valid JSON.") from error
             features = collection.get("features") if isinstance(collection, dict) else None
-            if not isinstance(collection, dict) or collection.get("type") != "FeatureCollection" or not isinstance(features, list) or len(features) != count:
+            if (
+                not isinstance(collection, dict)
+                or collection.get("type") != "FeatureCollection"
+                or not isinstance(features, list)
+                or len(features) != count
+            ):
                 raise StreamingTransactionError("Batch payload does not match its feature count.")
             encoded = []
             for feature in features:
                 try:
-                    encoded.append(json.dumps(feature, ensure_ascii=False, allow_nan=False, sort_keys=True, separators=(",", ":")).encode("utf-8"))
+                    encoded.append(
+                        json.dumps(
+                            feature,
+                            ensure_ascii=False,
+                            allow_nan=False,
+                            sort_keys=True,
+                            separators=(",", ":"),
+                        ).encode("utf-8")
+                    )
                 except (TypeError, ValueError) as error:
                     raise StreamingTransactionError("Feature is not finite JSON.") from error
             addition = (b"," if self._has_feature else b"") + b",".join(encoded)
@@ -165,8 +186,13 @@ class StreamingFeatureCollectionTransaction:
     def seal_input(self, source_completion: dict[str, Any]) -> None:
         with self._lock:
             self._require("open")
-            if not isinstance(source_completion, dict) or source_completion.get("eof_verified") is not True:
-                raise StreamingTransactionError("Source EOF and integrity verification are required.")
+            if (
+                not isinstance(source_completion, dict)
+                or source_completion.get("eof_verified") is not True
+            ):
+                raise StreamingTransactionError(
+                    "Source EOF and integrity verification are required."
+                )
             self._record["source_completion"] = source_completion
             self._state = "input_sealed"
             self._record["state"] = self._state
@@ -200,8 +226,13 @@ class StreamingFeatureCollectionTransaction:
     def mark_validated(self, validation_evidence: dict[str, Any]) -> dict[str, Any]:
         with self._lock:
             self._require("output_sealed")
-            if not isinstance(validation_evidence, dict) or validation_evidence.get("passed") is not True:
-                raise StreamingTransactionError("Passing whole-output validation evidence is required.")
+            if (
+                not isinstance(validation_evidence, dict)
+                or validation_evidence.get("passed") is not True
+            ):
+                raise StreamingTransactionError(
+                    "Passing whole-output validation evidence is required."
+                )
             self._state = "validated"
             self._record["state"] = self._state
             self._record["validation_evidence"] = validation_evidence
@@ -234,14 +265,18 @@ class StreamingFeatureCollectionTransaction:
             identity = {"artifact_id": artifact_id, "version": version}
             previous_intent = self._record.get("publication_intent")
             if previous_intent is not None and previous_intent != identity:
-                raise StreamingTransactionError("Publication retry must preserve Artifact identity.")
+                raise StreamingTransactionError(
+                    "Publication retry must preserve Artifact identity."
+                )
             self._record["publication_intent"] = identity
             self._persist()
 
             artifact_metadata = dict(metadata or {})
             run_id = self._record["run_id"]
             if artifact_metadata.get("producer_run_id", run_id) != run_id:
-                raise StreamingTransactionError("Artifact metadata cannot reference a different producer Run.")
+                raise StreamingTransactionError(
+                    "Artifact metadata cannot reference a different producer Run."
+                )
             artifact_metadata["producer_run_id"] = run_id
             artifact_metadata["producer_run_attempt"] = self._record["attempt"]
             artifact = artifact_store.put_file(
@@ -294,9 +329,13 @@ class StreamingFeatureCollectionTransaction:
         try:
             record = json.loads(journal_path.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError) as error:
-            raise StreamingTransactionError("Streaming transaction journal is unreadable.") from error
+            raise StreamingTransactionError(
+                "Streaming transaction journal is unreadable."
+            ) from error
         if record.get("transaction_id") != transaction_id:
-            raise StreamingTransactionError("Transaction journal identity does not match its directory.")
+            raise StreamingTransactionError(
+                "Transaction journal identity does not match its directory."
+            )
 
         transaction = cls.__new__(cls)
         transaction.root = Path(root).resolve()
@@ -335,7 +374,8 @@ class StreamingFeatureCollectionTransaction:
                     artifact.get("checksum", {}).get("value") != expected
                     or artifact.get("size_bytes") != record.get("staged_bytes")
                     or artifact.get("metadata", {}).get("producer_run_id") != record.get("run_id")
-                    or artifact.get("metadata", {}).get("producer_run_attempt") != record.get("attempt")
+                    or artifact.get("metadata", {}).get("producer_run_attempt")
+                    != record.get("attempt")
                 ):
                     raise StreamingTransactionError(
                         "Published Artifact does not match the transaction journal."
@@ -360,15 +400,22 @@ class StreamingFeatureCollectionTransaction:
         try:
             artifact = artifact_store.get_artifact(identity["artifact_id"], identity["version"])
         except FileNotFoundError as error:
-            raise StreamingTransactionError("Committed transaction Artifact metadata is missing.") from error
+            raise StreamingTransactionError(
+                "Committed transaction Artifact metadata is missing."
+            ) from error
         if (
-            artifact.get("checksum", {}).get("value") != self._record.get("published_checksum_sha256")
-            or artifact.get("checksum", {}).get("value") != self._record.get("output_checksum_sha256")
+            artifact.get("checksum", {}).get("value")
+            != self._record.get("published_checksum_sha256")
+            or artifact.get("checksum", {}).get("value")
+            != self._record.get("output_checksum_sha256")
             or artifact.get("size_bytes") != self._record.get("staged_bytes")
             or artifact.get("metadata", {}).get("producer_run_id") != self._record.get("run_id")
-            or artifact.get("metadata", {}).get("producer_run_attempt") != self._record.get("attempt")
+            or artifact.get("metadata", {}).get("producer_run_attempt")
+            != self._record.get("attempt")
         ):
-            raise StreamingTransactionError("Committed Artifact metadata fails transaction reconciliation.")
+            raise StreamingTransactionError(
+                "Committed Artifact metadata fails transaction reconciliation."
+            )
         artifact_store.verify_artifact(artifact)
 
     def abort(self, reason_code: str) -> None:
@@ -383,7 +430,9 @@ class StreamingFeatureCollectionTransaction:
 
     def _require(self, expected: str) -> None:
         if self._state != expected:
-            raise StreamingTransactionError(f"Transaction is {self._state!r}, expected {expected!r}.")
+            raise StreamingTransactionError(
+                f"Transaction is {self._state!r}, expected {expected!r}."
+            )
 
     def _persist(self) -> None:
         _atomic_json(self.journal_path, self._record)
