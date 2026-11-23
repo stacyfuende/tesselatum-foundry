@@ -6,7 +6,7 @@ import hashlib
 import json
 import re
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 from tessellatum_foundry.execution.batches import ProcessedFeatureBatch
@@ -50,7 +50,7 @@ class StreamingVectorValidationReport:
             "subject": {"kind": "run", "id": run_id},
             "stage": "execution_output",
             "overall_status": "passed" if passed else "failed",
-            "created_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+            "created_at": datetime.now(UTC).isoformat().replace("+00:00", "Z"),
             "validator": {
                 "name": "foundry-spatial-streaming-output-critic",
                 "version": "0.1.0",
