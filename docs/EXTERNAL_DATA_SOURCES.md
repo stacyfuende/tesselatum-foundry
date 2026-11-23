@@ -1,6 +1,6 @@
 # External spatial data sources
 
-**Status:** External source adapter, Run provenance, incremental NDJSON reader, bounded feature-batch pipeline, batch-aware worker bridge, provisional output staging and local streamed Artifact publication are implemented. Direct external Run orchestration, independent whole-output validation integration and Run/Artifact reconciliation remain pending.
+**Status:** External source adapter, Run provenance, incremental NDJSON reader, bounded feature-batch pipeline, batch-aware worker bridge, per-batch independent output critic, provisional output staging, local streamed Artifact publication and Run finalization/reconciliation primitives are implemented. Direct external-source Run orchestration and production source adapters remain pending.
 
 Foundry does not take custody of source datasets by default. A source reference identifies where data lives and records the evidence available to reproduce access. An adapter describes and reads that resource without requiring it to be copied into the Foundry Artifact store.
 
@@ -23,9 +23,13 @@ This is a byte-stream boundary, not a universal feature model or query engine. F
 
 ## Batch worker bridge
 
-`VectorBufferBatchExecutor` adapts the existing `vector.buffer` worker protocol to one bounded `FeatureBatch` at a time. Before dispatch it verifies the input payload checksum, sequence/offset/count metadata and FeatureCollection shape. It pins the runtime image identity, rejects worker outputs with a different feature count, canonicalizes the output payload and records its checksum alongside the original batch offset and sequence.
+`VectorBufferBatchExecutor` adapts the existing `vector.buffer` worker protocol to one bounded `FeatureBatch` at a time. Before dispatch it verifies the input payload checksum, sequence/offset/count metadata and FeatureCollection shape. It pins the runtime image identity, rejects worker outputs with a different feature count, canonicalizes the output payload and records its checksum, worker-reported CRS, original batch offset and sequence.
 
-This adapter is deliberately not a Run executor. It does not publish Artifacts, checkpoint progress, aggregate a complete output, or transition a Run. It is a tested worker boundary that can be composed into a future streaming lifecycle without changing the existing whole-Artifact worker contract.
+This adapter is deliberately not a Run executor. It does not publish Artifacts, checkpoint progress, or transition a Run. It is a tested worker boundary that can be composed into a streaming lifecycle without changing the existing whole-Artifact worker contract.
+
+## Bounded independent output validation
+
+`VectorBufferStreamingValidator` validates each paired input/output batch with the existing independent `vector.buffer` critic, using the worker-reported output CRS rather than assuming the declared CRS was honored. It aggregates findings, geometry types, feature counts and worker duration while retaining no complete FeatureCollection. It rejects missing/reordered batches, offset/count mismatches, altered input/output checksums, and worker-image changes. An empty stream cannot pass. This supplies a bounded validation primitive; the caller must still exhaust and verify the source iterator and pass the aggregate report into the transaction validation gate.
 
 ## Integrity and publication boundary
 
@@ -36,9 +40,9 @@ The current `vector.buffer` Run service still resolves and parses a complete Art
 ## Remaining integration gates
 
 - Direct external source inputs in Run orchestration and worker dispatch.
-- Independent whole-run validation across all output batches before the staging validation gate.
+- Wire the bounded aggregate critic into streamed Run orchestration and persist its report before the staging validation gate.
 - Resumable checkpoints, process-restart writer reopening and cross-process writer ownership; current recovery is conservative and aborts uncommitted work rather than resuming it.
-- Wiring the Run reconciliation primitive into a streaming Run orchestrator.
+- Wire `StreamingRunFinalizer` and rights/methodology evidence into the streaming Run orchestrator.
 - Run-level checkpoint/retry semantics with stable source cursor/version evidence.
 - Provider pagination, spatial/temporal windows and query pushdown.
 - Runtime authorization and scoped credential injection.
@@ -56,4 +60,4 @@ A validated transaction can now call `publish_artifact` to stream the staged fil
 
 The transaction recovery entry point can reconcile a journal after process restart: if the journal contains a publication intent and matching durable Artifact metadata/object can be verified, including producer Run and attempt identity, it repairs the journal to `committed`; otherwise it aborts the incomplete attempt. It deliberately does not resume batches. Publication automatically binds Artifact metadata to the originating Run ID and attempt. `RunRepository.reconcile_committed_output` separately verifies those producer fields, the Artifact bytes and a passing execution-output report before transitioning a running Run to succeeded, and is idempotent for the same output/report pair.
 
-These are local primitives, not yet connected by a streaming Run orchestrator. Cross-process writer leases, resumable checkpoints, whole-output critic integration and automatic recovery scheduling remain pending. A committed Artifact does not by itself mark its Run successful; the Run reconciliation step must be invoked.
+These are local primitives, not yet connected to direct external-source Run execution. Cross-process writer leases, resumable checkpoints, automatic recovery scheduling, and the complete Run orchestration that sequences source iteration, batch dispatch, aggregate validation, rights/methodology evidence and finalization remain pending. A committed Artifact does not by itself mark its Run successful; the Run reconciliation step must be invoked.
