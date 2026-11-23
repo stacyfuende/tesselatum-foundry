@@ -136,3 +136,56 @@ def test_publication_retry_preserves_identity_and_reuses_existing_artifact(tmp_p
     published = transaction.publish_artifact(store, **arguments)
     assert transaction.state == "committed"
     assert store.get_artifact("artifact:retry", "1.0.0") == published
+
+
+def test_recovery_reconciles_metadata_commit_after_journal_update_interruption(tmp_path):
+    store = FileSystemArtifactStore(tmp_path / "store")
+    transaction = _validated_transaction(tmp_path / "transactions")
+    original_persist = transaction._persist
+    persist_calls = 0
+
+    def interrupt_final_journal_write():
+        nonlocal persist_calls
+        persist_calls += 1
+        if persist_calls == 2:
+            raise OSError("simulated process interruption after Artifact commit")
+        original_persist()
+
+    transaction._persist = interrupt_final_journal_write
+    with pytest.raises(OSError, match="simulated process interruption"):
+        transaction.publish_artifact(
+            store,
+            artifact_id="artifact:crash-recovery",
+            version="1.0.0",
+            created_by="system:test",
+        )
+
+    recovered = StreamingFeatureCollectionTransaction.recover(
+        tmp_path / "transactions",
+        transaction.transaction_id,
+        store,
+    )
+
+    assert recovered.state == "committed"
+    journal = json.loads(recovered.journal_path.read_text())
+    assert journal["state"] == "committed"
+    assert journal["published_artifact"] == {
+        "artifact_id": "artifact:crash-recovery",
+        "version": "1.0.0",
+    }
+
+
+def test_recovery_aborts_unpublished_nonterminal_transaction(tmp_path):
+    store = FileSystemArtifactStore(tmp_path / "store")
+    transaction = _validated_transaction(tmp_path / "transactions")
+
+    recovered = StreamingFeatureCollectionTransaction.recover(
+        tmp_path / "transactions",
+        transaction.transaction_id,
+        store,
+    )
+
+    assert recovered.state == "aborted"
+    assert json.loads(recovered.journal_path.read_text())["state"] == "aborted"
+    with pytest.raises(FileNotFoundError):
+        store.get_artifact("artifact:never-published", "1.0.0")
