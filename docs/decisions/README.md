@@ -50,6 +50,6 @@ This register records decisions that constrain Foundry's architecture. Each deci
 | [044](044-raster-band-statistics.md) | Define raster band statistics scope and semantics | Proposed |
 | [045](045-spatial-information-core.md) | Persistent PostGIS spatial information core | Superseded by ADR-047 |
 | [046](046-bulk-geospatial-storage.md) | Bulk geospatial object storage boundary | Superseded by ADR-047 |
-| [047](047-external-data-computation-boundary.md) | External data remains external; Foundry owns computation | Accepted |
+| [047](047-external-data-computation-boundary.md) | External data remains external; Foundry owns computation | Accepted |\n| [048](048-transactional-streamed-artifact-publication.md) | Publish streamed Artifacts only after complete-run verification | Accepted |
 
 A decision may be superseded only by a new decision record that explains the change. Do not silently edit an accepted decision to reverse its meaning.
