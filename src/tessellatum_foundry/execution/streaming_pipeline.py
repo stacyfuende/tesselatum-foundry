@@ -13,6 +13,7 @@ from tessellatum_foundry.execution.streaming import (
     StreamingRunFinalizer,
 )
 from tessellatum_foundry.sources.batches import FeatureBatch
+from tessellatum_foundry.storage.artifacts import utc_timestamp
 from tessellatum_foundry.storage.streaming import (
     StreamingFeatureCollectionTransaction,
     StreamingTransactionError,
@@ -81,9 +82,11 @@ class StreamingVectorBufferPipeline:
             "version": capability_version,
         }:
             raise RunStateError("Run Capability does not match the streaming worker contract.")
-        if source_completion.get("eof_verified") is not True:
+        if not isinstance(source_completion, dict):
+            raise StreamingTransactionError("Source completion evidence must be an object.")
+        if "eof_verified" in source_completion:
             raise StreamingTransactionError(
-                "The caller must provide an EOF-verified source completion envelope."
+                "EOF verification is established by exhausting the source iterator, not caller input."
             )
 
         batch_count = 0
@@ -107,6 +110,8 @@ class StreamingVectorBufferPipeline:
                 feature_count += batch.feature_count
                 duration_ms += processed.duration_ms
 
+            # Reaching this point means the iterator terminated normally; source
+            # adapters perform checksum/ETag checks as part of that termination.
             completion = dict(source_completion)
             completion.update({
                 "eof_verified": True,
@@ -125,10 +130,7 @@ class StreamingVectorBufferPipeline:
                     expected_status="running",
                     new_status="failed",
                     fields={
-                        "finished_at": __import__(
-                            "tessellatum_foundry.storage.artifacts",
-                            fromlist=["utc_timestamp"],
-                        ).utc_timestamp(),
+                        "finished_at": utc_timestamp(),
                         "error": {
                             "code": "streaming.output_validation_failed",
                             "message": "The streamed output did not satisfy the execution-output contract.",
@@ -197,10 +199,7 @@ class StreamingVectorBufferPipeline:
                     expected_status="running",
                     new_status="failed",
                     fields={
-                        "finished_at": __import__(
-                            "tessellatum_foundry.storage.artifacts",
-                            fromlist=["utc_timestamp"],
-                        ).utc_timestamp(),
+                        "finished_at": utc_timestamp(),
                         "error": {
                             "code": "streaming.execution_failed",
                             "message": f"Streaming execution stopped ({type(error).__name__}).",
