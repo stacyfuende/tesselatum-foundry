@@ -65,14 +65,15 @@ class StreamingFeatureCollectionTransaction:
         self.root = root.resolve()
         self.transaction_id = str(uuid.uuid4())
         self.directory = self.root / "staging" / self.transaction_id
-        self.directory.mkdir(parents=True, exist_ok=False)
+        self.directory.mkdir(mode=0o700, parents=True, exist_ok=False)
+        self.directory.chmod(0o700)
         self.payload_path = self.directory / "output.geojson"
         self.journal_path = self.directory / "journal.json"
         self._stream = self.payload_path.open("xb")
+        self.payload_path.chmod(0o600)
         self._stream.write(b'{"type":"FeatureCollection","features":[')
         self._has_feature = False
         self._lock = threading.Lock()
-        self._digest = hashlib.sha256()
         self._bytes = self.payload_path.stat().st_size
         self._feature_count = 0
         self._next_sequence = 0
@@ -138,7 +139,6 @@ class StreamingFeatureCollectionTransaction:
             if projected > self._max_output_bytes:
                 raise StreamingTransactionError("Transaction output byte limit exceeded.")
             self._stream.write(addition)
-            self._digest.update(addition)
             self._bytes += len(addition)
             self._feature_count += count
             self._next_sequence += 1
