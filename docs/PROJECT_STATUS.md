@@ -32,7 +32,7 @@ Foundry is Tessellatum's spatial computation infrastructure. It makes spatial da
 | Batch worker | `VectorBufferBatchExecutor` verifies batch input checksum/metadata, pinned worker image, output shape/count and output checksum | Not yet integrated with Run orchestration or whole-run validation |
 | Source identity | `ExternalDataReference` records provider/dataset/resource URI and optional version/ETag/SHA-256 evidence | Provider-specific stable version evidence and source-aware cache identity |
 | Run provenance | Immutable source references are validated against input ports and preserved across retries | Direct external input execution and cursor/checkpoint evidence |
-| Output lifecycle | Existing Artifact store remains immutable and content-addressed | Streaming writer, provisional output staging, atomic finalization and cleanup on failure |
+| Output lifecycle | ADR-048 defines provisional staging, EOF sealing, whole-output validation, atomic publication and abort/recovery invariants | Transaction journal, streaming Artifact writer, bounded whole-output critic and Run/Artifact reconciliation are not yet implemented |
 | Credentials | Source references reject URI userinfo, query strings and fragments | Scoped runtime credential injection and authorization policy |
 | Source custody | Remains with provider/customer by default | Architectural rule |
 | Snapshots | Optional customer-controlled snapshot, not mandatory Foundry ingestion | Policy only; no snapshot service planned as core |
@@ -61,7 +61,7 @@ The current filesystem Artifact store is a local adapter. A future artifact back
 
 ## Verification status
 
-PR #24 CI run #718 passed on commit `751f248dbff5fe72d3883d5c8e71c12846b67f20`, including installed-package/schema checks, lint, both worker-image builds and the full Docker/PostGIS test suite. The subsequent batch-worker adapter and its tests are newer commits and require a fresh CI run.
+PR #24 CI run #722 passed on commit `b06ed5fb423bcce0cc20a4606bf1b391f145693b`, including installed-package/schema checks, lint, both worker-image builds and the full Docker/PostGIS test suite. This verifies the batch-worker adapter and its tests. ADR-048 now defines the streamed Artifact transaction boundary; its implementation remains pending.
 
 For each subsequent commit, record the exact head SHA and final checks. Do not claim a CI pass without a completed successful run on the current head.
 
