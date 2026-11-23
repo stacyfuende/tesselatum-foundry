@@ -94,7 +94,10 @@ class StreamingVectorBufferPipeline:
             "byte_count",
             "source_modified_at",
         }
-        if not isinstance(source_completion, dict) or set(source_completion) - safe_completion_fields:
+        if (
+            not isinstance(source_completion, dict)
+            or set(source_completion) - safe_completion_fields
+        ):
             raise StreamingTransactionError(
                 "Source completion evidence contains unsupported or potentially sensitive fields."
             )
@@ -143,7 +146,9 @@ class StreamingVectorBufferPipeline:
                         "finished_at": utc_timestamp(),
                         "error": {
                             "code": "streaming.output_validation_failed",
-                            "message": "The streamed output did not satisfy the execution-output contract.",
+                            "message": (
+                                "The streamed output did not satisfy the execution-output contract."
+                            ),
                             "retryable": False,
                         },
                         "validation_report_ids": [report["report_id"]],
