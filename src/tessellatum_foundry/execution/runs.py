@@ -23,6 +23,7 @@ _IMMUTABLE_FIELDS = {
     "created_at",
     "creation_sequence",
     "input_snapshots",
+    "source_references",
     "normalized_parameters",
     "retry_of_run_id",
     "recipe",
@@ -103,6 +104,7 @@ class RunRepository:
         capability: dict[str, str],
         input_snapshots: list[dict[str, Any]],
         normalized_parameters: dict[str, Any],
+        source_references: list[dict[str, Any]] | None = None,
         attempt: int = 1,
         retry_of_run_id: str | None = None,
         recipe: dict[str, str] | None = None,
@@ -119,6 +121,7 @@ class RunRepository:
             "created_at": utc_timestamp(),
             "input_snapshots": input_snapshots,
             "normalized_parameters": normalized_parameters,
+            **({"source_references": source_references} if source_references else {}),
             "events": [{"timestamp": utc_timestamp(), "event_type": "run_queued"}],
         }
         if retry_of_run_id is not None:
