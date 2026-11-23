@@ -7,6 +7,7 @@ from copy import deepcopy
 from typing import Any
 from urllib.parse import urlsplit
 
+from pyproj import CRS
 from pyproj.exceptions import CRSError
 
 from tessellatum_foundry.execution.capabilities import CapabilityRegistry, CapabilityRegistryError
@@ -34,6 +35,13 @@ class ExternalVectorBufferRunFactory:
         self.run_repository = run_repository
         self.contracts = contracts or ContractRegistry()
         self.capabilities = capabilities or CapabilityRegistry(contracts=self.contracts)
+
+    @staticmethod
+    def _resolve_crs(value: Any) -> CRS:
+        """Resolve a declared CRS using pyproj without guessing missing values."""
+        if not isinstance(value, (str, int)) or isinstance(value, bool):
+            raise ValueError("CRS must be an authority string or integer EPSG code.")
+        return CRS.from_user_input(value)
 
     def create_queued_run(
         self,
