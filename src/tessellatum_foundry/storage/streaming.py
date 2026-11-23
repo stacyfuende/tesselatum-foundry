@@ -125,7 +125,7 @@ class StreamingFeatureCollectionTransaction:
             except (UnicodeDecodeError, json.JSONDecodeError) as error:
                 raise StreamingTransactionError("Processed batch is not valid JSON.") from error
             features = collection.get("features") if isinstance(collection, dict) else None
-            if collection.get("type") != "FeatureCollection" or not isinstance(features, list) or len(features) != count:
+            if not isinstance(collection, dict) or collection.get("type") != "FeatureCollection" or not isinstance(features, list) or len(features) != count:
                 raise StreamingTransactionError("Batch payload does not match its feature count.")
             encoded = []
             for feature in features:
