@@ -225,6 +225,12 @@ class StreamingFeatureCollectionTransaction:
             self._record["publication_intent"] = identity
             self._persist()
 
+            artifact_metadata = dict(metadata or {})
+            run_id = self._record["run_id"]
+            if artifact_metadata.get("producer_run_id", run_id) != run_id:
+                raise StreamingTransactionError("Artifact metadata cannot reference a different producer Run.")
+            artifact_metadata["producer_run_id"] = run_id
+            artifact_metadata["producer_run_attempt"] = self._record["attempt"]
             artifact = artifact_store.put_file(
                 artifact_id=artifact_id,
                 version=version,
@@ -235,7 +241,7 @@ class StreamingFeatureCollectionTransaction:
                 expected_checksum_sha256=self._record["output_checksum_sha256"],
                 spatial=spatial,
                 rights=rights,
-                metadata=metadata,
+                metadata=artifact_metadata,
                 chunk_size=chunk_size,
             )
             self._record.update({
@@ -261,6 +267,12 @@ class StreamingFeatureCollectionTransaction:
         nonterminal states are aborted; batch-level resume is intentionally not
         attempted because the current journal is not a durable source checkpoint.
         """
+        try:
+            parsed_id = uuid.UUID(transaction_id)
+        except (ValueError, TypeError, AttributeError) as error:
+            raise StreamingTransactionError("Transaction ID must be a canonical UUID.") from error
+        if str(parsed_id) != transaction_id:
+            raise StreamingTransactionError("Transaction ID must be a canonical UUID.")
         directory = Path(root).resolve() / "staging" / transaction_id
         journal_path = directory / "journal.json"
         payload_path = directory / "output.geojson"
