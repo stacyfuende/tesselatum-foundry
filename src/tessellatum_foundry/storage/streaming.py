@@ -313,6 +313,7 @@ class StreamingFeatureCollectionTransaction:
                     raise StreamingTransactionError(
                         "Published Artifact does not match the transaction journal."
                     )
+                artifact_store.verify_artifact(artifact)
                 transaction._record.update({
                     "state": "committed",
                     "published_artifact": intent,
@@ -339,6 +340,7 @@ class StreamingFeatureCollectionTransaction:
             or artifact.get("size_bytes") != self._record.get("staged_bytes")
         ):
             raise StreamingTransactionError("Committed Artifact metadata fails transaction reconciliation.")
+        artifact_store.verify_artifact(artifact)
 
     def abort(self, reason_code: str) -> None:
         with self._lock:
