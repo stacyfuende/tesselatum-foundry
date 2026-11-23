@@ -321,6 +321,8 @@ class StreamingFeatureCollectionTransaction:
                 if (
                     artifact.get("checksum", {}).get("value") != expected
                     or artifact.get("size_bytes") != record.get("staged_bytes")
+                    or artifact.get("metadata", {}).get("producer_run_id") != record.get("run_id")
+                    or artifact.get("metadata", {}).get("producer_run_attempt") != record.get("attempt")
                 ):
                     raise StreamingTransactionError(
                         "Published Artifact does not match the transaction journal."
@@ -350,6 +352,8 @@ class StreamingFeatureCollectionTransaction:
             artifact.get("checksum", {}).get("value") != self._record.get("published_checksum_sha256")
             or artifact.get("checksum", {}).get("value") != self._record.get("output_checksum_sha256")
             or artifact.get("size_bytes") != self._record.get("staged_bytes")
+            or artifact.get("metadata", {}).get("producer_run_id") != self._record.get("run_id")
+            or artifact.get("metadata", {}).get("producer_run_attempt") != self._record.get("attempt")
         ):
             raise StreamingTransactionError("Committed Artifact metadata fails transaction reconciliation.")
         artifact_store.verify_artifact(artifact)
