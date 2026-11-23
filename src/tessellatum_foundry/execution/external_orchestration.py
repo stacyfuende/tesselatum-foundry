@@ -106,11 +106,18 @@ class ExternalVectorBufferRunOrchestrator:
             raise ExecutionPreconditionError("Run identity does not match the supplied Cell and Capability.")
         binding = cell.get("inputs", {}).get("features")
         if not isinstance(binding, dict) or binding.get("source") != "external":
-            raise ExecutionPreconditionError("Run must have an external features binding.")
+            raise ExecutionPreconditionError(
+                "Run must have an external features binding."
+            )
         reference_data = binding.get("reference")
         expected_sources = [{"input_port": "features", "reference": reference_data}]
-        if run.get("source_references") != expected_sources or run.get("input_snapshots") != []:
-            raise ExecutionPreconditionError("Run source provenance differs from the Cell binding.")
+        if (
+            run.get("source_references") != expected_sources
+            or run.get("input_snapshots") != []
+        ):
+            raise ExecutionPreconditionError(
+                "Run source provenance differs from the Cell binding."
+            )
         if not isinstance(actor_id, str) or not actor_id.strip():
             raise ExecutionPreconditionError("A non-empty actor identity is required.")
 
@@ -119,7 +126,9 @@ class ExternalVectorBufferRunOrchestrator:
             self.source_authorizer(reference, actor_id)
             adapter = self.source_adapter_resolver(reference)
             if adapter is None or not adapter.supports(reference):
-                raise ExecutionPreconditionError("No configured source adapter supports this reference.")
+                raise ExecutionPreconditionError(
+                    "No configured source adapter supports this reference."
+                )
             descriptor = adapter.describe(reference)
             self.worker_configuration_check()
             implementation = self.implementations.require_conformant(
@@ -133,8 +142,12 @@ class ExternalVectorBufferRunOrchestrator:
                 r"sha256:[a-fA-F0-9]{64}", image_digest
             ):
                 raise ExecutionPreconditionError("Worker did not provide an immutable image digest.")
-            input_port = VectorBufferRunService._required_port(canonical["input_ports"], "features")
-            output_port = VectorBufferRunService._required_port(canonical["output_ports"], "result")
+            input_port = VectorBufferRunService._required_port(
+                canonical["input_ports"], "features"
+            )
+            output_port = VectorBufferRunService._required_port(
+                canonical["output_ports"], "result"
+            )
             if reference.media_type not in input_port.get("accepted_media_types", []):
                 raise ExecutionPreconditionError("Source media type is not accepted by the Capability.")
             spatial = binding["spatial"]
@@ -150,13 +163,17 @@ class ExternalVectorBufferRunOrchestrator:
                 output_port.get("spatial", {}).get("geometry_types", [])
             )
             if not permitted:
-                raise ExecutionPreconditionError("Cell and Capability have no compatible output geometry types.")
+                raise ExecutionPreconditionError(
+                    "Cell and Capability have no compatible output geometry types."
+                )
             if reference.media_type in GeoJsonFeatureCollectionReader.supported_media_types:
                 reader = GeoJsonFeatureCollectionReader()
             elif reference.media_type in NdjsonFeatureReader.supported_media_types:
                 reader = NdjsonFeatureReader()
             else:
-                raise ExecutionPreconditionError("No incremental reader supports the source media type.")
+                raise ExecutionPreconditionError(
+                    "No incremental reader supports the source media type."
+                )
             manifest_checksum = self.implementations.manifest_checksum(
                 implementation["implementation_id"], implementation["version"]
             )
@@ -173,7 +190,9 @@ class ExternalVectorBufferRunOrchestrator:
                         "error": {
                             "code": "external_run.preflight_failed",
                             "message": f"External Run preflight failed ({type(error).__name__}).",
-                            "retryable": isinstance(error, (OSError, TimeoutError, ConnectionError)),
+                            "retryable": isinstance(
+                                error, (OSError, TimeoutError, ConnectionError)
+                            ),
                         },
                     },
                     event_type="external_run_preflight_failed",
@@ -196,7 +215,10 @@ class ExternalVectorBufferRunOrchestrator:
                     "manifest_checksum": manifest_checksum,
                 },
                 "runtime_image_digest": image_digest,
-                "cache": {"status": "bypassed", "reason": "external_source_integrity_not_cacheable"},
+                "cache": {
+                    "status": "bypassed",
+                    "reason": "external_source_integrity_not_cacheable",
+                },
             },
             event_type="external_source_worker_started",
             event_detail={"runtime_image_digest": image_digest},
