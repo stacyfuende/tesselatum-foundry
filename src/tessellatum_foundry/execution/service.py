@@ -9,6 +9,7 @@ import uuid
 from copy import deepcopy
 from dataclasses import dataclass
 from typing import Any
+from urllib.parse import urlsplit
 
 from jsonschema import Draft202012Validator, FormatChecker
 
@@ -227,6 +228,17 @@ class VectorBufferRunService:
                     f"External source reference is invalid: {error}"
                 ) from error
             reference = source_entry["reference"]
+            parsed_uri = urlsplit(reference["uri"])
+            if (
+                parsed_uri.username is not None
+                or parsed_uri.password is not None
+                or parsed_uri.query
+                or parsed_uri.fragment
+            ):
+                raise ExecutionPreconditionError(
+                    "External source reference is invalid: credentials, query parameters, "
+                    "and fragments must not be embedded in the persisted URI."
+                )
             identity = (
                 source_entry["input_port"],
                 reference["provider"],
