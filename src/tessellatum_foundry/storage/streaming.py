@@ -19,7 +19,7 @@ class StreamingTransactionError(RuntimeError):
     """Raised when a streamed output transaction violates its state or bounds."""
 
 
-_TERMINAL = {"validated", "aborted"}
+_TERMINAL = {"committed", "aborted"}
 
 
 def _atomic_json(path: Path, value: dict[str, Any]) -> None:
@@ -198,6 +198,58 @@ class StreamingFeatureCollectionTransaction:
             self._record["validation_evidence"] = validation_evidence
             self._persist()
             return dict(self._record)
+
+    def publish_artifact(
+        self,
+        artifact_store: Any,
+        *,
+        artifact_id: str,
+        version: str,
+        created_by: str,
+        media_type: str = "application/geo+json",
+        format_name: str = "geojson",
+        spatial: dict[str, Any] | None = None,
+        rights: dict[str, Any] | None = None,
+        metadata: dict[str, Any] | None = None,
+        chunk_size: int = 1024 * 1024,
+    ) -> dict[str, Any]:
+        """Publish validated staging as an immutable Artifact.
+
+        The publication intent is journaled before touching the Artifact
+        store. Retrying the same identity is safe if metadata was committed
+        but this transaction's final journal update was interrupted.
+        """
+        with self._lock:
+            if self._state != "validated":
+                raise StreamingTransactionError("Only validated output can be published once.")
+            identity = {"artifact_id": artifact_id, "version": version}
+            previous_intent = self._record.get("publication_intent")
+            if previous_intent is not None and previous_intent != identity:
+                raise StreamingTransactionError("Publication retry must preserve Artifact identity.")
+            self._record["publication_intent"] = identity
+            self._persist()
+
+            artifact = artifact_store.put_file(
+                artifact_id=artifact_id,
+                version=version,
+                source_path=self.payload_path,
+                created_by=created_by,
+                media_type=media_type,
+                format_name=format_name,
+                expected_checksum_sha256=self._record["output_checksum_sha256"],
+                spatial=spatial,
+                rights=rights,
+                metadata=metadata,
+                chunk_size=chunk_size,
+            )
+            self._state = "committed"
+            self._record.update({
+                "state": self._state,
+                "published_artifact": identity,
+                "published_checksum_sha256": artifact["checksum"]["value"],
+            })
+            self._persist()
+            return artifact
 
     def abort(self, reason_code: str) -> None:
         with self._lock:
