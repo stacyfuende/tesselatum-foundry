@@ -138,3 +138,20 @@ def test_batch_executor_rejects_batch_metadata_mismatch() -> None:
         execute(VectorBufferBatchExecutor(worker), malformed)
 
     assert worker.calls == 0
+
+
+def test_batch_executor_rejects_boolean_sequence_metadata() -> None:
+    batch = batch_for()
+    malformed = FeatureBatch(
+        sequence=True,
+        first_feature_offset=batch.first_feature_offset,
+        feature_count=batch.feature_count,
+        payload=batch.payload,
+        checksum_sha256=batch.checksum_sha256,
+    )
+    worker = FakeWorker()
+
+    with pytest.raises(BatchExecutionError, match="sequence"):
+        execute(VectorBufferBatchExecutor(worker), malformed)
+
+    assert worker.calls == 0
