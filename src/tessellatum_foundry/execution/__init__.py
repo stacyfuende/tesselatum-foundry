@@ -15,6 +15,7 @@ from .protocol import (
     VectorReprojectWorker,
     WorkerResult,
 )
+from .batches import BatchExecutionError, ProcessedFeatureBatch, VectorBufferBatchExecutor
 from .remote_worker import RemoteVectorBufferWorker, RemoteVectorReprojectWorker
 from .runs import RunRepository, RunStateError
 from .service import (
@@ -30,6 +31,7 @@ from .recipes import (
 )
 
 __all__ = [
+    "BatchExecutionError",
     "CapabilityRegistry",
     "CapabilityRegistryError",
     "DockerWorker",
@@ -38,6 +40,7 @@ __all__ = [
     "ExecutionResult",
     "ImplementationRegistry",
     "ImplementationRegistryError",
+    "ProcessedFeatureBatch",
     "RecipeExecutionPreconditionError",
     "RecipeExecutionResult",
     "RecipeExecutionService",
@@ -46,6 +49,7 @@ __all__ = [
     "RunRepository",
     "SpatialWorkerIdentity",
     "RunStateError",
+    "VectorBufferBatchExecutor",
     "VectorBufferRunService",
     "VectorBufferWorker",
     "VectorReprojectRunService",
