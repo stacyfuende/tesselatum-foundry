@@ -223,7 +223,10 @@ class GeoJsonFeatureCollectionReader:
                         yield feature
                         feature_count += 1
                         source.skip_ws()
-                        if source.position < len(source.buffer) and source.buffer[source.position] == ",":
+                        if (
+                            source.position < len(source.buffer)
+                            and source.buffer[source.position] == ","
+                        ):
                             source.position += 1
                             continue
                         source.expect("]")
