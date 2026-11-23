@@ -150,6 +150,8 @@ class VectorBufferStreamingValidator:
             )
         if hashlib.sha256(output_batch.payload).hexdigest() != output_batch.output_checksum_sha256:
             raise StreamingValidationError("Output batch checksum verification failed.")
+        if not isinstance(output_batch.output_crs, dict) or not output_batch.output_crs:
+            raise StreamingValidationError("Worker output CRS evidence is required.")
         if not re.fullmatch(r"sha256:[a-fA-F0-9]{64}", output_batch.runtime_image_digest):
             raise StreamingValidationError("Worker image digest is not immutable SHA-256 identity.")
         if self._runtime_image_digest is None:
@@ -181,7 +183,7 @@ class VectorBufferStreamingValidator:
             output_feature_collection=result_collection,
             input_crs=self.input_crs,
             expected_output_crs=self.expected_output_crs,
-            actual_output_crs=self.expected_output_crs,
+            actual_output_crs=output_batch.output_crs,
             permitted_geometry_types=self.permitted_geometry_types,
         )
         for finding in inspection.findings:
