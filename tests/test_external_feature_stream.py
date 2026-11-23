@@ -86,7 +86,7 @@ def test_external_stream_connects_local_source_reader_and_bounded_batches(tmp_pa
 def test_external_stream_verifies_source_checksum_before_successful_exhaustion(
     tmp_path: Path,
 ) -> None:
-    payload = json.dumps(feature(1)).encode() + b"\\n"
+    payload = json.dumps(feature(1)).encode() + bytes([10])
     _, reference = write_source(
         tmp_path,
         payload,
