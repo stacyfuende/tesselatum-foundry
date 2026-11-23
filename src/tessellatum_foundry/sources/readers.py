@@ -69,6 +69,7 @@ class _IncrementalJson:
 
     def value(self, *, max_bytes: int, label: str) -> Any:
         """Decode exactly one JSON value, retrying only when input is incomplete."""
+        self.skip_ws()
         start = self.position
         while True:
             try:
