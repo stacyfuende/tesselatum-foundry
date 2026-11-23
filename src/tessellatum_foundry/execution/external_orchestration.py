@@ -150,7 +150,9 @@ class ExternalVectorBufferRunOrchestrator:
             if not isinstance(image_digest, str) or not re.fullmatch(
                 r"sha256:[a-fA-F0-9]{64}", image_digest
             ):
-                raise ExecutionPreconditionError("Worker did not provide an immutable image digest.")
+                raise ExecutionPreconditionError(
+                    "Worker did not provide an immutable image digest."
+                )
             input_port = VectorBufferRunService._required_port(
                 canonical["input_ports"], "features"
             )
