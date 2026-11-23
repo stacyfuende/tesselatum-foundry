@@ -238,6 +238,36 @@ class FileSystemArtifactStore:
         self.contracts.validate("artifact.schema.json", record)
         return record
 
+    def verify_artifact(self, artifact: dict[str, Any], *, chunk_size: int = 1024 * 1024) -> None:
+        """Verify object integrity in bounded memory without returning its bytes."""
+        if isinstance(chunk_size, bool) or not isinstance(chunk_size, int) or chunk_size < 1:
+            raise ValueError("Chunk size must be a positive integer.")
+        object_key = artifact["storage"].get("object_key")
+        if not isinstance(object_key, str):
+            raise ArtifactIntegrityError("Artifact storage record has no object key.")
+        relative = PurePosixPath(object_key)
+        if relative.is_absolute() or ".." in relative.parts:
+            raise ArtifactIntegrityError("Artifact object key escapes the store root.")
+        path = (self.root / Path(*relative.parts)).resolve()
+        if not path.is_relative_to(self.root):
+            raise ArtifactIntegrityError("Artifact object path escapes the store root.")
+        digest = hashlib.sha256()
+        size_bytes = 0
+        try:
+            with path.open("rb") as stream:
+                for chunk in iter(lambda: stream.read(chunk_size), b""):
+                    digest.update(chunk)
+                    size_bytes += len(chunk)
+        except OSError as error:
+            raise ArtifactIntegrityError("Artifact object is unavailable.") from error
+        if (
+            digest.hexdigest() != artifact["checksum"]["value"]
+            or size_bytes != artifact.get("size_bytes")
+        ):
+            raise ArtifactIntegrityError(
+                f"Artifact {artifact['artifact_id']}@{artifact['version']} failed checksum verification."
+            )
+
     def read_bytes(self, artifact: dict[str, Any]) -> bytes:
         """Read an Artifact only through a validated store-relative object key."""
         object_key = artifact["storage"].get("object_key")
