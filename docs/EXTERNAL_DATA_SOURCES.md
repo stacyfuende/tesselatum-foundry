@@ -1,6 +1,6 @@
 # External spatial data sources
 
-**Status:** External source adapter, Run provenance, incremental NDJSON reader, bounded feature-batch pipeline, batch-aware worker bridge, per-batch independent output critic, provisional output staging, local streamed Artifact publication, Run finalization/reconciliation and a bounded streaming execution pipeline are implemented. Direct external-source Run creation/resolution, production source adapters and distributed recovery remain pending.
+**Status:** External source adapter, immutable external Geo-Cell bindings, source-only queued Run creation, incremental NDJSON reader, bounded feature-batch pipeline, batch-aware worker bridge, per-batch independent output critic, provisional output staging, local streamed Artifact publication, Run finalization/reconciliation and a bounded streaming execution pipeline are implemented. Direct external-source Run execution/resolution, production source adapters and distributed recovery remain pending.
 
 Foundry does not take custody of source datasets by default. A source reference identifies where data lives and records the evidence available to reproduce access. An adapter describes and reads that resource without requiring it to be copied into the Foundry Artifact store.
 
@@ -13,7 +13,7 @@ Foundry does not take custody of source datasets by default. A source reference 
 - A checksum is verified at end-of-stream. Callers must not publish derived outputs until iteration completes successfully.
 - A provider that exposes no stable version or checksum is still usable, but provenance must not claim snapshot-level reproducibility.
 
-The JSON Schema is `schema/external-data-reference.schema.json`. The initial `LocalFileSourceAdapter` is a minimal reference implementation. It reads local `file://` resources in bounded chunks and does not copy them into Artifact storage.
+The JSON Schema is `schema/external-data-reference.schema.json`. Geo-Cell input bindings can now declare `source: external`, a provenance-bearing reference, and explicit vector spatial metadata (CRS and geometry types). `ExternalVectorBufferRunFactory` validates the exact Capability, media type, geometry types, projected measurement CRS and source identity, then creates a queued Run with no fake Artifact snapshot and an immutable source reference. Retries must preserve that exact reference. This factory does not fetch data, authorize access, start a worker or claim the Run is executable end-to-end. The initial `LocalFileSourceAdapter` is a minimal reference implementation. It reads local `file://` resources in bounded chunks and does not copy them into Artifact storage.
 
 ## Bounded feature batches
 
@@ -35,21 +35,21 @@ This adapter is deliberately not a Run executor. It does not publish Artifacts, 
 
 A source checksum is verified only when the byte stream reaches EOF. Consumers MUST stage provisional batch results and MUST NOT publish output Artifacts or mark a Run successful until the source iterator is exhausted without error. A later batch failure or EOF checksum mismatch invalidates the entire provisional result set.
 
-The existing Artifact-backed `vector.buffer` Run service remains unchanged and continues to use its whole-FeatureCollection worker. The new `StreamingVectorBufferPipeline` is a separate execution path for an already-created and running Run: it exhausts the supplied source-batch iterator, dispatches and validates each batch, seals the source only after normal iterator completion, persists the aggregate report, and invokes transactional Artifact publication and Run reconciliation. It does not yet create the Run or resolve an external source reference from a Geo-Cell declaration.
+The existing Artifact-backed `vector.buffer` Run service remains unchanged and continues to use its whole-FeatureCollection worker. `ExternalVectorBufferRunFactory` now creates a queued source-backed Run from an external Geo-Cell binding. `StreamingVectorBufferPipeline` remains a separate execution path for an already-created and running Run: it exhausts the supplied source-batch iterator, dispatches and validates each batch, seals the source only after normal iterator completion, persists the aggregate report, and invokes transactional Artifact publication and Run reconciliation. The factory and pipeline are not yet joined by an execution service that resolves the source adapter, starts the Run, constructs the transaction and executes the source stream.
 
 ## Remaining integration gates
 
 - Direct external source inputs in Run orchestration and worker dispatch.
 - Wire the bounded aggregate critic into streamed Run orchestration and persist its report before the staging validation gate.
 - Resumable checkpoints, process-restart writer reopening and cross-process writer ownership; current recovery is conservative and aborts uncommitted work rather than resuming it.
-- Integrate rights and methodology evidence into streaming Run preconditions and output validation; the pipeline currently accepts caller-supplied rights metadata but does not infer authorization or methodology suitability.
+- Integrate source rights declarations, methodology evidence and runtime authorization into streaming Run preconditions and output validation; the current factory records provenance but does not infer permission or suitability.
 - Run-level checkpoint/retry semantics with stable source cursor/version evidence.
 - Provider pagination, spatial/temporal windows and query pushdown.
 - Runtime authorization and scoped credential injection.
 - Source-aware cache identity and explicit semantics when provider version evidence is absent.
 - Additional format readers chosen against real workloads, not an untested format matrix.
 
-The source path does not warehouse upstream data. Optional derived outputs remain subject to explicit ownership, access and retention policy.
+The source path does not warehouse upstream data. Optional derived outputs remain subject to explicit ownership, access and retention policy. The current external binding supports only media types already accepted by the exact Capability contract; NDJSON remains a separate reader format and is not silently treated as the vector.buffer 1.0.0 FeatureCollection media type.
 
 
 ## Provisional output staging
@@ -60,4 +60,4 @@ A validated transaction can now call `publish_artifact` to stream the staged fil
 
 The transaction recovery entry point can reconcile a journal after process restart: if the journal contains a publication intent and matching durable Artifact metadata/object can be verified, including producer Run and attempt identity, it repairs the journal to `committed`; otherwise it aborts the incomplete attempt. It deliberately does not resume batches. Publication automatically binds Artifact metadata to the originating Run ID and attempt. `RunRepository.reconcile_committed_output` separately verifies those producer fields, the Artifact bytes and a passing execution-output report before transitioning a running Run to succeeded, and is idempotent for the same output/report pair.
 
-`StreamingVectorBufferPipeline` now connects source-batch iteration, worker dispatch, bounded independent validation, EOF-gated transaction sealing, persisted validation evidence, Artifact publication and Run reconciliation for an already-running Run. The existing Artifact-backed Run service is unchanged. Direct external-source Run creation/resolution, Geo-Cell external bindings, cross-process writer leases, resumable checkpoints and automatic recovery scheduling remain pending. Rights/methodology policy must be integrated before treating this as a complete production Run service. A committed Artifact does not by itself mark its Run successful; the Run reconciliation step must be invoked.
+`StreamingVectorBufferPipeline` connects source-batch iteration, worker dispatch, bounded independent validation, EOF-gated transaction sealing, persisted validation evidence, Artifact publication and Run reconciliation for an already-running Run. `ExternalVectorBufferRunFactory` now creates source-only queued Runs from explicit Geo-Cell external bindings, without inventing Artifact snapshots. These components are not yet joined: adapter resolution, Run start, transaction construction and direct streaming execution remain pending. Cross-process writer leases, resumable checkpoints and automatic recovery scheduling also remain pending. Rights/methodology policy and runtime authorization must be integrated before treating this as a complete production Run service. A committed Artifact does not by itself mark its Run successful; the Run reconciliation step must be invoked.
