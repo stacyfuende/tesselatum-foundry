@@ -44,3 +44,10 @@ The current `vector.buffer` Run service still resolves and parses a complete Art
 - Additional format readers chosen against real workloads, not an untested format matrix.
 
 The source path does not warehouse upstream data. Optional derived outputs remain subject to explicit ownership, access and retention policy.
+
+
+## Provisional output staging
+
+The local storage adapter now includes `StreamingFeatureCollectionTransaction`. It appends verified processed batches to a private provisional GeoJSON FeatureCollection, enforcing contiguous sequence/offsets, batch count and output byte limits. It persists an atomic journal after each accepted batch, requires explicit source EOF verification before sealing, computes a checksum over the sealed output, and requires passing validation evidence before reaching the `validated` state.
+
+This is not yet an Artifact publisher. Staged files are not discoverable through Artifact lookup and must not be treated as successful outputs. Crash recovery/reopen, durable cross-process writer ownership, whole-output critic integration, Artifact metadata publication and Run reconciliation remain future work. A failed append or process crash must not be interpreted as a committed Artifact.
