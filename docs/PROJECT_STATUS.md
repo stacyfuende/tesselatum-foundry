@@ -32,7 +32,7 @@ Foundry is Tessellatum's spatial computation infrastructure. It makes spatial da
 | Batch worker | `VectorBufferBatchExecutor` verifies batch input checksum/metadata, pinned worker image, output shape/count and output checksum | Not yet integrated with Run orchestration or whole-run validation |
 | Source identity | `ExternalDataReference` records provider/dataset/resource URI and optional version/ETag/SHA-256 evidence | Provider-specific stable version evidence and source-aware cache identity |
 | Run provenance | Immutable source references are validated against input ports and preserved across retries | Direct external input execution and cursor/checkpoint evidence |
-| Output lifecycle | ADR-048 defines provisional staging, EOF sealing, whole-output validation, atomic publication and abort/recovery invariants | Transaction journal, streaming Artifact writer, bounded whole-output critic and Run/Artifact reconciliation are not yet implemented |
+| Output lifecycle | Private provisional staging, atomic transaction journal, EOF gate, bounded file-based Artifact writer, durable object-before-metadata publication, stable publication intent and idempotent same-identity retry | Process-restart recovery, cross-process writer lease, independent whole-output critic integration and Run/Artifact reconciliation remain pending |
 | Credentials | Source references reject URI userinfo, query strings and fragments | Scoped runtime credential injection and authorization policy |
 | Source custody | Remains with provider/customer by default | Architectural rule |
 | Snapshots | Optional customer-controlled snapshot, not mandatory Foundry ingestion | Policy only; no snapshot service planned as core |
