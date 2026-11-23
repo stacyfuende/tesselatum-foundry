@@ -296,10 +296,10 @@ class NdjsonFeatureReader:
                 raise FeatureReaderError("Source adapters must yield byte chunks.")
             pending.extend(chunk)
             while True:
-                boundary = pending.find(b"\\n")
+                boundary = pending.find(b"\n")
                 if boundary < 0:
                     break
-                line = bytes(pending[:boundary]).rstrip(b"\\r")
+                line = bytes(pending[:boundary]).rstrip(b"\r")
                 del pending[: boundary + 1]
                 if line.strip():
                     yield self._decode_feature(line, offset)
