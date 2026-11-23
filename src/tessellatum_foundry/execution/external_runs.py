@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import re
 import uuid
 from copy import deepcopy
 from typing import Any
