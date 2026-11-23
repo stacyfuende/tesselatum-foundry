@@ -58,7 +58,7 @@ class StreamingFeatureCollectionTransaction:
         max_output_bytes: int,
         max_batches: int,
     ) -> None:
-        if not run_id or isinstance(attempt, bool) or attempt < 1:
+        if not isinstance(run_id, str) or not run_id or isinstance(attempt, bool) or not isinstance(attempt, int) or attempt < 1:
             raise ValueError("A Run ID and positive attempt are required.")
         if max_output_bytes < 1 or max_batches < 1:
             raise ValueError("Transaction limits must be positive.")
@@ -166,6 +166,8 @@ class StreamingFeatureCollectionTransaction:
     def seal_output(self) -> dict[str, Any]:
         with self._lock:
             self._require("input_sealed")
+            if self._feature_count < 1:
+                raise StreamingTransactionError("Cannot seal an empty output FeatureCollection.")
             self._stream.write(b"]}")
             self._stream.flush()
             os.fsync(self._stream.fileno())
