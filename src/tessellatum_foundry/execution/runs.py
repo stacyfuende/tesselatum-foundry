@@ -253,7 +253,9 @@ class RunRepository:
                 and validation_report_id in current.get("validation_report_ids", [])
             ):
                 return current
-            raise RunStateError("Succeeded Run does not match the committed output being reconciled.")
+            raise RunStateError(
+                "Succeeded Run does not match the committed output being reconciled."
+            )
         if current["status"] != "running":
             raise RunStateError("Only a running Run can be reconciled to succeeded.")
 
