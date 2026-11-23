@@ -97,6 +97,7 @@ def test_external_stream_verifies_source_checksum_before_successful_exhaustion(
         adapter=LocalFileSourceAdapter(),
         reader=NdjsonFeatureReader(),
         chunk_size=5,
+        max_batch_features=1,
     )
 
     assert next(batches).feature_count == 1
