@@ -84,7 +84,9 @@ def iter_feature_batches(
                 separators=(",", ":"),
             ).encode("utf-8")
         except (TypeError, ValueError) as error:
-            raise FeatureBatchError(f"Feature at offset {feature_offset} is not valid JSON: {error}") from error
+            raise FeatureBatchError(
+                f"Feature at offset {feature_offset} is not valid JSON: {error}"
+            ) from error
 
         candidate_size = batch_size + len(encoded) + (1 if batch_items else 0)
         if candidate_size > max_bytes:
