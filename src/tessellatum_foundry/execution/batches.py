@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 from dataclasses import dataclass
 from typing import Any
 
@@ -56,10 +57,25 @@ class VectorBufferBatchExecutor:
     ) -> ProcessedFeatureBatch:
         if not isinstance(batch, FeatureBatch):
             raise BatchExecutionError("Input must be a FeatureBatch.")
+        if not isinstance(batch.payload, bytes):
+            raise BatchExecutionError("Input batch payload must be bytes.")
+        if not isinstance(batch.checksum_sha256, str) or not re.fullmatch(
+            r"[a-fA-F0-9]{64}", batch.checksum_sha256
+        ):
+            raise BatchExecutionError("Input batch checksum must be a SHA-256 hex digest.")
         if hashlib.sha256(batch.payload).hexdigest() != batch.checksum_sha256:
             raise BatchExecutionError("Input batch checksum verification failed.")
-        if batch.sequence < 0 or batch.first_feature_offset < 0 or batch.feature_count < 1:
-            raise BatchExecutionError("Input batch sequence, offset and count are invalid.")
+        for name, value, minimum in (
+            ("sequence", batch.sequence, 0),
+            ("first_feature_offset", batch.first_feature_offset, 0),
+            ("feature_count", batch.feature_count, 1),
+        ):
+            if isinstance(value, bool) or not isinstance(value, int) or value < minimum:
+                raise BatchExecutionError(f"Input batch {name} is invalid.")
+        if not isinstance(runtime_image_digest, str) or not re.fullmatch(
+            r"sha256:[a-fA-F0-9]{64}", runtime_image_digest
+        ):
+            raise BatchExecutionError("A pinned SHA-256 worker image digest is required.")
 
         try:
             collection = json.loads(batch.payload)
@@ -85,6 +101,12 @@ class VectorBufferBatchExecutor:
             raise BatchExecutionError("Worker returned an invalid result envelope.")
         if result.runtime_image_digest != runtime_image_digest:
             raise BatchExecutionError("Worker result image digest differs from the pinned image.")
+        if (
+            isinstance(result.duration_ms, bool)
+            or not isinstance(result.duration_ms, int)
+            or result.duration_ms < 0
+        ):
+            raise BatchExecutionError("Worker duration_ms must be a non-negative integer.")
         output = result.feature_collection
         if (
             not isinstance(output, dict)
