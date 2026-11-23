@@ -5,7 +5,7 @@ from .artifacts import (
     FileSystemArtifactStore,
     ImmutableArtifactError,
 )
-from .definitions import (
+from .streaming import (\n    StreamingFeatureCollectionTransaction,\n    StreamingTransactionError,\n)\nfrom .definitions import (
     DefinitionIntegrityError,
     ImmutableDefinitionError,
     VersionedDefinitionStore,
@@ -16,6 +16,6 @@ __all__ = [
     "DefinitionIntegrityError",
     "FileSystemArtifactStore",
     "ImmutableArtifactError",
-    "ImmutableDefinitionError",
+    "ImmutableDefinitionError",\n    "StreamingFeatureCollectionTransaction",\n    "StreamingTransactionError",
     "VersionedDefinitionStore",
 ]
