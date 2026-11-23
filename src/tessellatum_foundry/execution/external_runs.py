@@ -7,7 +7,6 @@ from copy import deepcopy
 from typing import Any
 from urllib.parse import urlsplit
 
-from pyproj import CRS
 from pyproj.exceptions import CRSError
 
 from tessellatum_foundry.execution.capabilities import CapabilityRegistry, CapabilityRegistryError
@@ -96,12 +95,14 @@ class ExternalVectorBufferRunFactory:
             )
         if reference.get("selection"):
             raise ExecutionPreconditionError(
-                "This initial external Run path does not support source selection or query pushdown."
+                "This initial external Run path does not support source selection "
+                "or query pushdown."
             )
         media_type = reference.get("media_type")
         if not media_type or media_type not in input_ports[0].get("accepted_media_types", []):
             raise ExecutionPreconditionError(
-                "External source media_type must be declared and accepted by the features input port."
+                "External source media_type must be declared and accepted by "
+                "the features input port."
             )
 
         spatial = binding["spatial"]
@@ -127,7 +128,8 @@ class ExternalVectorBufferRunFactory:
             measurement_crs, ignore_axis_order=True
         ):
             raise ExecutionPreconditionError(
-                "vector.buffer requires the external source CRS to match its projected measurement CRS."
+                "vector.buffer requires the external source CRS to match "
+                "its projected measurement CRS."
             )
         if parameters.get("single_sided", False) and declared_types != {"LineString"}:
             raise ExecutionPreconditionError(
