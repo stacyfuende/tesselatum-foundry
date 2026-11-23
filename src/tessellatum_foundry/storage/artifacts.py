@@ -278,5 +278,10 @@ class FileSystemArtifactStore:
             except FileExistsError:
                 raise
             path.chmod(0o444)
+            directory = os.open(path.parent, os.O_RDONLY)
+            try:
+                os.fsync(directory)
+            finally:
+                os.close(directory)
         finally:
             temporary.unlink(missing_ok=True)
