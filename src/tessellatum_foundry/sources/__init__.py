@@ -13,17 +13,24 @@ from .models import (
     SourceIntegrityError,
     SourceLimitExceeded,
 )
-from .protocols import SourceAdapter
+from .protocols import FeatureReader, SourceAdapter
+from .readers import FeatureReaderError, NdjsonFeatureReader
+from .stream import ExternalFeatureStreamError, iter_external_feature_batches
 
 __all__ = [
     "ExternalDataReference",
     "FeatureBatch",
     "FeatureBatchError",
     "FeatureExceedsBatchLimit",
+    "FeatureReader",
+    "FeatureReaderError",
+    "ExternalFeatureStreamError",
     "LocalFileSourceAdapter",
+    "NdjsonFeatureReader",
     "SourceAdapter",
     "SourceDescriptor",
     "SourceIntegrityError",
     "SourceLimitExceeded",
     "iter_feature_batches",
+    "iter_external_feature_batches",
 ]
