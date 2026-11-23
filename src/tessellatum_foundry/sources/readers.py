@@ -92,6 +92,56 @@ class _IncrementalJson:
                     raise FeatureReaderError(f"{label} is malformed JSON.") from error
                 self._read_more()
 
+    def object(self, *, max_bytes: int, label: str) -> Any:
+        """Scan one object boundary before materializing its decoded value."""
+        self.skip_ws()
+        start = self.position
+        if start >= len(self.buffer) or self.buffer[start] != "{":
+            raise FeatureReaderError(f"{label} must be a JSON object.")
+
+        index = start
+        depth = 0
+        in_string = False
+        escaped = False
+        byte_count = 0
+        while True:
+            while index < len(self.buffer):
+                character = self.buffer[index]
+                byte_count += len(character.encode("utf-8"))
+                if byte_count > max_bytes:
+                    raise FeatureReaderError(
+                        f"{label} exceeds the configured {max_bytes}-byte limit."
+                    )
+                if in_string:
+                    if escaped:
+                        escaped = False
+                    elif character == "\\\\":
+                        escaped = True
+                    elif character == '"':
+                        in_string = False
+                elif character == '"':
+                    in_string = True
+                elif character in "{[":
+                    depth += 1
+                elif character in "}]":
+                    depth -= 1
+                    if depth < 0:
+                        raise FeatureReaderError(f"{label} has unbalanced JSON delimiters.")
+                    if depth == 0:
+                        end = index + 1
+                        raw = self.buffer[start:end]
+                        try:
+                            value = json.loads(raw)
+                        except json.JSONDecodeError as error:
+                            raise FeatureReaderError(f"{label} is malformed JSON.") from error
+                        self.position = end
+                        return value
+                index += 1
+
+            if self.eof:
+                raise FeatureReaderError(f"{label} is incomplete JSON.")
+            self._read_more()
+
 
 class GeoJsonFeatureCollectionReader:
     """Incrementally read a GeoJSON FeatureCollection one bounded feature at a time.
@@ -161,7 +211,7 @@ class GeoJsonFeatureCollectionReader:
                     source.position += 1
                 else:
                     while True:
-                        feature = source.value(
+                        feature = source.object(
                             max_bytes=self.max_feature_bytes,
                             label=f"Feature at offset {feature_count}",
                         )
