@@ -35,8 +35,10 @@ The current `vector.buffer` Run service still resolves and parses a complete Art
 
 ## Remaining integration gates
 
-- Transactional streamed output writer and Artifact finalization after successful source EOF.
-- Whole-run independent validation across all output batches.
+- Direct external source inputs in Run orchestration and worker dispatch.
+- Independent whole-run validation across all output batches before the staging validation gate.
+- Crash recovery/reopen, resumable checkpoints and cross-process writer ownership.
+- Run success transition and reconciliation after Artifact metadata publication.
 - Run-level checkpoint/retry semantics with stable source cursor/version evidence.
 - Provider pagination, spatial/temporal windows and query pushdown.
 - Runtime authorization and scoped credential injection.
