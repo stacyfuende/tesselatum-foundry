@@ -242,13 +242,13 @@ class StreamingFeatureCollectionTransaction:
                 metadata=metadata,
                 chunk_size=chunk_size,
             )
-            self._state = "committed"
             self._record.update({
-                "state": self._state,
+                "state": "committed",
                 "published_artifact": identity,
                 "published_checksum_sha256": artifact["checksum"]["value"],
             })
             self._persist()
+            self._state = "committed"
             return artifact
 
     def abort(self, reason_code: str) -> None:
