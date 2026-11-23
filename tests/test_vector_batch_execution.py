@@ -87,6 +87,7 @@ def test_batch_executor_preserves_offsets_and_checksums() -> None:
     assert result.first_feature_offset == 6
     assert result.feature_count == 2
     assert result.input_checksum_sha256 == batch_for().checksum_sha256
+    assert result.output_crs == {"authority": "EPSG", "code": "3857"}
     assert hashlib.sha256(result.payload).hexdigest() == result.output_checksum_sha256
     assert result.duration_ms == 12
     assert worker.calls == 1
