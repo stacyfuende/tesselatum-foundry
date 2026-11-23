@@ -19,6 +19,10 @@ from .batches import BatchExecutionError, ProcessedFeatureBatch, VectorBufferBat
 from .remote_worker import RemoteVectorBufferWorker, RemoteVectorReprojectWorker
 from .runs import RunRepository, RunStateError
 from .external_runs import ExternalVectorBufferRunFactory
+from .external_orchestration import (
+    ExternalRunAuthorizationError,
+    ExternalVectorBufferRunOrchestrator,
+)
 from .streaming import StreamingFinalizationResult, StreamingRunFinalizer
 from .streaming_pipeline import StreamingExecutionResult, StreamingVectorBufferPipeline
 from .service import (
@@ -40,8 +44,10 @@ __all__ = [
     "DockerWorker",
     "DockerVectorReprojectWorker",
     "ExecutionPreconditionError",
-    "ExternalVectorBufferRunFactory",
     "ExecutionResult",
+    "ExternalRunAuthorizationError",
+    "ExternalVectorBufferRunFactory",
+    "ExternalVectorBufferRunOrchestrator",
     "ImplementationRegistry",
     "ImplementationRegistryError",
     "ProcessedFeatureBatch",
