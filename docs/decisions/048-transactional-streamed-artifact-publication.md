@@ -26,7 +26,9 @@ A streamed Run MUST use a provisional output transaction with the following phas
 
 The local implementation now covers private bounded staging, atomic journal replacement, source-EOF gating, output sealing/checksum, a validation-evidence gate, bounded file-to-object copying, content-addressed object durability before immutable metadata registration, and a stable publication intent that permits same-identity retry after metadata commit. The transaction reaches `committed` only after Artifact metadata is registered.
 
-Not yet implemented: reopening transactions after process restart, resumable batch checkpoints, cross-process writer leases, independent whole-output critic integration, automatic orphan garbage collection, Run success transition, and Run/Artifact reconciliation. The current Artifact publisher is a local filesystem adapter; production object stores must provide equivalent conditional publication and durability semantics.
+The recovery entry point can reopen a journal after process restart for reconciliation, but it does not resume batch writes: it verifies a matching committed Artifact and repairs the final journal state, or aborts uncommitted work. `RunRepository.reconcile_committed_output` verifies Artifact bytes and a passing execution-output report before transitioning the Run to succeeded; repeating the same reconciliation is idempotent.
+
+Not yet implemented: resumable batch checkpoints, cross-process writer leases, independent whole-output critic integration, automatic orphan garbage collection, and a streaming Run orchestrator that invokes both publication and Run reconciliation. The current Artifact publisher is a local filesystem adapter; production object stores must provide equivalent conditional publication and durability semantics.
 
 ## Required invariants
 
