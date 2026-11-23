@@ -28,7 +28,7 @@ Foundry is Tessellatum's spatial computation infrastructure. It makes spatial da
 | Concern | Intended behavior | Status |
 |---|---|---|
 | Source access | Provider-neutral `SourceAdapter` protocol and `LocalFileSourceAdapter` implemented | Remote/provider adapters and direct worker input resolution pending |
-| Bounded reads | Local adapter streams bounded byte chunks and enforces optional byte budgets | Format-aware feature windows, pagination and provider-side pushdown pending |
+| Bounded reads | Local adapter streams bounded byte chunks; `iter_feature_batches` emits canonical feature batches bounded by feature count and encoded bytes, with offsets and SHA-256 checksums | Format-aware readers, provider pagination/window pushdown, worker dispatch and streaming output remain pending |
 | Source identity | `ExternalDataReference` records provider/dataset/resource URI and optional version/ETag/SHA-256 evidence | Immutable Run source provenance is implemented; source-aware cache-key integration pending |
 | Credentials | Source references reject URI userinfo, query strings and fragments | Scoped runtime credential injection and authorization policy pending |
 | Source custody | Remains with provider/customer by default | Architectural rule |
@@ -58,7 +58,7 @@ The current filesystem Artifact store is a local adapter. A future artifact back
 
 ## Verification status
 
-The latest observed PR #24 CI run before this direction change was cancelled during initialization. It did not establish successful migration or test execution. The new direction removes the proposed information-database migration gate; existing PostGIS conformance tests remain part of CI.
+PR #24 CI run #700 completed successfully on commit `3ee8d247260792ec73d825878d668c350c48303e`: package/schema checks, lint, both worker-image builds, and the full Docker/PostGIS test suite passed. Subsequent commits added broader URI regression cases and the bounded feature-batch primitive; those newer commits still require CI verification. The new direction removes the proposed information-database migration gate; existing PostGIS conformance tests remain part of CI.
 
 For each subsequent commit, record the exact head SHA and final checks. Do not claim a CI pass without a completed successful run on the current head.
 
