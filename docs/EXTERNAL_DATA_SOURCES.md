@@ -1,6 +1,6 @@
 # External spatial data sources
 
-**Status:** Initial adapter contract implemented; Run integration pending.
+**Status:** Initial adapter contract and immutable Run source-provenance field implemented; direct external streaming into worker execution remains pending.
 
 Foundry does not take custody of source datasets by default. A source reference identifies where data lives and records the evidence available to reproduce access. An adapter describes and reads that resource without requiring it to be copied into the Foundry Artifact store.
 
@@ -35,4 +35,4 @@ for chunk in adapter.iter_chunks(source, chunk_size=8 * 1024 * 1024):
     consume_chunk(chunk)
 ```
 
-This is a byte-stream boundary, not a universal feature model or query engine. Format-specific readers will interpret bytes and implement feature/window-level selection. The current adapter is not yet wired into Run input resolution, worker staging, authorization or cache keys. Those are the next integration gates.
+This is a byte-stream boundary, not a universal feature model or query engine. Format-specific readers will interpret bytes and implement feature/window-level selection. Run records can now retain validated source references alongside the immutable Artifact input snapshots they describe. Retries must preserve identical source evidence. This is provenance capture, not direct external-input execution: the current vector.buffer service still resolves an Artifact before invoking its worker. Format-aware readers, direct bounded worker input, authorization and source-aware cache keys remain future integration gates.
