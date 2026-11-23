@@ -37,8 +37,8 @@ The current `vector.buffer` Run service still resolves and parses a complete Art
 
 - Direct external source inputs in Run orchestration and worker dispatch.
 - Independent whole-run validation across all output batches before the staging validation gate.
-- Crash recovery/reopen, resumable checkpoints and cross-process writer ownership.
-- Run success transition and reconciliation after Artifact metadata publication.
+- Resumable checkpoints, process-restart writer reopening and cross-process writer ownership; current recovery is conservative and aborts uncommitted work rather than resuming it.
+- Wiring the Run reconciliation primitive into a streaming Run orchestrator.
 - Run-level checkpoint/retry semantics with stable source cursor/version evidence.
 - Provider pagination, spatial/temporal windows and query pushdown.
 - Runtime authorization and scoped credential injection.
