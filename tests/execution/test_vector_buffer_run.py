@@ -289,6 +289,62 @@ def test_output_critic_fails_run_without_registering_invalid_output(tmp_path):
         )
 
 
+def test_run_records_external_source_evidence_immutably(tmp_path):
+    store, runs, service = make_service(tmp_path, WrongCrsWorker())
+    input_artifact = make_input(store)
+    cell = bind_cell_to_input(input_artifact)
+    capability = load_fixture("capability.valid.json")
+    source_references = [
+        {
+            "input_port": "features",
+            "reference": {
+                "provider": "customer-catalog",
+                "dataset_id": "roads-current",
+                "uri": "https://data.example.test/roads",
+                "version": "2026-11-22",
+                "media_type": "application/geo+json",
+            },
+        }
+    ]
+
+    result = service.execute(
+        cell=cell,
+        capability=capability,
+        actor_id="test-operator",
+        source_references=source_references,
+    )
+
+    assert result.run["status"] == "failed"
+    assert result.run["source_references"] == source_references
+    assert runs.get_run(result.run["run_id"])["source_references"] == source_references
+
+
+def test_run_rejects_signed_external_source_urls_before_creation(tmp_path):
+    store, runs, service = make_service(tmp_path, WrongCrsWorker())
+    input_artifact = make_input(store)
+    cell = bind_cell_to_input(input_artifact)
+    capability = load_fixture("capability.valid.json")
+
+    with pytest.raises(ExecutionPreconditionError, match="External source reference is invalid"):
+        service.execute(
+            cell=cell,
+            capability=capability,
+            actor_id="test-operator",
+            source_references=[
+                {
+                    "input_port": "features",
+                    "reference": {
+                        "provider": "customer-catalog",
+                        "dataset_id": "roads-current",
+                        "uri": "https://data.example.test/roads?token=secret",
+                    },
+                }
+            ],
+        )
+
+    assert not (runs.root / "runs").exists()
+
+
 def test_run_service_rejects_worker_for_a_different_capability_version(tmp_path):
     class IncompatibleWorker(WrongCrsWorker):
         capability_version = "2.0.0"
