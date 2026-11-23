@@ -29,10 +29,10 @@ Foundry is Tessellatum's spatial computation infrastructure. It makes spatial da
 |---|---|---|
 | Source access | Provider-neutral `SourceAdapter` protocol and bounded local-file adapter | Remote/provider adapters and runtime authorization |
 | Bounded reads | Incremental NDJSON reader and lazy source-to-batch pipeline; feature-count and encoded-byte bounds | Additional readers, pagination, windowing and query pushdown |
-| Batch worker | `VectorBufferBatchExecutor` verifies batch input checksum/metadata, pinned worker image, output shape/count and output checksum | Not yet integrated with Run orchestration or whole-run validation |
+| Batch worker | `VectorBufferBatchExecutor` verifies batch input checksum/metadata, pinned worker image, output shape/count, output checksum and worker-reported CRS | Not yet integrated with Run orchestration |
 | Source identity | `ExternalDataReference` records provider/dataset/resource URI and optional version/ETag/SHA-256 evidence | Provider-specific stable version evidence and source-aware cache identity |
 | Run provenance | Immutable source references are validated against input ports and preserved across retries | Direct external input execution and cursor/checkpoint evidence |
-| Output lifecycle | Private provisional staging, atomic journal, EOF gate, bounded file-based Artifact writer, durable object-before-metadata publication, stable publication intent, conservative process-restart reconciliation, bounded Artifact integrity verification, producer Run/attempt binding, verified Run success reconciliation | Resumable checkpoints, cross-process writer lease, whole-output critic integration and streaming Run orchestrator remain pending |
+| Output lifecycle | Private provisional staging, atomic journal, EOF gate, bounded file-based Artifact writer, durable object-before-metadata publication, stable publication intent, conservative process-restart reconciliation, bounded Artifact integrity verification, producer Run/attempt binding, verified Run success reconciliation, bounded per-batch independent critic and aggregate report | Resumable checkpoints, cross-process writer lease, direct external-source Run orchestration and production source adapters remain pending |
 | Credentials | Source references reject URI userinfo, query strings and fragments | Scoped runtime credential injection and authorization policy |
 | Source custody | Remains with provider/customer by default | Architectural rule |
 | Snapshots | Optional customer-controlled snapshot, not mandatory Foundry ingestion | Policy only; no snapshot service planned as core |
@@ -61,7 +61,7 @@ The current filesystem Artifact store is a local adapter. A future artifact back
 
 ## Verification status
 
-PR #24 CI run #722 passed on commit `b06ed5fb423bcce0cc20a4606bf1b391f145693b`, including installed-package/schema checks, lint, both worker-image builds and the full Docker/PostGIS test suite. Run #730 failed at the installed-package check because `storage/__init__.py` contained literal escape sequences; that packaging defect has been corrected. The streamed Artifact publication changes are newer commits and require fresh CI verification.
+PR #24 CI run #722 passed on commit `b06ed5fb423bcce0cc20a4606bf1b391f145693b`, including installed-package/schema checks, lint, both worker-image builds and the full Docker/PostGIS test suite. Run #730 failed at the installed-package check because `storage/__init__.py` contained literal escape sequences; that packaging defect has been corrected. The streamed Artifact publication and bounded output-critic changes are newer commits and require fresh CI verification.
 
 For each subsequent commit, record the exact head SHA and final checks. Do not claim a CI pass without a completed successful run on the current head.
 
