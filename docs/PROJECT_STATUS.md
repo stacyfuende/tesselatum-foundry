@@ -1,6 +1,6 @@
 # Project status and collaboration guide
 
-**Last updated:** 2026-11-22  
+**Last updated:** 2026-11-23  
 **Status:** Living engineering tracker.
 
 This page distinguishes implemented behavior from proposed work and unverified assumptions. A checked item does not imply production readiness. Read [Foundry architecture](FOUNDRY_REORIENTATION.md) and [Project vision](PROJECT_VISION.md) for current direction.
@@ -23,14 +23,17 @@ Foundry is Tessellatum's spatial computation infrastructure. It makes spatial da
 | Remote worker | Authenticated HTTPS transport and service exist for vector capabilities | Concurrency, process-isolated hard timeouts, ingress, resource policy, monitoring, secret rotation and deployment verification |
 | Provenance and methodology | Rights declarations and lineage; buffer approximation and reprojection operation evidence | Declarations are not legal authorization; suitability and accuracy need domain evidence |
 
-## External data boundary — direction accepted, implementation pending
+## External data boundary — implementation in progress
 
-| Concern | Intended behavior | Status |
+| Concern | Implemented | Remaining / qualification |
 |---|---|---|
-| Source access | Provider-neutral `SourceAdapter` protocol and `LocalFileSourceAdapter` implemented | Remote/provider adapters and direct worker input resolution pending |
-| Bounded reads | Local adapter streams bounded byte chunks; incremental `NdjsonFeatureReader` decodes GeoJSON Features; `iter_external_feature_batches` emits count/byte-bounded payloads with offsets and SHA-256 checksums | Other format readers, provider pagination/window pushdown, worker dispatch and streaming output remain pending |
-| Source identity | `ExternalDataReference` records provider/dataset/resource URI and optional version/ETag/SHA-256 evidence | Immutable Run source provenance is implemented; source-aware cache-key integration pending |
-| Credentials | Source references reject URI userinfo, query strings and fragments | Scoped runtime credential injection and authorization policy pending |
+| Source access | Provider-neutral `SourceAdapter` protocol and bounded local-file adapter | Remote/provider adapters and runtime authorization |
+| Bounded reads | Incremental NDJSON reader and lazy source-to-batch pipeline; feature-count and encoded-byte bounds | Additional readers, pagination, windowing and query pushdown |
+| Batch worker | `VectorBufferBatchExecutor` verifies batch input checksum/metadata, pinned worker image, output shape/count and output checksum | Not yet integrated with Run orchestration or whole-run validation |
+| Source identity | `ExternalDataReference` records provider/dataset/resource URI and optional version/ETag/SHA-256 evidence | Provider-specific stable version evidence and source-aware cache identity |
+| Run provenance | Immutable source references are validated against input ports and preserved across retries | Direct external input execution and cursor/checkpoint evidence |
+| Output lifecycle | Existing Artifact store remains immutable and content-addressed | Streaming writer, provisional output staging, atomic finalization and cleanup on failure |
+| Credentials | Source references reject URI userinfo, query strings and fragments | Scoped runtime credential injection and authorization policy |
 | Source custody | Remains with provider/customer by default | Architectural rule |
 | Snapshots | Optional customer-controlled snapshot, not mandatory Foundry ingestion | Policy only; no snapshot service planned as core |
 
@@ -58,7 +61,7 @@ The current filesystem Artifact store is a local adapter. A future artifact back
 
 ## Verification status
 
-PR #24 CI run #700 completed successfully on commit `3ee8d247260792ec73d825878d668c350c48303e`: package/schema checks, lint, both worker-image builds, and the full Docker/PostGIS test suite passed. Subsequent commits added broader URI regression cases and the bounded feature-batch primitive; those newer commits still require CI verification. The new direction removes the proposed information-database migration gate; existing PostGIS conformance tests remain part of CI.
+PR #24 CI run #718 passed on commit `751f248dbff5fe72d3883d5c8e71c12846b67f20`, including installed-package/schema checks, lint, both worker-image builds and the full Docker/PostGIS test suite. The subsequent batch-worker adapter and its tests are newer commits and require a fresh CI run.
 
 For each subsequent commit, record the exact head SHA and final checks. Do not claim a CI pass without a completed successful run on the current head.
 
