@@ -160,3 +160,30 @@ def test_external_run_retry_rejects_changed_source_identity(tmp_path):
             capability=capability,
             retry_of_run_id=first["run_id"],
         )
+
+
+def test_external_run_rejects_geographic_crs_for_planar_buffer(tmp_path):
+    _, factory = make_factory(tmp_path)
+    cell = external_cell()
+    cell["inputs"]["features"]["spatial"]["crs"] = {
+        "authority": "EPSG",
+        "code": 4326,
+    }
+
+    with pytest.raises(ExecutionPreconditionError, match="projected measurement CRS"):
+        factory.create_queued_run(
+            cell=cell,
+            capability=fixture("capability.valid.json"),
+        )
+
+
+def test_external_run_rejects_geometry_types_outside_capability(tmp_path):
+    _, factory = make_factory(tmp_path)
+    cell = external_cell()
+    cell["inputs"]["features"]["spatial"]["geometry_types"] = ["Triangle"]
+
+    with pytest.raises(ExecutionPreconditionError, match="exceed the Capability"):
+        factory.create_queued_run(
+            cell=cell,
+            capability=fixture("capability.valid.json"),
+        )
