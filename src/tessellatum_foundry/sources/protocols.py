@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterator
+from collections.abc import Iterable, Iterator, Mapping
 from typing import Protocol
 
 from .models import ExternalDataReference, SourceDescriptor
@@ -27,3 +27,25 @@ class SourceAdapter(Protocol):
         chunk_size: int = 8 * 1024 * 1024,
         max_bytes: int | None = None,
     ) -> Iterator[bytes]: ...
+
+
+
+class FeatureReader(Protocol):
+    """Incrementally decode a source byte stream into individual features.
+
+    Readers must bound any internal buffering, preserve source order, reject
+    malformed records, and never silently skip invalid feature records.
+    Selection is explicit; unsupported selection must be rejected rather than
+    ignored. Implementations must not retain the complete source in memory.
+    """
+
+    supported_media_types: tuple[str, ...]
+
+    def iter_features(
+        self,
+        chunks: Iterable[bytes],
+        *,
+        selection: Mapping[str, object],
+    ) -> Iterator[Mapping[str, object]]:
+        """Yield decoded features from a bounded byte stream."""
+        ...
