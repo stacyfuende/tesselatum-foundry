@@ -132,7 +132,9 @@ class VectorBufferRunService:
         capability = deepcopy(capability)
         recipe_ref = deepcopy(recipe_ref)
         resolved_inputs = deepcopy(resolved_inputs or {})
-        source_references = deepcopy(source_references or [])
+        source_references = (
+            deepcopy(source_references) if source_references is not None else []
+        )
         if not isinstance(source_references, list):
             raise ExecutionPreconditionError("Source references must be supplied as a list.")
         self.contracts.validate("cell.schema.json", cell)
