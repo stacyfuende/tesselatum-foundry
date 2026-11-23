@@ -40,8 +40,10 @@ class StreamingVectorValidationReport:
 
     def as_validation_report(self, run_id: str) -> dict[str, Any]:
         """Serialize aggregate findings in Foundry's execution-output report shape."""
-        if not isinstance(run_id, str) or not run_id:
-            raise ValueError("run_id must be a non-empty string.")
+        if not isinstance(run_id, str) or not re.fullmatch(
+            r"[A-Za-z0-9][A-Za-z0-9._:/-]{0,254}", run_id
+        ):
+            raise ValueError("run_id must be a valid Foundry identifier.")
         passed = self.passed
         return {
             "report_id": f"report:{run_id}:output",
@@ -216,26 +218,56 @@ class VectorBufferStreamingValidator:
             )
             for code, (passed, message, pointer) in sorted(self._findings.items())
         ]
-        if self._batch_count == 0:
+        required_codes = {
+            "output.crs_matches_input",
+            "output.feature_collection",
+            "output.feature_count_preserved",
+            "output.geometry_validity",
+            "output.geometry_types",
+            "output.coordinate_finiteness",
+            "output.dimensionality",
+            "output.feature_metadata",
+        }
+        missing_codes = required_codes - set(self._findings)
+        for code in sorted(missing_codes):
             findings.append(
                 OutputFinding(
-                    code="output.feature_collection",
+                    code=code,
                     status="failed",
                     severity="error",
-                    message="Stream contained no feature batches.",
-                    json_pointer="/features",
+                    message="Required output validation evidence is missing.",
+                    json_pointer="/",
                 )
             )
-        if self._runtime_image_digest is None:
-            findings.append(
-                OutputFinding(
-                    code="output.worker_identity",
-                    status="failed",
-                    severity="error",
-                    message="No pinned worker image identity was recorded.",
-                    json_pointer="/worker/runtime_image_digest",
-                )
+        continuity_passed = self._batch_count > 0
+        findings.append(
+            OutputFinding(
+                code="output.batch_continuity",
+                status="passed" if continuity_passed else "failed",
+                severity="info" if continuity_passed else "error",
+                message=(
+                    f"Verified {self._batch_count} contiguous batches and "
+                    f"{self._feature_count} feature offsets."
+                    if continuity_passed
+                    else "Stream contained no feature batches."
+                ),
+                json_pointer="/batches",
             )
+        )
+        identity_passed = self._runtime_image_digest is not None
+        findings.append(
+            OutputFinding(
+                code="output.worker_identity",
+                status="passed" if identity_passed else "failed",
+                severity="info" if identity_passed else "error",
+                message=(
+                    f"All batches used pinned worker image {self._runtime_image_digest}."
+                    if identity_passed
+                    else "No pinned worker image identity was recorded."
+                ),
+                json_pointer="/worker/runtime_image_digest",
+            )
+        )
         return StreamingVectorValidationReport(
             geometry_types=tuple(sorted(self._geometry_types)),
             findings=tuple(findings),
