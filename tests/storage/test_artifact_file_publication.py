@@ -189,3 +189,24 @@ def test_recovery_aborts_unpublished_nonterminal_transaction(tmp_path):
     assert json.loads(recovered.journal_path.read_text())["state"] == "aborted"
     with pytest.raises(FileNotFoundError):
         store.get_artifact("artifact:never-published", "1.0.0")
+
+
+def test_recovery_refuses_committed_journal_when_object_bytes_are_corrupt(tmp_path):
+    store = FileSystemArtifactStore(tmp_path / "store")
+    transaction = _validated_transaction(tmp_path / "transactions")
+    artifact = transaction.publish_artifact(
+        store,
+        artifact_id="artifact:corrupt-after-commit",
+        version="1.0.0",
+        created_by="system:test",
+    )
+    object_path = store.root / artifact["storage"]["object_key"]
+    object_path.chmod(0o600)
+    object_path.write_bytes(b"corrupt")
+
+    with pytest.raises(ArtifactIntegrityError, match="failed checksum"):
+        StreamingFeatureCollectionTransaction.recover(
+            tmp_path / "transactions",
+            transaction.transaction_id,
+            store,
+        )
