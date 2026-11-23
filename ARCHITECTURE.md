@@ -86,7 +86,7 @@ Finding statuses distinguish passed, failed, warning, not_assessed, and requires
 
 An External Data Reference identifies a provider-controlled or customer-controlled resource without taking custody of its bytes. It records the provider and dataset identity, resource URI, optional resource/version/ETag/checksum evidence, media type, retrieval time, and non-secret selection parameters. Credentials MUST be injected at runtime and MUST NOT appear in the URI, Cell/Recipe definitions, Run manifests, or logs.
 
-Source adapters MUST expose bounded access (for example byte streams, windows, pagination, or provider-side query pushdown) and close resources on completion or cancellation. A locator without immutable version evidence is not a reproducible snapshot; the Run MUST record that limitation. Foundry MUST NOT silently mirror a complete external dataset merely to make a Run appear reproducible.
+Source adapters MUST expose bounded access (for example byte streams, windows, pagination, or provider-side query pushdown) and close resources on completion or cancellation. A locator without immutable version evidence is not a reproducible snapshot; the Run MUST record that limitation. Run records MAY include validated source references associated with their input ports; these references are immutable provenance and retries MUST preserve them exactly. Foundry MUST NOT silently mirror a complete external dataset merely to make a Run appear reproducible.
 
 An external reference is not an Artifact copy. A workflow may deliberately materialize a bounded or derived payload as an immutable Artifact when required, subject to explicit retention and access policy.
 
