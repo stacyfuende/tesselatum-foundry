@@ -241,6 +241,7 @@ def test_run_reconciliation_succeeds_only_after_verified_artifact_and_report(tmp
         created_by="system:test",
         media_type="application/geo+json",
         format_name="geojson",
+        metadata={"producer_run_id": running["run_id"], "producer_run_attempt": running["attempt"]},
     )
     report = {
         "report_id": "report:reconciled",
@@ -296,6 +297,7 @@ def test_run_reconciliation_rejects_failed_validation_report(tmp_path):
         created_by="system:test",
         media_type="application/octet-stream",
         format_name="binary",
+        metadata={"producer_run_id": running["run_id"], "producer_run_attempt": running["attempt"]},
     )
     report = {
         "report_id": "report:rejected",
