@@ -94,16 +94,25 @@ class ExternalVectorBufferRunOrchestrator:
         """Claim and execute one queued source-backed Run attempt."""
         run = self.run_repository.get_run(run_id)
         if run.get("status") != "queued":
-            raise RunStateError("Only a queued Run can be claimed for external execution.")
+            raise RunStateError(
+                "Only a queued Run can be claimed for external execution."
+            )
         self.contracts.validate("cell.schema.json", cell)
         canonical = self.capabilities.require_exact(capability)
         if canonical.get("capability_id") != "vector.buffer":
-            raise ExecutionPreconditionError("Only vector.buffer is supported by this orchestrator.")
+            raise ExecutionPreconditionError(
+                "Only vector.buffer is supported by this orchestrator."
+            )
         if run.get("capability") != {
             "capability_id": canonical["capability_id"],
             "version": canonical["version"],
-        } or run.get("cell") != {"cell_id": cell["cell_id"], "version": cell["version"]}:
-            raise ExecutionPreconditionError("Run identity does not match the supplied Cell and Capability.")
+        } or run.get("cell") != {
+            "cell_id": cell["cell_id"],
+            "version": cell["version"],
+        }:
+            raise ExecutionPreconditionError(
+                "Run identity does not match the supplied Cell and Capability."
+            )
         binding = cell.get("inputs", {}).get("features")
         if not isinstance(binding, dict) or binding.get("source") != "external":
             raise ExecutionPreconditionError(
@@ -149,12 +158,16 @@ class ExternalVectorBufferRunOrchestrator:
                 canonical["output_ports"], "result"
             )
             if reference.media_type not in input_port.get("accepted_media_types", []):
-                raise ExecutionPreconditionError("Source media type is not accepted by the Capability.")
+                raise ExecutionPreconditionError(
+                    "Source media type is not accepted by the Capability."
+                )
             spatial = binding["spatial"]
             input_crs = spatial["crs"]
             output_contract = cell.get("output_contracts", {}).get("result")
             if not isinstance(output_contract, dict):
-                raise ExecutionPreconditionError("Cell must declare a result output contract.")
+                raise ExecutionPreconditionError(
+                    "Cell must declare a result output contract."
+                )
             output_media_type = VectorBufferRunService._output_media_type(
                 output_contract, output_port
             )
