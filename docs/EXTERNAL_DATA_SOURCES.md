@@ -1,6 +1,6 @@
 # External spatial data sources
 
-**Status:** External source adapter, Run provenance, incremental NDJSON reader, bounded feature-batch pipeline and a batch-aware vector worker adapter are implemented. Direct external Run orchestration and transactional output publication remain pending.
+**Status:** External source adapter, Run provenance, incremental NDJSON reader, bounded feature-batch pipeline, batch-aware worker bridge, provisional output staging and local streamed Artifact publication are implemented. Direct external Run orchestration, independent whole-output validation integration and Run/Artifact reconciliation remain pending.
 
 Foundry does not take custody of source datasets by default. A source reference identifies where data lives and records the evidence available to reproduce access. An adapter describes and reads that resource without requiring it to be copied into the Foundry Artifact store.
 
