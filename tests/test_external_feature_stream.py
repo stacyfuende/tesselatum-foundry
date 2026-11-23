@@ -33,7 +33,7 @@ def write_source(tmp_path: Path, payload: bytes, **reference_options):
         provider="customer-filesystem",
         dataset_id="ndjson-fixture",
         uri=path.resolve().as_uri(),
-        media_type="application/x-ndjson",
+        media_type=reference_options.pop("media_type", "application/x-ndjson"),
         **reference_options,
     )
     return path, reference
@@ -86,7 +86,7 @@ def test_external_stream_connects_local_source_reader_and_bounded_batches(tmp_pa
 def test_external_stream_verifies_source_checksum_before_successful_exhaustion(
     tmp_path: Path,
 ) -> None:
-    payload = json.dumps(feature(1)).encode()
+    payload = json.dumps(feature(1)).encode() + b"\\n"
     _, reference = write_source(
         tmp_path,
         payload,
