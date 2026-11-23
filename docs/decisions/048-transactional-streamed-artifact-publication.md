@@ -22,6 +22,12 @@ A streamed Run MUST use a provisional output transaction with the following phas
 6. **Commit:** only after all sources are complete and validation succeeds, atomically publish the content-addressed object and immutable Artifact metadata. Then transition the Run to succeeded with the output reference and validation evidence.
 7. **Abort:** on any failure before commit, mark the transaction aborted, make its staging data unreachable, and ensure no successful Artifact or succeeded Run is visible. Cleanup may be deferred, but aborted staging must never be mistaken for committed output.
 
+## Current implementation status
+
+The local implementation now covers private bounded staging, atomic journal replacement, source-EOF gating, output sealing/checksum, a validation-evidence gate, bounded file-to-object copying, content-addressed object durability before immutable metadata registration, and a stable publication intent that permits same-identity retry after metadata commit. The transaction reaches `committed` only after Artifact metadata is registered.
+
+Not yet implemented: reopening transactions after process restart, resumable batch checkpoints, cross-process writer leases, independent whole-output critic integration, automatic orphan garbage collection, Run success transition, and Run/Artifact reconciliation. The current Artifact publisher is a local filesystem adapter; production object stores must provide equivalent conditional publication and durability semantics.
+
 ## Required invariants
 
 - At most one active writer owns a transaction; concurrent append attempts are rejected.
