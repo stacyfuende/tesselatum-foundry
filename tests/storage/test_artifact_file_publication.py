@@ -41,7 +41,7 @@ def _validated_transaction(root):
 
 def test_put_file_publishes_content_addressed_object_in_bounded_chunks(tmp_path):
     source = tmp_path / "large-output.geojson"
-    source.write_bytes((b'{"features":[' + b' ' * 4096 + b"]}"))
+    source.write_bytes(b'{"features":[' + b' ' * 4096 + b"]}")
     expected = hashlib.sha256(source.read_bytes()).hexdigest()
     store = FileSystemArtifactStore(tmp_path / "store")
 
