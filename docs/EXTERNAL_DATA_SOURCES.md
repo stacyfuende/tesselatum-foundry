@@ -1,6 +1,6 @@
 # External spatial data sources
 
-**Status:** External source adapter, Run provenance, incremental NDJSON reader and bounded feature-batch pipeline implemented. Direct external worker execution remains pending.
+**Status:** External source adapter, Run provenance, incremental NDJSON reader, bounded feature-batch pipeline and a batch-aware vector worker adapter are implemented. Direct external Run orchestration and transactional output publication remain pending.
 
 Foundry does not take custody of source datasets by default. A source reference identifies where data lives and records the evidence available to reproduce access. An adapter describes and reads that resource without requiring it to be copied into the Foundry Artifact store.
 
@@ -15,63 +15,32 @@ Foundry does not take custody of source datasets by default. A source reference 
 
 The JSON Schema is `schema/external-data-reference.schema.json`. The initial `LocalFileSourceAdapter` is a minimal reference implementation. It reads local `file://` resources in bounded chunks and does not copy them into Artifact storage.
 
-## Example
-
-```python
-from pathlib import Path
-from tessellatum_foundry.sources import ExternalDataReference, LocalFileSourceAdapter
-
-path = Path("roads.parquet").resolve()
-source = ExternalDataReference(
-    provider="customer-filesystem",
-    dataset_id="roads-2026-11",
-    uri=path.as_uri(),
-    media_type="application/vnd.apache.parquet",
-)
-
-adapter = LocalFileSourceAdapter()
-descriptor = adapter.describe(source)
-for chunk in adapter.iter_chunks(source, chunk_size=8 * 1024 * 1024):
-    consume_chunk(chunk)
-```
+## Bounded feature batches
 
 This is a byte-stream boundary, not a universal feature model or query engine. Format-specific readers interpret bytes and implement feature/window-level selection. `iter_feature_batches` accepts a feature iterator and emits canonical GeoJSON FeatureCollection payloads bounded by both feature count and encoded byte size. Each batch carries a monotonically increasing sequence, first-feature offset, feature count and SHA-256 checksum. It retains only the current batch in memory, preserves feature order, and rejects a single feature that exceeds the configured byte budget.
 
-Example:
-
-```python
-from tessellatum_foundry.sources import iter_feature_batches
-
-for batch in iter_feature_batches(feature_reader.iter_features(source), max_features=2_000, max_bytes=16 * 1024 * 1024):
-    process_bounded_batch(batch.payload, batch.checksum_sha256)
-```
-
 `NdjsonFeatureReader` is the first concrete incremental format reader. It decodes one GeoJSON Feature per line, handles chunk boundaries and CRLF, caps individual record size, preserves order, and rejects non-empty selections because it does not implement filtering or query pushdown. `iter_external_feature_batches` composes the source adapter, reader and batcher into a single lazy pipeline.
 
-Example:
+## Batch worker bridge
 
-```python
-from tessellatum_foundry.sources import (
-    ExternalDataReference,
-    LocalFileSourceAdapter,
-    NdjsonFeatureReader,
-    iter_external_feature_batches,
-)
+`VectorBufferBatchExecutor` adapts the existing `vector.buffer` worker protocol to one bounded `FeatureBatch` at a time. Before dispatch it verifies the input payload checksum, sequence/offset/count metadata and FeatureCollection shape. It pins the runtime image identity, rejects worker outputs with a different feature count, canonicalizes the output payload and records its checksum alongside the original batch offset and sequence.
 
-source = ExternalDataReference(
-    provider="customer-filesystem",
-    dataset_id="roads.ndjson",
-    uri=roads_path.as_uri(),
-    media_type="application/x-ndjson",
-)
-for batch in iter_external_feature_batches(
-    source,
-    adapter=LocalFileSourceAdapter(),
-    reader=NdjsonFeatureReader(),
-    max_batch_features=2_000,
-    max_batch_bytes=16 * 1024 * 1024,
-):
-    stage_batch_for_worker(batch.payload, batch.checksum_sha256)
-```
+This adapter is deliberately not a Run executor. It does not publish Artifacts, checkpoint progress, aggregate a complete output, or transition a Run. It is a tested worker boundary that can be composed into a future streaming lifecycle without changing the existing whole-Artifact worker contract.
 
-This is a bounded source-to-batch data path, not yet a complete Run execution path. Adapters and readers are lazy; the pipeline does not warehouse the source. A source checksum is verified only when the byte stream reaches EOF, so consumers MUST stage provisional batch results and MUST NOT publish output Artifacts or mark a Run successful until the iterator is exhausted without error. The current `vector.buffer` Run service still resolves and parses a complete Artifact before invoking its whole-FeatureCollection worker. Provider pagination/window pushdown, restartable source cursors, batch-aware worker dispatch, streaming output writers, Run-level checkpoint/retry semantics, runtime authorization and source-aware cache keys remain future integration gates.
+## Integrity and publication boundary
+
+A source checksum is verified only when the byte stream reaches EOF. Consumers MUST stage provisional batch results and MUST NOT publish output Artifacts or mark a Run successful until the source iterator is exhausted without error. A later batch failure or EOF checksum mismatch invalidates the entire provisional result set.
+
+The current `vector.buffer` Run service still resolves and parses a complete Artifact before invoking its whole-FeatureCollection worker. The batch adapter is not yet wired into that Run service.
+
+## Remaining integration gates
+
+- Transactional streamed output writer and Artifact finalization after successful source EOF.
+- Whole-run independent validation across all output batches.
+- Run-level checkpoint/retry semantics with stable source cursor/version evidence.
+- Provider pagination, spatial/temporal windows and query pushdown.
+- Runtime authorization and scoped credential injection.
+- Source-aware cache identity and explicit semantics when provider version evidence is absent.
+- Additional format readers chosen against real workloads, not an untested format matrix.
+
+The source path does not warehouse upstream data. Optional derived outputs remain subject to explicit ownership, access and retention policy.
