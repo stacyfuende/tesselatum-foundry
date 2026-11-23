@@ -7,10 +7,12 @@ import pytest
 
 from tessellatum_foundry.sources import (
     ExternalDataReference,
+    GeoJsonFeatureCollectionReader,
     LocalFileSourceAdapter,
     SourceIntegrityError,
     SourceLimitExceeded,
 )
+from tessellatum_foundry.sources.readers import FeatureReaderError
 from tessellatum_foundry.validation.contracts import ContractRegistry
 
 
@@ -102,3 +104,69 @@ def test_external_reference_matches_canonical_schema(tmp_path: Path) -> None:
     ContractRegistry().validate(
         "external-data-reference.schema.json", reference_value.to_dict()
     )
+
+
+def test_geojson_feature_collection_reader_handles_arbitrary_chunk_boundaries() -> None:
+    payload = (
+        b'{"type":"FeatureCollection","features":['
+        b'{"type":"Feature","properties":{"name":"caf\xc3\xa9"},"geometry":null},'
+        b'{"type":"Feature","properties":{"n":2},"geometry":null}]}'
+    )
+    chunks = (payload[index : index + 3] for index in range(0, len(payload), 3))
+
+    features = list(
+        GeoJsonFeatureCollectionReader().iter_features(chunks, selection={})
+    )
+
+    assert [feature["properties"] for feature in features] == [
+        {"name": "café"},
+        {"n": 2},
+    ]
+
+
+def test_geojson_reader_accepts_features_before_type_and_empty_collection() -> None:
+    payload = b'{"features":[],"bbox":[0,0,1,1],"type":"FeatureCollection"}'
+
+    assert list(
+        GeoJsonFeatureCollectionReader().iter_features([payload], selection={})
+    ) == []
+
+
+def test_geojson_reader_enforces_feature_size_limit() -> None:
+    payload = (
+        b'{"type":"FeatureCollection","features":['
+        b'{"type":"Feature","properties":{"long":"0123456789"},"geometry":null}]}'
+    )
+
+    with pytest.raises(FeatureReaderError, match="byte limit"):
+        list(
+            GeoJsonFeatureCollectionReader(max_feature_bytes=32).iter_features(
+                [payload], selection={}
+            )
+        )
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        b'{"type":"FeatureCollection","features":[{"type":"Point"}]}',
+        b'{"type":"FeatureCollection","features":[{"type":"Feature"}',
+        b'{"type":"FeatureCollection","features":[{"type":"Feature"},]}',
+        b'{"type":"FeatureCollection","features":[],"features":[]}',
+        b'{"type":"FeatureCollection","features":[]} trailing',
+        b'{"type":"Feature","features":[]}',
+    ],
+)
+def test_geojson_reader_rejects_malformed_or_non_collection_input(payload: bytes) -> None:
+    with pytest.raises(FeatureReaderError):
+        list(GeoJsonFeatureCollectionReader().iter_features([payload], selection={}))
+
+
+def test_geojson_reader_rejects_selection() -> None:
+    with pytest.raises(FeatureReaderError, match="does not support source selection"):
+        list(
+            GeoJsonFeatureCollectionReader().iter_features(
+                [b'{"type":"FeatureCollection","features":[]}'],
+                selection={"bbox": [0, 0, 1, 1]},
+            )
+        )
