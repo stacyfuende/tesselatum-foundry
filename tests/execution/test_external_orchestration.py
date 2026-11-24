@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 
 import pytest
@@ -128,7 +129,7 @@ def test_external_orchestrator_rejects_nonqueued_run_without_claiming_it(tmp_pat
 
 
 @pytest.mark.skipif(
-    not __import__("os").getenv("FOUNDRY_VECTOR_BUFFER_IMAGE"),
+    not os.getenv("FOUNDRY_VECTOR_BUFFER_IMAGE"),
     reason="Docker worker image is built and configured only in the container CI job.",
 )
 def test_external_source_run_executes_worker_validates_and_publishes(tmp_path):
