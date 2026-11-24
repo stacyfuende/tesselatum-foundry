@@ -202,3 +202,22 @@ bounded range requests for header, IFD, tile/strip and overview access, enforce
 a cumulative request/byte budget, and verify that all ranges belong to one
 stable object version (ETag or equivalent) before publishing derived results.
 The vector FeatureCollection pipeline remains unchanged.
+
+
+## Raster grid and range-read contracts
+
+The first raster-specific contracts are represented independently of any
+pixel library. RasterMetadata records grid dimensions, per-band dtypes,
+six-coefficient affine transform, optional CRS and NoData values, block shapes
+and overview factors. RasterWindow uses zero-based pixel offsets and
+dimensions with optional one-based band indexes; windows are checked against
+the declared grid before execution.
+
+BudgetedRasterRangeReader wraps a byte-range adapter with cumulative request,
+total-byte and per-request byte limits. It requires a strong ETag because the
+current HTTP adapter uses If-Match to pin each range to one source
+representation. Failed attempts consume budget. This is a safe transport
+boundary, not a TIFF/COG decoder: no IFD parsing, COG conformance validation,
+overview selection or pixel decoding is claimed yet. A future reader must
+derive and validate RasterMetadata from bounded source reads before exposing
+windows to a raster worker.
