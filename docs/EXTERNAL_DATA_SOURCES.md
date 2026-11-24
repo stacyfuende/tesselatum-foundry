@@ -253,6 +253,13 @@ entry count, and records each directory's dimensions and strip/tile byte
 ranges. This is enough to inventory the image-directory graph and identify
 candidate reduced-resolution images without reading their pixel blocks.
 
+For tiled directories, the index also records tile width/height, samples per
+pixel, planar configuration, compression and NewSubfileType. It checks that
+tile dimensions are positive and that the tile-offset table length matches the
+image grid (including separate-planar sample planes). The index follows both
+primary next-IFD links and SubIFD links; it does not assume every later IFD is
+an overview.
+
 The directory index is not yet a COG conformance verdict. It does not establish
 that SubIFDs are valid reduced-resolution overviews, validate overview scale
 relationships, prove IFD/tile ordering or byte-range alignment, parse GeoKeys
