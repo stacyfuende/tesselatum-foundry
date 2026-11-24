@@ -9,7 +9,7 @@ from __future__ import annotations
 import struct
 from dataclasses import dataclass
 
-from .raster import BudgetedRasterRangeReader, RasterContractError, RasterMetadata
+from .raster import BudgetedRasterRangeReader, RasterMetadata
 
 
 class TiffFormatError(ValueError):
@@ -22,6 +22,20 @@ class TiffLayout:
     bigtiff: bool
     first_ifd_offset: int
     file_size: int
+
+
+@dataclass(frozen=True, slots=True)
+class TiffDirectory:
+    """One bounded TIFF directory and its image-block byte ranges."""
+
+    offset: int
+    width: int
+    height: int
+    tiled: bool
+    block_offsets: tuple[int, ...]
+    block_byte_counts: tuple[int, ...]
+    subifd_offsets: tuple[int, ...]
+    next_ifd_offset: int
 
 
 @dataclass(frozen=True, slots=True)
@@ -69,6 +83,136 @@ class TiffRangeReader:
         self.source = source
         self.max_ifd_entries = max_ifd_entries
         self.max_tag_bytes = max_tag_bytes
+
+    def read_directory_index(
+        self, *, file_size: int, max_directories: int = 256
+    ) -> tuple[TiffDirectory, ...]:
+        """Traverse the primary IFD chain and nested SubIFDs with hard bounds."""
+        if (
+            isinstance(max_directories, bool)
+            or not isinstance(max_directories, int)
+            or max_directories < 1
+        ):
+            raise ValueError("max_directories must be a positive integer.")
+        endian, big, first_offset, count_size, entry_size, next_size, inline_size, offset_fmt = (
+            self._header(file_size)
+        )
+        pending = [first_offset]
+        visited: set[int] = set()
+        directories: list[TiffDirectory] = []
+        while pending:
+            offset = pending.pop(0)
+            if offset in visited:
+                raise TiffFormatError("TIFF directory graph contains a cycle or duplicate reference.")
+            if len(directories) >= max_directories:
+                raise TiffFormatError("TIFF directory graph exceeds its configured limit.")
+            visited.add(offset)
+            count_fmt = "Q" if big else "H"
+            raw_count = self._read_checked(offset, count_size, file_size)
+            count = struct.unpack(endian + count_fmt, raw_count)[0]
+            if count < 1 or count > self.max_ifd_entries:
+                raise TiffFormatError("TIFF directory entry count is empty or exceeds its limit.")
+            entries_start = offset + count_size
+            size = count * entry_size + next_size
+            raw = self._read_checked(entries_start, size, file_size)
+            tags: dict[int, tuple[int, int, bytes]] = {}
+            for index in range(count):
+                entry = raw[index * entry_size:(index + 1) * entry_size]
+                if big:
+                    tag, typ, value_count = struct.unpack(endian + "HHQ", entry[:12])
+                    value_field = entry[12:20]
+                else:
+                    tag, typ, value_count = struct.unpack(endian + "HHI", entry[:8])
+                    value_field = entry[8:12]
+                if tag in tags:
+                    raise TiffFormatError(f"TIFF directory contains duplicate tag {tag}.")
+                if typ not in _TYPE_FORMATS:
+                    continue
+                unit = _TYPE_FORMATS[typ][1]
+                byte_count = value_count * unit
+                if byte_count > self.max_tag_bytes:
+                    raise TiffFormatError(f"TIFF tag {tag} exceeds the configured metadata limit.")
+                if byte_count <= inline_size:
+                    payload = value_field[:byte_count]
+                else:
+                    value_offset = struct.unpack(endian + offset_fmt, value_field)[0]
+                    payload = self._read_checked(value_offset, byte_count, file_size)
+                tags[tag] = (typ, value_count, payload)
+
+            def integer_values(tag: int) -> tuple[int, ...]:
+                item = tags.get(tag)
+                if item is None:
+                    return ()
+                typ, value_count, payload = item
+                if typ not in (3, 4, 13, 16, 18):
+                    raise TiffFormatError(f"TIFF tag {tag} must contain unsigned integer offsets.")
+                fmt = _TYPE_FORMATS[typ][0]
+                return tuple(int(value) for value in struct.unpack(endian + fmt * value_count, payload))
+
+            width_values = integer_values(256)
+            height_values = integer_values(257)
+            if not width_values or not height_values:
+                raise TiffFormatError("TIFF directory is missing image dimensions.")
+            width, height = width_values[0], height_values[0]
+            tiled = 322 in tags or 323 in tags
+            if tiled:
+                if 322 not in tags or 323 not in tags:
+                    raise TiffFormatError("Tiled TIFF directory must declare both tile dimensions.")
+                block_offsets = integer_values(324)
+                block_counts = integer_values(325)
+            else:
+                block_offsets = integer_values(273)
+                block_counts = integer_values(279)
+            if not block_offsets or len(block_offsets) != len(block_counts):
+                raise TiffFormatError("TIFF directory block offsets and byte counts are incomplete.")
+            for block_offset, block_count in zip(block_offsets, block_counts):
+                if block_count < 1 or block_offset + block_count > file_size:
+                    raise TiffFormatError("TIFF block byte range is outside the declared file.")
+            subifds = integer_values(330)
+            next_offset = struct.unpack(
+                endian + ("Q" if big else "I"), raw[count * entry_size:count * entry_size + next_size]
+            )[0]
+            if next_offset:
+                pending.append(next_offset)
+            pending.extend(subifds)
+            directories.append(
+                TiffDirectory(
+                    offset, width, height, tiled, block_offsets, block_counts, subifds, next_offset
+                )
+            )
+        return tuple(directories)
+
+    def _header(self, file_size: int):
+        if isinstance(file_size, bool) or not isinstance(file_size, int) or file_size < 8:
+            raise TiffFormatError("TIFF file size must be an integer of at least eight bytes.")
+        header = self.source.read(offset=0, length=min(16, file_size))
+        if header[:2] == b"II":
+            endian = "<"
+        elif header[:2] == b"MM":
+            endian = ">"
+        else:
+            raise TiffFormatError("TIFF byte-order marker is invalid.")
+        magic = struct.unpack(endian + "H", header[2:4])[0]
+        if magic == 42:
+            big = False
+            if len(header) < 8:
+                raise TiffFormatError("Classic TIFF header is truncated.")
+            first_offset = struct.unpack(endian + "I", header[4:8])[0]
+            count_size, entry_size, next_size, inline_size, offset_fmt = 2, 12, 4, 4, "I"
+        elif magic == 43:
+            if len(header) < 16:
+                raise TiffFormatError("BigTIFF header is truncated.")
+            offset_size = struct.unpack(endian + "H", header[4:6])[0]
+            if offset_size != 8 or header[6:8] != b"\x00\x00":
+                raise TiffFormatError("BigTIFF offset-size declaration is unsupported.")
+            big = True
+            first_offset = struct.unpack(endian + "Q", header[8:16])[0]
+            count_size, entry_size, next_size, inline_size, offset_fmt = 8, 20, 8, 8, "Q"
+        else:
+            raise TiffFormatError("TIFF magic number is neither 42 nor 43.")
+        if first_offset < (16 if big else 8) or first_offset >= file_size:
+            raise TiffFormatError("First TIFF IFD offset is outside the file.")
+        return endian, big, first_offset, count_size, entry_size, next_size, inline_size, offset_fmt
 
     def read(self, *, file_size: int) -> TiffRaster:
         if isinstance(file_size, bool) or not isinstance(file_size, int) or file_size < 8:
@@ -223,10 +367,7 @@ class TiffRangeReader:
     def _read_checked(self, offset: int, length: int, file_size: int) -> bytes:
         if offset < 0 or length < 1 or offset + length > file_size:
             raise TiffFormatError("TIFF metadata range is outside the declared file.")
-        try:
-            return self.source.read(offset=offset, length=length)
-        except Exception as error:
-            raise TiffFormatError("TIFF metadata range could not be read.") from error
+        return self.source.read(offset=offset, length=length)
 
     @staticmethod
     def _dtype(bits: int, sample_format: int) -> str:
