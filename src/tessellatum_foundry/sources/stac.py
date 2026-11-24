@@ -21,7 +21,9 @@ class StacResolutionError(ValueError):
     """A STAC Item or selected asset cannot become a safe source reference."""
 
 
-def parse_stac_item(payload: bytes | str, *, max_bytes: int = MAX_STAC_ITEM_BYTES) -> dict[str, Any]:
+def parse_stac_item(
+    payload: bytes | str, *, max_bytes: int = MAX_STAC_ITEM_BYTES
+) -> dict[str, Any]:
     """Parse one bounded STAC Item JSON document."""
     if isinstance(max_bytes, bool) or not isinstance(max_bytes, int) or max_bytes < 1:
         raise ValueError("max_bytes must be a positive integer.")
