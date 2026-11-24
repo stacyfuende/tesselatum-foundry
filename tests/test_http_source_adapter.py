@@ -184,7 +184,7 @@ def test_https_adapter_reads_exact_byte_range_with_validator():
     payload = adapter.read_range(
         reference(etag='"v1"'), offset=0, length=4
     )
-    assert payload == b"II*\\x00"
+    assert payload == b"II*\x00"
     assert requests[0].get_header("Range") == "bytes=0-3"
     assert requests[0].get_header("If-match") == '"v1"'
     assert requests[0].get_header("Authorization") == "Bearer runtime-secret"
