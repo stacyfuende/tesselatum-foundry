@@ -7,9 +7,9 @@ import pytest
 from tessellatum_foundry.sources import (
     BudgetedRasterRangeReader,
     ExternalDataReference,
+    SourceLimitExceeded,
     TiffFormatError,
     TiffRangeReader,
-    SourceLimitExceeded,
 )
 
 
