@@ -235,8 +235,9 @@ class StacApiSearchClient:
                 for value in bbox
             ):
                 raise StacSearchError("bbox coordinates must be finite numbers.")
+            longitude_max = bbox[2] if len(bbox) == 4 else bbox[3]
             latitude_min, latitude_max = bbox[1], bbox[3 if len(bbox) == 4 else 4]
-            if not -180 <= bbox[0] <= 180 or not -180 <= bbox[3] <= 180:
+            if not -180 <= bbox[0] <= 180 or not -180 <= longitude_max <= 180:
                 raise StacSearchError("bbox longitude coordinates must be within [-180, 180].")
             if not -90 <= latitude_min <= 90 or not -90 <= latitude_max <= 90:
                 raise StacSearchError("bbox latitude coordinates must be within [-90, 90].")
