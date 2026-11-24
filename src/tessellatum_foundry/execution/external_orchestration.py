@@ -212,7 +212,13 @@ class ExternalVectorBufferRunOrchestrator:
                     },
                     event_type="external_run_preflight_failed",
                 )
-            raise
+            if isinstance(error, PermissionError):
+                raise ExternalRunAuthorizationError(
+                    "External source authorization failed."
+                ) from None
+            raise ExecutionPreconditionError(
+                f"External Run preflight failed ({type(error).__name__})."
+            ) from None
 
         started = self.run_repository.transition(
             run_id,
