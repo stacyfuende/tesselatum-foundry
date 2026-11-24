@@ -112,3 +112,60 @@ def test_rejects_unsupported_sample_representation():
     tiff_reader, _ = reader(bytes(payload))
     with pytest.raises(TiffFormatError, match="Unsupported TIFF sample"):
         tiff_reader.read(file_size=len(payload))
+
+
+def bigtiff():
+    endian = "<"
+    tags = [
+        (256, 4, 1, (32,)),
+        (257, 4, 1, (16,)),
+        (258, 3, 1, (8,)),
+        (259, 3, 1, (1,)),
+        (273, 16, 1, (0,)),
+        (277, 3, 1, (1,)),
+        (278, 4, 1, (16,)),
+        (279, 16, 1, (512,)),
+        (339, 3, 1, (1,)),
+        (33550, 12, 3, (2.0, 2.0, 0.0)),
+        (33922, 12, 6, (0.0, 0.0, 0.0, 100.0, 200.0, 0.0)),
+    ]
+    ifd_offset = 16
+    extra_start = ifd_offset + 8 + len(tags) * 20 + 8
+    extra = bytearray()
+    entries = []
+    for tag, typ, count, values in tags:
+        fmt = {3: "H", 4: "I", 12: "d", 16: "Q"}[typ]
+        packed = struct.pack(endian + fmt * count, *values)
+        if len(packed) <= 8:
+            field = packed.ljust(8, b"\\x00")
+        else:
+            field = struct.pack(endian + "Q", extra_start + len(extra))
+            extra.extend(packed)
+        entries.append(struct.pack(endian + "HHQ", tag, typ, count) + field)
+    pixel_offset = extra_start + len(extra)
+    for index, (tag, _typ, _count, _values) in enumerate(tags):
+        if tag == 273:
+            entries[index] = (
+                struct.pack(endian + "HHQ", tag, 16, 1)
+                + struct.pack(endian + "Q", pixel_offset)
+            )
+    header = b"II" + struct.pack(endian + "HHHQ", 43, 8, 0, ifd_offset)
+    directory = (
+        struct.pack(endian + "Q", len(entries))
+        + b"".join(entries)
+        + struct.pack(endian + "Q", 0)
+    )
+    return header + directory + bytes(extra) + b"\\x00" * 512
+
+
+def test_reads_bigtiff_header_and_first_directory():
+    payload = bigtiff()
+    tiff_reader, _ = reader(payload)
+
+    result = tiff_reader.read(file_size=len(payload))
+
+    assert result.layout.bigtiff is True
+    assert result.layout.first_ifd_offset == 16
+    assert result.metadata.width == 32
+    assert result.metadata.height == 16
+    assert result.strip_offsets[0] + result.strip_byte_counts[0] <= len(payload)
