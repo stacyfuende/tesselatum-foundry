@@ -103,7 +103,9 @@ class TiffRangeReader:
         while pending:
             offset = pending.pop(0)
             if offset in visited:
-                raise TiffFormatError("TIFF directory graph contains a cycle or duplicate reference.")
+                raise TiffFormatError(
+                    "TIFF directory graph contains a cycle or duplicate reference."
+                )
             if len(directories) >= max_directories:
                 raise TiffFormatError("TIFF directory graph exceeds its configured limit.")
             visited.add(offset)
@@ -149,7 +151,8 @@ class TiffRangeReader:
                 if typ not in (3, 4, 13, 16, 18):
                     raise TiffFormatError(f"TIFF tag {tag} must contain unsigned integer offsets.")
                 fmt = _TYPE_FORMATS[typ][0]
-                return tuple(int(value) for value in struct.unpack(endian + fmt * value_count, payload))
+                unpacked = struct.unpack(endian + fmt * value_count, payload)
+                return tuple(int(value) for value in unpacked)
 
             width_values = integer_values(256)
             height_values = integer_values(257)
@@ -166,14 +169,15 @@ class TiffRangeReader:
                 block_offsets = integer_values(273)
                 block_counts = integer_values(279)
             if not block_offsets or len(block_offsets) != len(block_counts):
-                raise TiffFormatError("TIFF directory block offsets and byte counts are incomplete.")
+                raise TiffFormatError(
+                    "TIFF directory block offsets and byte counts are incomplete."
+                )
             for block_offset, block_count in zip(block_offsets, block_counts):
                 if block_count < 1 or block_offset + block_count > file_size:
                     raise TiffFormatError("TIFF block byte range is outside the declared file.")
             subifds = integer_values(330)
-            next_offset = struct.unpack(
-                endian + ("Q" if big else "I"), raw[count * entry_size:count * entry_size + next_size]
-            )[0]
+            next_field = raw[count * entry_size:count * entry_size + next_size]
+            next_offset = struct.unpack(endian + ("Q" if big else "I"), next_field)[0]
             if next_offset:
                 pending.append(next_offset)
             pending.extend(subifds)
