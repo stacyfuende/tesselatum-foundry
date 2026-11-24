@@ -276,6 +276,7 @@ def test_directory_index_preserves_source_budget_errors():
     with pytest.raises(SourceLimitExceeded):
         tiff_reader.read_directory_index(file_size=len(payload))
 
+
 def test_directory_index_follows_primary_ifd_chain():
     payload = bytearray(classic_tiff())
     first_ifd_size = struct.unpack_from("<H", payload, 8)[0] * 12 + 2 + 4
