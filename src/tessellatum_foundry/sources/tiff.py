@@ -36,6 +36,12 @@ class TiffDirectory:
     block_byte_counts: tuple[int, ...]
     subifd_offsets: tuple[int, ...]
     next_ifd_offset: int
+    tile_width: int | None
+    tile_height: int | None
+    samples_per_pixel: int
+    planar_configuration: int
+    compression: int
+    new_subfile_type: int
 
 
 @dataclass(frozen=True, slots=True)
@@ -160,9 +166,17 @@ class TiffRangeReader:
                 raise TiffFormatError("TIFF directory is missing image dimensions.")
             width, height = width_values[0], height_values[0]
             tiled = 322 in tags or 323 in tags
+            tile_width = tile_height = None
             if tiled:
-                if 322 not in tags or 323 not in tags:
-                    raise TiffFormatError("Tiled TIFF directory must declare both tile dimensions.")
+                if not all(tag in tags for tag in (322, 323, 324, 325)):
+                    raise TiffFormatError("Tiled TIFF directory must declare tile dimensions and tables.")
+                tile_width_values = integer_values(322)
+                tile_height_values = integer_values(323)
+                if len(tile_width_values) != 1 or len(tile_height_values) != 1:
+                    raise TiffFormatError("TIFF tile dimensions must be single positive integers.")
+                tile_width, tile_height = tile_width_values[0], tile_height_values[0]
+                if tile_width < 1 or tile_height < 1:
+                    raise TiffFormatError("TIFF tile dimensions must be positive.")
                 block_offsets = integer_values(324)
                 block_counts = integer_values(325)
             else:
@@ -175,6 +189,24 @@ class TiffRangeReader:
             for block_offset, block_count in zip(block_offsets, block_counts):
                 if block_count < 1 or block_offset + block_count > file_size:
                     raise TiffFormatError("TIFF block byte range is outside the declared file.")
+            samples_values = integer_values(277)
+            samples_per_pixel = samples_values[0] if samples_values else 1
+            planar_values = integer_values(284)
+            planar_configuration = planar_values[0] if planar_values else 1
+            if samples_per_pixel < 1 or planar_configuration not in (1, 2):
+                raise TiffFormatError("TIFF sample or planar configuration is invalid.")
+            if planar_configuration == 2 and not tiled:
+                raise TiffFormatError("Separate-planar strip directories are unsupported.")
+            compression_values = integer_values(259)
+            compression = compression_values[0] if compression_values else 1
+            subfile_values = integer_values(254)
+            new_subfile_type = subfile_values[0] if subfile_values else 0
+            if tiled:
+                across = (width + tile_width - 1) // tile_width
+                down = (height + tile_height - 1) // tile_height
+                expected_blocks = across * down * (samples_per_pixel if planar_configuration == 2 else 1)
+                if len(block_offsets) != expected_blocks:
+                    raise TiffFormatError("TIFF tile table does not match its image grid.")
             subifds = integer_values(330)
             next_field = raw[count * entry_size:count * entry_size + next_size]
             next_offset = struct.unpack(endian + ("Q" if big else "I"), next_field)[0]
@@ -186,7 +218,9 @@ class TiffRangeReader:
             pending.extend(new_references)
             directories.append(
                 TiffDirectory(
-                    offset, width, height, tiled, block_offsets, block_counts, subifds, next_offset
+                    offset, width, height, tiled, block_offsets, block_counts,
+                    subifds, next_offset, tile_width, tile_height, samples_per_pixel,
+                    planar_configuration, compression, new_subfile_type
                 )
             )
         return tuple(directories)
