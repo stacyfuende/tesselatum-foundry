@@ -35,13 +35,14 @@ class FakeResponse:
 
 
 def reference(**kwargs) -> ExternalDataReference:
-    return ExternalDataReference(
-        provider="example",
-        dataset_id="roads",
-        uri="https://data.example.test/roads.geojson",
-        media_type="application/geo+json",
-        **kwargs,
-    )
+    values = {
+        "provider": "example",
+        "dataset_id": "roads",
+        "uri": "https://data.example.test/roads.geojson",
+        "media_type": "application/geo+json",
+    }
+    values.update(kwargs)
+    return ExternalDataReference(**values)
 
 
 def test_https_adapter_describes_and_streams_with_runtime_headers():
