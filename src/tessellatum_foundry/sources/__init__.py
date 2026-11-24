@@ -14,7 +14,7 @@ from .models import (
     SourceIntegrityError,
     SourceLimitExceeded,
 )
-from .protocols import FeatureReader, SourceAdapter
+from .protocols import FeatureReader, RangeSourceAdapter, SourceAdapter
 from .readers import (
     FeatureReaderError,
     GeoJsonFeatureCollectionReader,
@@ -40,6 +40,7 @@ __all__ = [
     "NdjsonFeatureReader",
     "SourceAccessError",
     "SourceAdapter",
+    "RangeSourceAdapter",
     "SourceDescriptor",
     "SourceIntegrityError",
     "SourceLimitExceeded",
