@@ -8,6 +8,7 @@ validated source bytes before constructing RasterMetadata.
 from __future__ import annotations
 
 import math
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 from typing import Protocol
 
@@ -91,14 +92,31 @@ class RasterMetadata:
             raise TypeError("Raster dimensions and band count must be integers.")
         if any(value < 1 for value in dimensions):
             raise RasterContractError("Raster dimensions and band count must be positive.")
-        if len(self.dtypes) != self.band_count or any(not value for value in self.dtypes):
+        if len(self.dtypes) != self.band_count or any(
+            not isinstance(value, str) or not value.strip() for value in self.dtypes
+        ):
             raise RasterContractError("A non-empty dtype is required for every raster band.")
-        if len(self.transform) != 6 or any(not math.isfinite(value) for value in self.transform):
+        if len(self.transform) != 6 or any(
+            isinstance(value, bool)
+            or not isinstance(value, (int, float))
+            or not math.isfinite(value)
+            for value in self.transform
+        ):
             raise RasterContractError("Raster affine transform must contain six finite values.")
         if self.transform[1] * self.transform[5] - self.transform[2] * self.transform[4] == 0:
             raise RasterContractError("Raster affine transform must be invertible.")
-        if self.nodata and len(self.nodata) != self.band_count:
-            raise RasterContractError("NoData values must align with the raster band count.")
+        if self.nodata and (
+            len(self.nodata) != self.band_count
+            or any(
+                value is not None
+                and (
+                    isinstance(value, bool)
+                    or not isinstance(value, (int, float))
+                )
+                for value in self.nodata
+            )
+        ):
+            raise RasterContractError("NoData values must be numeric and align with raster bands.")
         if self.block_shapes and len(self.block_shapes) != self.band_count:
             raise RasterContractError("Block shapes must align with the raster band count.")
         if any(
@@ -114,10 +132,17 @@ class RasterMetadata:
             or tuple(sorted(set(self.overview_factors))) != self.overview_factors
         ):
             raise RasterContractError("Overview factors must be unique, sorted integers above one.")
-        if self.crs is not None and not self.crs.strip():
-            raise RasterContractError("CRS must be non-empty when supplied.")
-        if not self.driver.strip():
-            raise RasterContractError("Raster driver must be non-empty.")
+        if self.crs is not None and (
+            not isinstance(self.crs, str) or not self.crs.strip()
+        ):
+            raise RasterContractError("CRS must be non-empty text when supplied.")
+        if not isinstance(self.driver, str) or not self.driver.strip():
+            raise RasterContractError("Raster driver must be non-empty text.")
+        if not isinstance(self.metadata, Mapping) or any(
+            not isinstance(key, str) or not isinstance(value, str)
+            for key, value in self.metadata.items()
+        ):
+            raise RasterContractError("Raster metadata must contain only string keys and values.")
 
     def validate_window(self, window: RasterWindow) -> None:
         window.validate_against(self)
@@ -147,7 +172,11 @@ class BudgetedRasterRangeReader:
         ):
             if isinstance(value, bool) or not isinstance(value, int) or value < 1:
                 raise ValueError(f"{name} must be a positive integer.")
-        if reference.etag is None or not reference.etag.strip() or reference.etag.startswith("W/"):
+        if (
+            not isinstance(reference.etag, str)
+            or not reference.etag.strip()
+            or reference.etag.startswith("W/")
+        ):
             raise RasterContractError("Raster range reads require a strong source ETag.")
         if max_range_bytes > max_total_bytes:
             raise ValueError("max_range_bytes cannot exceed max_total_bytes.")
