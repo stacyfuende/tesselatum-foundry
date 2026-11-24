@@ -114,6 +114,12 @@ class HttpSourceAdapter:
         try:
             with self.opener(request, timeout=self.timeout_seconds) as response:
                 self._verify_etag(reference, response.headers)
+                content_length = response.headers.get("Content-Length")
+                expected_size = int(content_length) if content_length and content_length.isdigit() else None
+                if max_bytes is not None and expected_size is not None and expected_size > max_bytes:
+                    raise SourceLimitExceeded(
+                        f"Remote source exceeds the {max_bytes}-byte read limit."
+                    )
                 while True:
                     read_size = chunk_size
                     if max_bytes is not None:
@@ -128,6 +134,10 @@ class HttpSourceAdapter:
                     total += len(chunk)
                     digest.update(chunk)
                     yield chunk
+                if expected_size is not None and total != expected_size:
+                    raise SourceIntegrityError(
+                        f"Remote source {reference.dataset_id!r} size changed during retrieval."
+                    )
         except (SourceIntegrityError, SourceLimitExceeded):
             raise
         except Exception:
@@ -181,9 +191,9 @@ class HttpSourceAdapter:
     @staticmethod
     def _verify_etag(reference: ExternalDataReference, headers: Message) -> None:
         observed = headers.get("ETag")
-        if reference.etag is not None and observed is not None and observed != reference.etag:
+        if reference.etag is not None and observed != reference.etag:
             raise SourceIntegrityError(
-                f"Remote source {reference.dataset_id!r} changed ETag."
+                f"Remote source {reference.dataset_id!r} ETag is missing or changed."
             )
 
     @staticmethod
