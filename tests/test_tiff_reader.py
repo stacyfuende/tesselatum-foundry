@@ -4,8 +4,12 @@ import struct
 
 import pytest
 
-from tessellatum_foundry.sources import BudgetedRasterRangeReader, ExternalDataReference
-from tessellatum_foundry.sources.tiff import TiffFormatError, TiffRangeReader
+from tessellatum_foundry.sources import (
+    BudgetedRasterRangeReader,
+    ExternalDataReference,
+    TiffFormatError,
+    TiffRangeReader,
+)
 
 
 class MemoryRanges:
