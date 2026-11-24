@@ -142,7 +142,7 @@ def test_search_enforces_response_byte_and_item_limits():
     [
         {"bbox": [0, 0, 1]},
         {"bbox": [0, 0, float("nan"), 1]},
-        {"bbox": [2, 0, 1, 1]},
+        {"bbox": [0, 2, 1, 1]},
         {"bbox": [0, 0, 1, 1], "intersects": {"type": "Point", "coordinates": [0, 0]}},
         {"limit": 0},
         {"collections": [""]},
@@ -187,3 +187,31 @@ def test_search_rejects_non_json_intersects_and_invalid_item_identity():
     )
     with pytest.raises(StacSearchError, match="invalid Item"):
         list(client(bad_item).search())
+
+
+
+@pytest.mark.parametrize(
+    "bbox",
+    [
+        [170, -10, -170, 10],
+        [170, -10, 0, -170, 10, 100],
+    ],
+)
+def test_search_accepts_antimeridian_crossing_bboxes(bbox):
+    transport = FakeSearchTransport([page([])])
+    list(client(transport).search(bbox=bbox))
+    assert json.loads(transport.calls[0][2])["bbox"] == bbox
+
+
+@pytest.mark.parametrize(
+    "bbox",
+    [
+        [0, -91, 1, 1],
+        [0, 0, 181, 1],
+        [0, 2, 1, 1],
+        [0, 0, 0, 1, 1, -1],
+    ],
+)
+def test_search_rejects_invalid_bbox_axis_ranges(bbox):
+    with pytest.raises(StacSearchError):
+        list(client(FakeSearchTransport([])).search(bbox=bbox))
