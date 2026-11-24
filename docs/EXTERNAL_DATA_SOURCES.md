@@ -180,3 +180,25 @@ is disabled in normal pull-request CI. Configure
 `FOUNDRY_STAC_ASSET_HOSTS` with exact asset hostnames and optionally
 `FOUNDRY_STAC_SEARCH_URL` to select a compatible public STAC API endpoint.
 The test only resolves metadata; it does not download the raster asset.
+
+
+## Exact HTTP byte-range reads
+
+`HttpSourceAdapter.read_range` now provides the transport primitive required
+for remote formats whose metadata and data blocks can be accessed by byte
+offset, including Cloud Optimized GeoTIFF. It issues a single bounded HTTP
+Range request and accepts only HTTP 206 with an exact `Content-Range`, exact
+payload length and identity content encoding. When the source reference has an
+ETag, the request includes `If-Match` and the response ETag is checked again.
+The caller sets a maximum range size (16 MiB by default); a server that ignores
+Range and returns the full object is rejected rather than silently downloaded.
+
+This is deliberately only a byte-addressed transport primitive. It does not
+parse TIFF/GeoTIFF headers, validate COG layout, interpret overviews or
+georeferencing, select raster windows, decode pixels, or prove that a provider
+honors stable snapshot semantics. Those responsibilities belong in a
+raster-specific reader and validation contract. A raster reader must use
+bounded range requests for header, IFD, tile/strip and overview access, enforce
+a cumulative request/byte budget, and verify that all ranges belong to one
+stable object version (ETag or equivalent) before publishing derived results.
+The vector FeatureCollection pipeline remains unchanged.
