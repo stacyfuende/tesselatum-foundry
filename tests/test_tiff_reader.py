@@ -56,9 +56,16 @@ def classic_tiff(*, endian="<", tiled=False):
     # Patch the strip/tile offset to a valid byte immediately after metadata.
     for index, (tag, _typ, _count, _values) in enumerate(tags):
         if tag == offset_tag:
-            entries[index] = struct.pack(endian + "HHI", tag, 4, 1) + struct.pack(endian + "I", pixel_offset)
+            entries[index] = (
+                struct.pack(endian + "HHI", tag, 4, 1)
+                + struct.pack(endian + "I", pixel_offset)
+            )
     header = (b"II" if endian == "<" else b"MM") + struct.pack(endian + "HI", 42, ifd_offset)
-    directory = struct.pack(endian + "H", len(entries)) + b"".join(entries) + struct.pack(endian + "I", 0)
+    directory = (
+        struct.pack(endian + "H", len(entries))
+        + b"".join(entries)
+        + struct.pack(endian + "I", 0)
+    )
     return header + directory + bytes(extra) + b"\x00" * 512
 
 
