@@ -186,6 +186,7 @@ def test_https_adapter_reads_exact_byte_range_with_validator():
     )
     assert payload == b"II*\x00"
     assert requests[0].get_header("Range") == "bytes=0-3"
+    assert requests[0].get_header("Accept-encoding") == "identity"
     assert requests[0].get_header("If-match") == '"v1"'
     assert requests[0].get_header("Authorization") == "Bearer runtime-secret"
     assert response.read_sizes == [5]
@@ -244,3 +245,24 @@ def test_https_adapter_bounds_requested_range():
         adapter.read_range(reference(), offset=0, length=5, max_range_bytes=4)
     with pytest.raises(ValueError, match="offset"):
         adapter.read_range(reference(), offset=-1, length=4)
+
+
+
+def test_https_adapter_treats_if_match_precondition_failure_as_integrity_error():
+    import urllib.error
+
+    def opener(_request, **_kwargs):
+        raise urllib.error.HTTPError(
+            "https://data.example.test/roads.geojson",
+            412,
+            "precondition failed",
+            {},
+            None,
+        )
+
+    adapter = HttpSourceAdapter(
+        allowed_hosts={"data.example.test"},
+        opener=opener,
+    )
+    with pytest.raises(SourceIntegrityError, match="validator"):
+        adapter.read_range(reference(etag='"v1"'), offset=0, length=4)
