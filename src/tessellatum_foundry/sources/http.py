@@ -115,8 +115,16 @@ class HttpSourceAdapter:
             with self.opener(request, timeout=self.timeout_seconds) as response:
                 self._verify_etag(reference, response.headers)
                 content_length = response.headers.get("Content-Length")
-                expected_size = int(content_length) if content_length and content_length.isdigit() else None
-                if max_bytes is not None and expected_size is not None and expected_size > max_bytes:
+                expected_size = (
+                    int(content_length)
+                    if content_length and content_length.isdigit()
+                    else None
+                )
+                if (
+                    max_bytes is not None
+                    and expected_size is not None
+                    and expected_size > max_bytes
+                ):
                     raise SourceLimitExceeded(
                         f"Remote source exceeds the {max_bytes}-byte read limit."
                     )
