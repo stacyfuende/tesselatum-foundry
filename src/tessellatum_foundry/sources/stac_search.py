@@ -47,7 +47,11 @@ class StacApiSearchClient:
         max_pages: int = 100,
         max_items: int = 100_000,
     ) -> None:
-        if isinstance(max_page_bytes, bool) or not isinstance(max_page_bytes, int) or max_page_bytes < 1:
+        if (
+            isinstance(max_page_bytes, bool)
+            or not isinstance(max_page_bytes, int)
+            or max_page_bytes < 1
+        ):
             raise ValueError("max_page_bytes must be a positive integer.")
         if isinstance(max_pages, bool) or not isinstance(max_pages, int) or max_pages < 1:
             raise ValueError("max_pages must be a positive integer.")
