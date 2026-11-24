@@ -112,7 +112,18 @@ def test_search_rejects_unapproved_next_host():
 
 def test_search_rejects_cycles_and_page_limit():
     cyclic = FakeSearchTransport(
-        [page([], [{"rel": "next", "href": "https://catalog.example.test/search"}])]
+        [
+            page(
+                [],
+                [
+                    {
+                        "rel": "next",
+                        "href": "https://catalog.example.test/search",
+                        "method": "POST",
+                    }
+                ],
+            )
+        ]
     )
     with pytest.raises(StacSearchError, match="cycle"):
         list(client(cyclic).search())
