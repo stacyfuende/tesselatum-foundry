@@ -27,7 +27,7 @@ Foundry is Tessellatum's spatial computation infrastructure. It makes spatial da
 
 | Concern | Implemented | Remaining / qualification |
 |---|---|---|
-| Source access | Provider-neutral `SourceAdapter` protocol and bounded local-file adapter | Remote/provider adapters; production credential broker and authorization policy |
+| Source access | Provider-neutral `SourceAdapter`, bounded local-file adapter, and exact-host-allowlisted HTTPS adapter with runtime headers, no redirects, timeouts, byte/ETag/SHA-256 checks and redacted transport errors | Provider pagination/query pushdown, cloud-native signed access, OAuth refresh, DNS/IP policy and production credential broker |
 | Bounded reads | Incremental NDJSON reader and lazy source-to-batch pipeline; feature-count and encoded-byte bounds | Additional readers, pagination, windowing and query pushdown |
 | Batch worker | `VectorBufferBatchExecutor` verifies batch input checksum/metadata, pinned worker image, output shape/count, output checksum and worker-reported CRS; exercised by source-backed orchestration | Additional worker implementations and operational resource policy |
 | Source identity | `ExternalDataReference` records provider/dataset/resource URI and optional version/ETag/SHA-256 evidence | Provider-specific stable version evidence and source-aware cache identity |
