@@ -7,6 +7,7 @@ import urllib.error
 import urllib.request
 from collections.abc import Callable, Iterable, Iterator, Mapping
 from email.message import Message
+import re
 from typing import Any
 from urllib.parse import urlsplit
 
@@ -90,6 +91,78 @@ class HttpSourceAdapter:
         except Exception:
             raise SourceAccessError("Remote source metadata could not be retrieved.") from None
 
+    def read_range(
+        self,
+        reference: ExternalDataReference,
+        *,
+        offset: int,
+        length: int,
+        max_range_bytes: int = 16 * 1024 * 1024,
+    ) -> bytes:
+        """Read one exact byte range without falling back to a full-object GET.
+
+        A range is accepted only when the server returns HTTP 206 with an
+        exact Content-Range and byte count. If an ETag is known it is sent as
+        If-Match and verified again on the response. This is the transport
+        primitive needed by COG readers; it does not parse TIFF metadata.
+        """
+        for name, value in (("offset", offset), ("length", length),
+                            ("max_range_bytes", max_range_bytes)):
+            if isinstance(value, bool) or not isinstance(value, int):
+                raise TypeError(f"{name} must be an integer.")
+        if offset < 0 or length < 1 or max_range_bytes < 1:
+            raise ValueError("offset must be non-negative and range limits positive.")
+        if length > max_range_bytes:
+            raise SourceLimitExceeded(
+                f"Requested range exceeds the {max_range_bytes}-byte range limit."
+            )
+        end = offset + length - 1
+        range_headers = {"Range": f"bytes={offset}-{end}"}
+        if reference.etag is not None:
+            range_headers["If-Match"] = reference.etag
+        request = self._request(reference, method="GET", extra_headers=range_headers)
+        try:
+            with self.opener(request, timeout=self.timeout_seconds) as response:
+                status = getattr(response, "status", None)
+                if status is None and hasattr(response, "getcode"):
+                    status = response.getcode()
+                if status != 206:
+                    raise SourceIntegrityError(
+                        "Remote source did not honor the requested byte range."
+                    )
+                content_encoding = response.headers.get("Content-Encoding", "identity")
+                if content_encoding.lower() not in {"", "identity"}:
+                    raise SourceIntegrityError(
+                        "Remote source applied content encoding to a byte range."
+                    )
+                content_range = response.headers.get("Content-Range", "")
+                match = re.fullmatch(r"bytes (\\d+)-(\\d+)/(\\d+)", content_range)
+                if (
+                    match is None
+                    or int(match.group(1)) != offset
+                    or int(match.group(2)) != end
+                    or int(match.group(3)) <= end
+                ):
+                    raise SourceIntegrityError(
+                        "Remote source returned an unexpected Content-Range."
+                    )
+                self._verify_etag(reference, response.headers)
+                content_length = response.headers.get("Content-Length")
+                if content_length is not None and content_length != str(length):
+                    raise SourceIntegrityError(
+                        "Remote source returned an unexpected range Content-Length."
+                    )
+                payload = response.read(length + 1)
+                if len(payload) != length:
+                    raise SourceIntegrityError(
+                        "Remote source returned an incomplete or oversized byte range."
+                    )
+                return payload
+        except (SourceIntegrityError, SourceLimitExceeded):
+            raise
+        except Exception:
+            raise SourceAccessError("Remote source byte range could not be retrieved.") from None
+
     def iter_chunks(
         self,
         reference: ExternalDataReference,
@@ -157,7 +230,13 @@ class HttpSourceAdapter:
                 f"Remote source {reference.dataset_id!r} failed SHA-256 verification."
             )
 
-    def _request(self, reference: ExternalDataReference, *, method: str) -> urllib.request.Request:
+    def _request(
+        self,
+        reference: ExternalDataReference,
+        *,
+        method: str,
+        extra_headers: Mapping[str, str] | None = None,
+    ) -> urllib.request.Request:
         self._validate_uri(reference)
         try:
             headers = self.headers_resolver(reference)
@@ -166,7 +245,10 @@ class HttpSourceAdapter:
         if not isinstance(headers, Mapping):
             raise SourceAccessError("Runtime source credentials are unavailable.")
         safe_headers: dict[str, str] = {}
-        for name, value in headers.items():
+        combined_headers = dict(headers)
+        if extra_headers:
+            combined_headers.update(extra_headers)
+        for name, value in combined_headers.items():
             if (
                 not isinstance(name, str)
                 or not isinstance(value, str)
