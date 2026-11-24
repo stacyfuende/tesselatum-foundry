@@ -91,14 +91,15 @@ class StacApiSearchClient:
             ).encode("utf-8")
         except (TypeError, ValueError):
             raise StacSearchError("STAC search constraints must be JSON-compatible.") from None
-        visited: set[str] = set()
+        visited: set[tuple[str, str, bytes | None]] = set()
         page_count = 0
         item_count = 0
 
         while True:
-            if url in visited:
-                raise StacSearchError("STAC pagination contains a URL cycle.")
-            visited.add(url)
+            request_identity = (method, url, body)
+            if request_identity in visited:
+                raise StacSearchError("STAC pagination contains a request cycle.")
+            visited.add(request_identity)
             page_count += 1
             if page_count > self.max_pages:
                 raise StacSearchError("STAC search exceeded the page limit.")
