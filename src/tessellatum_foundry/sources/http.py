@@ -117,7 +117,10 @@ class HttpSourceAdapter:
                 f"Requested range exceeds the {max_range_bytes}-byte range limit."
             )
         end = offset + length - 1
-        range_headers = {"Range": f"bytes={offset}-{end}"}
+        range_headers = {
+            "Range": f"bytes={offset}-{end}",
+            "Accept-Encoding": "identity",
+        }
         if reference.etag is not None:
             range_headers["If-Match"] = reference.etag
         request = self._request(reference, method="GET", extra_headers=range_headers)
@@ -160,8 +163,18 @@ class HttpSourceAdapter:
                 return payload
         except (SourceIntegrityError, SourceLimitExceeded):
             raise
+        except urllib.error.HTTPError as error:
+            if error.code == 412:
+                raise SourceIntegrityError(
+                    "Remote source validator no longer matches the requested version."
+                ) from None
+            raise SourceAccessError(
+                "Remote source byte range could not be retrieved."
+            ) from None
         except Exception:
-            raise SourceAccessError("Remote source byte range could not be retrieved.") from None
+            raise SourceAccessError(
+                "Remote source byte range could not be retrieved."
+            ) from None
 
     def iter_chunks(
         self,
