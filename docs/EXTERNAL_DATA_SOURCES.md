@@ -158,3 +158,25 @@ refusing redirects. This client does not implement provider-specific auth,
 catalog conformance negotiation, asynchronous search jobs or spatial query
 planning. Search results are Items; resolve selected assets through
 `StacItemSourceResolver` and the separate asset-host policy.
+
+
+## STAC HTTPS search transport
+
+`UrllibStacSearchTransport` is the reference transport for the bounded STAC
+search client. It uses Python's default TLS certificate validation, an exact
+host allowlist checked on every request, a finite timeout, and a bounded
+response read. Redirects are rejected rather than followed. A runtime header
+resolver may inject scoped credentials for a request; header values are
+validated against CR/LF injection and transport-controlled headers cannot be
+overridden. HTTP failures are exposed as generic redacted transport errors.
+The transport is intentionally separate from `HttpSourceAdapter`: STAC
+search needs POST JSON bodies and ephemeral cursor URLs, while source adapters
+identify stable resources for data reads.
+
+An opt-in public-catalog integration test at
+`tests/integration/test_live_stac_search.py` uses Earth Search's v1 search
+endpoint to discover an Item and resolve one allowlisted asset reference. It
+is disabled in normal pull-request CI. Configure
+`FOUNDRY_STAC_ASSET_HOSTS` with exact asset hostnames and optionally
+`FOUNDRY_STAC_SEARCH_URL` to select a compatible public STAC API endpoint.
+The test only resolves metadata; it does not download the raster asset.
