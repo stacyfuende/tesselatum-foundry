@@ -81,9 +81,12 @@ class StacApiSearchClient:
         )
         method = "POST"
         url = self.search_endpoint
-        body: bytes | None = json.dumps(
-            query, separators=(",", ":"), allow_nan=False
-        ).encode("utf-8")
+        try:
+            body: bytes | None = json.dumps(
+                query, separators=(",", ":"), allow_nan=False
+            ).encode("utf-8")
+        except (TypeError, ValueError):
+            raise StacSearchError("STAC search constraints must be JSON-compatible.") from None
         visited: set[str] = set()
         page_count = 0
         item_count = 0
@@ -115,8 +118,14 @@ class StacApiSearchClient:
             if not isinstance(features, list):
                 raise StacSearchError("STAC search response features must be an array.")
             for feature in features:
-                if not isinstance(feature, dict) or feature.get("type") != "Feature":
-                    raise StacSearchError("STAC search returned a non-Item feature.")
+                if (
+                    not isinstance(feature, dict)
+                    or feature.get("type") != "Feature"
+                    or not isinstance(feature.get("id"), str)
+                    or not feature.get("id").strip()
+                    or not isinstance(feature.get("stac_version"), str)
+                ):
+                    raise StacSearchError("STAC search returned an invalid Item feature.")
                 item_count += 1
                 if item_count > self.max_items:
                     raise StacSearchError("STAC search exceeded the Item limit.")
