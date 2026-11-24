@@ -87,7 +87,7 @@ class HttpSourceAdapter:
                 )
         except SourceIntegrityError:
             raise
-        except Exception as error:
+        except Exception:
             raise SourceAccessError("Remote source metadata could not be retrieved.") from None
 
     def iter_chunks(
