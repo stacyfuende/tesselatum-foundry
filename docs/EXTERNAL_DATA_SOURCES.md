@@ -21,6 +21,19 @@ This is a byte-stream boundary, not a universal feature model or query engine. F
 
 `NdjsonFeatureReader` is the first concrete incremental format reader. It decodes one GeoJSON Feature per line, handles chunk boundaries and CRLF, caps individual record size, preserves order, and rejects non-empty selections because it does not implement filtering or query pushdown. `iter_external_feature_batches` composes the source adapter, reader and batcher into a single lazy pipeline.
 
+## Allowlisted HTTPS adapter
+
+`HttpSourceAdapter` is the first remote-source transport implementation. It is deliberately a constrained HTTPS adapter, not an unrestricted URL fetcher:
+
+- HTTPS only, default port only, and exact-match host allowlist (no wildcard suffixes).
+- Runtime credential/header resolver is injected per adapter instance; secrets are never written to the source reference or provenance record.
+- Redirects are rejected so runtime credentials cannot be forwarded to an unreviewed destination. Register the final host explicitly.
+- HEAD metadata and GET streaming use bounded timeouts and bounded read chunks; optional maximum source bytes, ETag and SHA-256 checks are enforced.
+- Credential resolver, transport and response errors are exposed as generic redacted source-access errors.
+- Header injection and transport-controlled headers are rejected.
+
+The adapter is appropriate for explicitly allowlisted object/API hosts where a stable HTTPS resource URL is available. It does not implement OAuth refresh, provider pagination, cloud object signing, IP-range/DNS rebinding defenses, range-resume, or provider-specific query pushdown. Those belong in separately reviewed provider adapters and the runtime credential broker. The caller remains responsible for configuring a narrow host allowlist and source authorization policy.
+
 ## Batch worker bridge
 
 `VectorBufferBatchExecutor` adapts the existing `vector.buffer` worker protocol to one bounded `FeatureBatch` at a time. Before dispatch it verifies the input payload checksum, sequence/offset/count metadata and FeatureCollection shape. It pins the runtime image identity, rejects worker outputs with a different feature count, canonicalizes the output payload and records its checksum, worker-reported CRS, original batch offset and sequence.
