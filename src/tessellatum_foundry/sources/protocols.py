@@ -49,3 +49,23 @@ class FeatureReader(Protocol):
     ) -> Iterator[Mapping[str, object]]:
         """Yield decoded features from a bounded byte stream."""
         ...
+
+
+class RangeSourceAdapter(Protocol):
+    """Read exact byte ranges from one externally versioned resource.
+
+    Implementations must reject full-object fallbacks and verify the returned
+    range boundaries. Multi-range readers should pin a stable object validator
+    (ETag, generation ID or equivalent) across every request.
+    """
+
+    def read_range(
+        self,
+        reference: ExternalDataReference,
+        *,
+        offset: int,
+        length: int,
+        max_range_bytes: int = 16 * 1024 * 1024,
+    ) -> bytes:
+        """Return exactly the requested bounded byte interval."""
+        ...
