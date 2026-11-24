@@ -136,7 +136,7 @@ class HttpSourceAdapter:
                         "Remote source applied content encoding to a byte range."
                     )
                 content_range = response.headers.get("Content-Range", "")
-                match = re.fullmatch(r"bytes (\\d+)-(\\d+)/(\\d+)", content_range)
+                match = re.fullmatch(r"bytes (\d+)-(\d+)/(\d+)", content_range)
                 if (
                     match is None
                     or int(match.group(1)) != offset
