@@ -92,3 +92,15 @@ expiring signed URLs are not persisted: the HTTP adapter's runtime credential
 resolver must provide access separately. Catalog discovery, pagination,
 conformance negotiation, alternate asset selection and provider-specific
 authentication remain separate future integrations.
+
+
+## Bounded STAC Item retrieval
+
+`StacItemSourceResolver` now joins catalog metadata retrieval to asset resolution.
+It accepts a known Item endpoint as an `ExternalDataReference`, reads it through
+an injected source adapter with an explicit metadata byte budget, parses the
+Item, and resolves the requested asset against a separate exact asset-host
+allowlist. It does not crawl collections, perform search pagination, or fetch
+the selected asset. The resulting asset reference can be passed to the existing
+HTTPS adapter and external feature pipeline when its media type is supported.
+Catalog and asset hosts are intentionally governed independently.
