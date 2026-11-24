@@ -43,7 +43,13 @@ def test_search_posts_spatiotemporal_query_and_yields_paginated_items():
         [
             page(
                 [item("one")],
-                [{"rel": "next", "href": "https://catalog.example.test/search?token=cursor", "method": "GET"}],
+                [
+                    {
+                        "rel": "next",
+                        "href": "https://catalog.example.test/search?token=cursor",
+                        "method": "GET",
+                    }
+                ],
             ),
             page([item("two")]),
         ]
@@ -79,12 +85,14 @@ def test_search_supports_post_next_link_body():
         [
             page(
                 [item("one")],
-                [{
-                    "rel": "next",
-                    "href": "https://catalog.example.test/search",
-                    "method": "POST",
-                    "body": {"token": "next-page"},
-                }],
+                [
+                    {
+                        "rel": "next",
+                        "href": "https://catalog.example.test/search",
+                        "method": "POST",
+                        "body": {"token": "next-page"},
+                    }
+                ],
             ),
             page([item("two")]),
         ]
@@ -163,7 +171,6 @@ def test_search_rejects_malformed_page_and_duplicate_next_links():
     )
     with pytest.raises(StacSearchError, match="at most one"):
         list(client(duplicate).search())
-
 
 
 def test_search_rejects_non_json_intersects_and_invalid_item_identity():
