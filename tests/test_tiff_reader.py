@@ -180,3 +180,75 @@ def test_reads_bigtiff_header_and_first_directory():
     assert result.metadata.width == 32
     assert result.metadata.height == 16
     assert result.strip_offsets[0] + result.strip_byte_counts[0] <= len(payload)
+
+
+def directory_graph_tiff():
+    """Create a main image IFD with one reduced-resolution SubIFD."""
+    main_offset = 8
+    main_count = 5
+    main_size = 2 + main_count * 12 + 4
+    overview_offset = main_offset + main_size
+    overview_count = 4
+    overview_size = 2 + overview_count * 12 + 4
+    pixel_offset = overview_offset + overview_size
+    main_tags = [
+        (256, 4, 1, 64),
+        (257, 4, 1, 64),
+        (273, 4, 1, pixel_offset),
+        (279, 4, 1, 256),
+        (330, 13, 1, overview_offset),
+    ]
+    overview_tags = [
+        (256, 4, 1, 16),
+        (257, 4, 1, 16),
+        (273, 4, 1, pixel_offset + 256),
+        (279, 4, 1, 64),
+    ]
+
+    def encode_ifd(tags):
+        entries = b"".join(
+            struct.pack("<HHII", tag, typ, count, value)
+            for tag, typ, count, value in tags
+        )
+        return struct.pack("<H", len(tags)) + entries + struct.pack("<I", 0)
+
+    header = b"II" + struct.pack("<HI", 42, main_offset)
+    return (
+        header
+        + encode_ifd(main_tags)
+        + encode_ifd(overview_tags)
+        + b"\\x00" * 320
+    )
+
+
+def test_traverses_main_ifd_and_nested_subifd_with_bounds():
+    payload = directory_graph_tiff()
+    tiff_reader, _ = reader(payload)
+
+    directories = tiff_reader.read_directory_index(
+        file_size=len(payload), max_directories=2
+    )
+
+    assert len(directories) == 2
+    assert directories[0].width == 64
+    assert directories[0].height == 64
+    assert directories[0].subifd_offsets == (directories[1].offset,)
+    assert directories[1].width == 16
+    assert directories[1].height == 16
+    assert directories[1].block_offsets[0] > directories[0].block_offsets[0]
+
+
+def test_directory_index_rejects_limit_and_subifd_cycle():
+    payload = directory_graph_tiff()
+    tiff_reader, _ = reader(payload)
+    with pytest.raises(TiffFormatError, match="configured limit"):
+        tiff_reader.read_directory_index(
+            file_size=len(payload), max_directories=1
+        )
+
+    cyclic = bytearray(payload)
+    # SubIFD offset points back to the main IFD.
+    cyclic[8 + 2 + 4 * 12 + 8:8 + 2 + 5 * 12] = struct.pack("<I", 8)
+    tiff_reader, _ = reader(bytes(cyclic))
+    with pytest.raises(TiffFormatError, match="cycle or duplicate"):
+        tiff_reader.read_directory_index(file_size=len(cyclic))
