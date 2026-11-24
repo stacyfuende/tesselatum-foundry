@@ -221,3 +221,24 @@ boundary, not a TIFF/COG decoder: no IFD parsing, COG conformance validation,
 overview selection or pixel decoding is claimed yet. A future reader must
 derive and validate RasterMetadata from bounded source reads before exposing
 windows to a raster worker.
+
+
+## Bounded TIFF metadata inspection
+
+`TiffRangeReader` now reads the TIFF header and first image file directory
+through `BudgetedRasterRangeReader`. It recognizes classic TIFF and BigTIFF
+byte order/header layouts, bounds IFD entry counts and individual tag payloads,
+and extracts image dimensions, sample representation, compression, strip or
+tile byte ranges, and affine georeferencing from GeoTIFF transformation or
+pixel-scale/tiepoint tags. It rejects out-of-file metadata/data ranges,
+duplicate tags, unsupported sample representations and incomplete strip/tile
+tables. It requires the strong ETag and cumulative range budgets enforced by
+the wrapped reader.
+
+This is an initial metadata reader, not a COG validator or raster decoder. It
+currently reads only the first IFD, does not traverse SubIFDs or overview
+directories, does not interpret GeoKeyDirectoryTag into a normalized CRS,
+does not prove COG ordering/alignment/layout, and does not decompress tiles or
+strips. The returned grid therefore has no CRS unless supplied by a later
+georeferencing resolver. Do not expose arbitrary pixel windows as executable
+until those remaining checks and a bounded block decoder are implemented.
