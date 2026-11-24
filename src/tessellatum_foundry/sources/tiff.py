@@ -169,7 +169,9 @@ class TiffRangeReader:
             tile_width = tile_height = None
             if tiled:
                 if not all(tag in tags for tag in (322, 323, 324, 325)):
-                    raise TiffFormatError("Tiled TIFF directory must declare tile dimensions and tables.")
+                    raise TiffFormatError(
+                        "Tiled TIFF directory must declare tile dimensions and tables."
+                    )
                 tile_width_values = integer_values(322)
                 tile_height_values = integer_values(323)
                 if len(tile_width_values) != 1 or len(tile_height_values) != 1:
