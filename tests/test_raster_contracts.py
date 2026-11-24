@@ -56,6 +56,10 @@ def test_raster_window_validates_grid_and_band_selection() -> None:
         {"nodata": (None,)},
         {"block_shapes": ((256, 256),)},
         {"overview_factors": (4, 2)},
+        {"transform": (0, 1, 0, 0, 0, float("nan"))},
+        {"dtypes": ("uint8", "uint8", 7)},
+        {"nodata": (None, False, 0)},
+        {"metadata": {"bad": 1}},
     ],
 )
 def test_raster_metadata_rejects_invalid_grid_contract(overrides) -> None:
