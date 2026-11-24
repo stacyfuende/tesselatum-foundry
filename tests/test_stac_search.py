@@ -163,3 +163,20 @@ def test_search_rejects_malformed_page_and_duplicate_next_links():
     )
     with pytest.raises(StacSearchError, match="at most one"):
         list(client(duplicate).search())
+
+
+
+def test_search_rejects_non_json_intersects_and_invalid_item_identity():
+    bad_query = FakeSearchTransport([])
+    with pytest.raises(StacSearchError, match="JSON-compatible"):
+        list(
+            client(bad_query).search(
+                intersects={"type": "Point", "coordinates": [object(), 0]}
+            )
+        )
+
+    bad_item = FakeSearchTransport(
+        [page([{"type": "Feature", "properties": {}, "assets": {}}])]
+    )
+    with pytest.raises(StacSearchError, match="invalid Item"):
+        list(client(bad_item).search())
