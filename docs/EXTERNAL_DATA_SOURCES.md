@@ -131,3 +131,30 @@ COG reference is useful provenance, but cannot yet be sent to
 `vector.buffer`. Raster range reads, raster window readers, grid/tile
 semantics and raster Capabilities must be implemented as a separate path;
 do not disguise raster bytes as vector features.
+
+
+## Bounded STAC API search
+
+`StacApiSearchClient` adds a bounded search boundary for an already-known
+STAC API `/search` endpoint. It submits a POST query with optional bbox or
+GeoJSON intersects, datetime interval, collection IDs, Item IDs and page
+limit, then yields Items one page at a time. It does not accumulate a complete
+catalog result set.
+
+Pagination follows only a single explicit `rel=next` link per page. Both the
+initial endpoint and every next-link URL must use HTTPS, default port and an
+exact allowlisted hostname. GET and POST next links are supported; redirects
+must be disabled by the injected transport. Page bytes, page count and total
+Item count are independently bounded. Cycles, malformed pages, unapproved
+hosts, duplicate next links and invalid query constraints fail closed.
+
+The transport is intentionally injected rather than silently reusing the
+generic file adapter: STAC search requires POST bodies and some providers
+return transient cursor query parameters in next links. These URLs are
+ephemeral request state only; callers must not persist them as
+`ExternalDataReference` values or log them. The transport is responsible for
+TLS validation, timeouts, runtime credential injection, bounded reads and
+refusing redirects. This client does not implement provider-specific auth,
+catalog conformance negotiation, asynchronous search jobs or spatial query
+planning. Search results are Items; resolve selected assets through
+`StacItemSourceResolver` and the separate asset-host policy.
