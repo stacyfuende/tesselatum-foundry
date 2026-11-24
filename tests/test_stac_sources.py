@@ -101,3 +101,40 @@ def test_requires_stac_item_identity_and_collection():
         resolve_stac_asset(
             value, "data", catalog_id="catalog", allowed_hosts={"data.example.test"}
         )
+
+
+
+@pytest.mark.parametrize(
+    "href",
+    [
+        "https://data.example.test:bad/tile.tif",
+        "https://data.example.test:444/tile.tif",
+    ],
+)
+def test_rejects_invalid_or_non_default_asset_ports(href):
+    value = item()
+    value["assets"]["data"]["href"] = href
+    with pytest.raises(StacResolutionError, match="allowlisted HTTPS"):
+        resolve_stac_asset(
+            value, "data", catalog_id="catalog", allowed_hosts={"data.example.test"}
+        )
+
+
+@pytest.mark.parametrize("allowed_hosts", [set(), {"*.example.test"}, {"https://data.example.test"}, {""}])
+def test_requires_nonempty_exact_dns_asset_host_allowlist(allowed_hosts):
+    with pytest.raises(StacResolutionError, match="allowlist|exact DNS"):
+        resolve_stac_asset(
+            item(), "data", catalog_id="catalog", allowed_hosts=allowed_hosts
+        )
+
+
+def test_asset_host_matching_is_case_insensitive_and_ignores_terminal_dot():
+    value = item()
+    value["assets"]["data"]["href"] = "HTTPS://DATA.EXAMPLE.TEST./tile.tif"
+    reference = resolve_stac_asset(
+        value,
+        "data",
+        catalog_id="catalog",
+        allowed_hosts={"Data.Example.Test."},
+    )
+    assert reference.uri == "HTTPS://DATA.EXAMPLE.TEST./tile.tif"
