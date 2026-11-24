@@ -24,6 +24,7 @@ from .stream import ExternalFeatureStreamError, iter_external_feature_batches
 from .stac import StacResolutionError, parse_stac_item, resolve_stac_asset
 from .stac_client import StacItemSourceResolver
 from .stac_search import StacApiSearchClient, StacSearchError
+from .stac_http import StacSearchTransportError, UrllibStacSearchTransport
 
 __all__ = [
     "ExternalDataReference",
@@ -46,6 +47,8 @@ __all__ = [
     "StacItemSourceResolver",
     "StacApiSearchClient",
     "StacSearchError",
+    "StacSearchTransportError",
+    "UrllibStacSearchTransport",
     "parse_stac_item",
     "resolve_stac_asset",
     "iter_feature_batches",
