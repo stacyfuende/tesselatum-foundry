@@ -154,7 +154,6 @@ def test_https_adapter_rejects_content_length_mismatch():
         list(adapter.iter_chunks(reference()))
 
 
-
 def range_response(payload, *, offset, total, etag='"v1"', status=206):
     response = FakeResponse(
         payload,
@@ -170,7 +169,7 @@ def range_response(payload, *, offset, total, etag='"v1"', status=206):
 
 
 def test_https_adapter_reads_exact_byte_range_with_validator():
-    response = range_response(b"II*\\x00", offset=0, total=4096)
+    response = range_response(b"II*\x00", offset=0, total=4096)
     requests = []
 
     def opener(request, *, timeout):
