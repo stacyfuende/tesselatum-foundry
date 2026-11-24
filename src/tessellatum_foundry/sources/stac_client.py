@@ -36,7 +36,11 @@ class StacItemSourceResolver:
         max_item_bytes: int = 2 * 1024 * 1024,
         chunk_size: int = 64 * 1024,
     ) -> None:
-        if isinstance(max_item_bytes, bool) or not isinstance(max_item_bytes, int) or max_item_bytes < 1:
+        if (
+            isinstance(max_item_bytes, bool)
+            or not isinstance(max_item_bytes, int)
+            or max_item_bytes < 1
+        ):
             raise ValueError("max_item_bytes must be a positive integer.")
         if isinstance(chunk_size, bool) or not isinstance(chunk_size, int) or chunk_size < 1:
             raise ValueError("chunk_size must be a positive integer.")
