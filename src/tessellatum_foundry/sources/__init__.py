@@ -22,6 +22,7 @@ from .readers import (
 )
 from .stream import ExternalFeatureStreamError, iter_external_feature_batches
 from .stac import StacResolutionError, parse_stac_item, resolve_stac_asset
+from .stac_client import StacItemSourceResolver
 
 __all__ = [
     "ExternalDataReference",
@@ -41,6 +42,7 @@ __all__ = [
     "SourceIntegrityError",
     "SourceLimitExceeded",
     "StacResolutionError",
+    "StacItemSourceResolver",
     "parse_stac_item",
     "resolve_stac_asset",
     "iter_feature_batches",
