@@ -9,6 +9,7 @@ from tessellatum_foundry.sources import (
     ExternalDataReference,
     TiffFormatError,
     TiffRangeReader,
+    SourceLimitExceeded,
 )
 
 
@@ -252,3 +253,25 @@ def test_directory_index_rejects_limit_and_subifd_cycle():
     tiff_reader, _ = reader(bytes(cyclic))
     with pytest.raises(TiffFormatError, match="cycle or duplicate"):
         tiff_reader.read_directory_index(file_size=len(cyclic))
+
+
+def test_directory_index_preserves_source_budget_errors():
+    payload = classic_tiff()
+    adapter = MemoryRanges(payload)
+    reference = ExternalDataReference(
+        provider="test",
+        dataset_id="raster",
+        uri="https://example.test/raster.tif",
+        etag='"v1"',
+    )
+    bounded = BudgetedRasterRangeReader(
+        adapter,
+        reference,
+        max_requests=1,
+        max_total_bytes=1024,
+        max_range_bytes=1024,
+    )
+    tiff_reader = TiffRangeReader(bounded)
+
+    with pytest.raises(SourceLimitExceeded):
+        tiff_reader.read_directory_index(file_size=len(payload))
