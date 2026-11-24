@@ -148,7 +148,7 @@ def bigtiff():
         fmt = {3: "H", 4: "I", 12: "d", 16: "Q"}[typ]
         packed = struct.pack(endian + fmt * count, *values)
         if len(packed) <= 8:
-            field = packed.ljust(8, b"\\x00")
+            field = packed.ljust(8, b"\x00")
         else:
             field = struct.pack(endian + "Q", extra_start + len(extra))
             extra.extend(packed)
@@ -166,7 +166,7 @@ def bigtiff():
         + b"".join(entries)
         + struct.pack(endian + "Q", 0)
     )
-    return header + directory + bytes(extra) + b"\\x00" * 512
+    return header + directory + bytes(extra) + b"\x00" * 512
 
 
 def test_reads_bigtiff_header_and_first_directory():
@@ -217,7 +217,7 @@ def directory_graph_tiff():
         header
         + encode_ifd(main_tags)
         + encode_ifd(overview_tags)
-        + b"\\x00" * 320
+        + b"\x00" * 320
     )
 
 
