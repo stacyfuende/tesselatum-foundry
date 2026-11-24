@@ -72,3 +72,23 @@ A validated transaction can now call `publish_artifact` to stream the staged fil
 The transaction recovery entry point can reconcile a journal after process restart: if the journal contains a publication intent and matching durable Artifact metadata/object can be verified, including producer Run and attempt identity, it repairs the journal to `committed`; otherwise it aborts the incomplete attempt. It deliberately does not resume batches. Publication automatically binds Artifact metadata to the originating Run ID and attempt. `RunRepository.reconcile_committed_output` separately verifies those producer fields, the Artifact bytes and a passing execution-output report before transitioning a running Run to succeeded, and is idempotent for the same output/report pair.
 
 `StreamingVectorBufferPipeline` connects source-batch iteration, worker dispatch, bounded independent validation, EOF-gated transaction sealing, persisted validation evidence, Artifact publication and Run reconciliation. `ExternalVectorBufferRunFactory` creates source-only queued Runs from explicit Geo-Cell external bindings, without inventing Artifact snapshots. `ExternalVectorBufferRunOrchestrator` joins these components for the initial local-source `vector.buffer` path. Cross-process writer leases, resumable checkpoints and automatic recovery scheduling remain pending. Rights/methodology policy and production-grade runtime credential brokering must be integrated before treating this as a complete production Run service. A committed Artifact does not by itself mark its Run successful; the Run reconciliation step must be invoked.
+
+
+## STAC Item asset resolution
+
+The STAC integration currently resolves a single, already-discovered STAC Item
+asset; it is not yet a catalog crawler or STAC API client. `parse_stac_item`
+accepts bounded UTF-8 JSON (2 MiB by default). `resolve_stac_asset` requires
+a STAC Item identity, collection, selected asset, caller-supplied catalog ID
+and exact HTTPS asset-host allowlist. It produces an `ExternalDataReference`
+whose dataset/resource identity is derived from catalog, collection, Item and
+asset key. Version evidence is selected from the Item's version, updated,
+datetime or created properties. A supported `file:checksum` SHA-256 multihash
+is converted to the source reference checksum.
+
+Asset hrefs containing credentials, query parameters, fragments, non-default
+ports, non-HTTPS schemes or unapproved hosts are rejected. In particular,
+expiring signed URLs are not persisted: the HTTP adapter's runtime credential
+resolver must provide access separately. Catalog discovery, pagination,
+conformance negotiation, alternate asset selection and provider-specific
+authentication remain separate future integrations.
