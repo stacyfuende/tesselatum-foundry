@@ -1,6 +1,6 @@
 # Project status and collaboration guide
 
-**Last updated:** 2026-11-23  
+**Last updated:** 2026-11-24  
 **Status:** Living engineering tracker.
 
 This page distinguishes implemented behavior from proposed work and unverified assumptions. A checked item does not imply production readiness. Read [Foundry architecture](FOUNDRY_REORIENTATION.md) and [Project vision](PROJECT_VISION.md) for current direction.
@@ -23,17 +23,17 @@ Foundry is Tessellatum's spatial computation infrastructure. It makes spatial da
 | Remote worker | Authenticated HTTPS transport and service exist for vector capabilities | Concurrency, process-isolated hard timeouts, ingress, resource policy, monitoring, secret rotation and deployment verification |
 | Provenance and methodology | Rights declarations and lineage; buffer approximation and reprojection operation evidence | Declarations are not legal authorization; suitability and accuracy need domain evidence |
 
-## External data boundary — implementation in progress
+## External data boundary — initial source-backed execution implemented
 
 | Concern | Implemented | Remaining / qualification |
 |---|---|---|
-| Source access | Provider-neutral `SourceAdapter` protocol and bounded local-file adapter | Remote/provider adapters and runtime authorization |
+| Source access | Provider-neutral `SourceAdapter` protocol and bounded local-file adapter | Remote/provider adapters; production credential broker and authorization policy |
 | Bounded reads | Incremental NDJSON reader and lazy source-to-batch pipeline; feature-count and encoded-byte bounds | Additional readers, pagination, windowing and query pushdown |
-| Batch worker | `VectorBufferBatchExecutor` verifies batch input checksum/metadata, pinned worker image, output shape/count, output checksum and worker-reported CRS | Not yet integrated with Run orchestration |
+| Batch worker | `VectorBufferBatchExecutor` verifies batch input checksum/metadata, pinned worker image, output shape/count, output checksum and worker-reported CRS; exercised by source-backed orchestration | Additional worker implementations and operational resource policy |
 | Source identity | `ExternalDataReference` records provider/dataset/resource URI and optional version/ETag/SHA-256 evidence | Provider-specific stable version evidence and source-aware cache identity |
-| Run provenance | Immutable source references are validated against input ports and preserved across retries; Geo-Cell schema supports explicit external bindings; `ExternalVectorBufferRunFactory` creates source-only queued Runs and enforces exact-source retry identity | Joining source-backed Run creation to adapter resolution, worker start and streaming execution; cursor/checkpoint evidence |
+| Run provenance | Immutable source references are validated against input ports and preserved across retries; Geo-Cell schema supports explicit external bindings; `ExternalVectorBufferRunFactory` creates source-only queued Runs; `ExternalVectorBufferRunOrchestrator` authorizes, resolves, streams, dispatches, validates and finalizes source-backed Runs | Cursor/checkpoint evidence and durable retry semantics |
 | Output lifecycle | Private provisional staging, atomic journal, EOF gate, bounded file-based Artifact writer, durable object-before-metadata publication, stable publication intent, conservative process-restart reconciliation, bounded Artifact integrity verification, producer Run/attempt binding, verified Run success reconciliation, bounded per-batch independent critic, aggregate report and `StreamingVectorBufferPipeline` for an already-running Run; source-only queued Run factory now accepts external Geo-Cell bindings | Join source-backed Run creation to direct stream execution, resumable checkpoints, cross-process writer lease and production source adapters remain pending |
-| Credentials | Source references reject URI userinfo, query strings and fragments | Scoped runtime credential injection and authorization policy |
+| Credentials | Authorization is invoked before adapter resolution; provider exception text is redacted from caller-visible errors and persisted Run records; URI userinfo, query strings and fragments are rejected | Production scoped credential broker, rotation and provider-specific authorization policy |
 | Source custody | Remains with provider/customer by default | Architectural rule |
 | Snapshots | Optional customer-controlled snapshot, not mandatory Foundry ingestion | Policy only; no snapshot service planned as core |
 
@@ -61,7 +61,9 @@ The current filesystem Artifact store is a local adapter. A future artifact back
 
 ## Verification status
 
-PR #24 CI run #722 passed on commit `b06ed5fb423bcce0cc20a4606bf1b391f145693b`, including installed-package/schema checks, lint, both worker-image builds and the full Docker/PostGIS test suite. Run #730 failed at the installed-package check because `storage/__init__.py` contained literal escape sequences; that packaging defect has been corrected. The streamed Artifact publication, bounded output critic, streaming execution pipeline, external Geo-Cell binding and source-only Run factory are newer commits and require fresh CI verification.
+CI run [#815](https://github.com/stacyfuende/tesselatum-foundry/actions/runs/45338892077) completed successfully on the source-backed orchestration branch, including installed-package/schema checks, lint, both worker-image builds and the full Docker/PostGIS test suite. Its test job includes the opt-in Docker-backed local-source integration test, which exercises authorization, bounded source reading, worker execution, independent validation, transactional Artifact publication and successful Run reconciliation. Commit `409dbefdee5744b8648cbf4d5dd67bc8989bba35` adds a caller-visible error-redaction assertion for provider authorization failures.
+
+This verifies the local-file adapter path and one `vector.buffer` implementation in CI. It does not establish production readiness for remote providers, credential brokering, resumable execution, distributed worker ownership or broader Capability support.
 
 For each subsequent commit, record the exact head SHA and final checks. Do not claim a CI pass without a completed successful run on the current head.
 
