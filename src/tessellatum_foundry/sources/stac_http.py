@@ -109,7 +109,9 @@ class UrllibStacSearchTransport:
             try:
                 extra = self.headers_resolver(method, url)
             except Exception:
-                raise StacSearchTransportError("STAC runtime credential resolution failed.") from None
+                raise StacSearchTransportError(
+                    "STAC runtime credential resolution failed."
+                ) from None
             if not isinstance(extra, Mapping):
                 raise StacSearchTransportError("STAC runtime headers must be a mapping.")
             for name, value in extra.items():
