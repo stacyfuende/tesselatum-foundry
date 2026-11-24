@@ -140,3 +140,13 @@ def test_https_adapter_redacts_runtime_credential_resolver_errors():
     with pytest.raises(SourceAccessError) as error:
         list(adapter.iter_chunks(reference()))
     assert "provider secret token" not in str(error.value)
+
+
+def test_https_adapter_rejects_content_length_mismatch():
+    response = FakeResponse(b"short", {"Content-Length": "20"})
+    adapter = HttpSourceAdapter(
+        allowed_hosts={"data.example.test"},
+        opener=lambda _request, **_kwargs: response,
+    )
+    with pytest.raises(SourceIntegrityError, match="size changed"):
+        list(adapter.iter_chunks(reference()))
