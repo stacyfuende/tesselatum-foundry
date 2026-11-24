@@ -195,8 +195,6 @@ class TiffRangeReader:
             planar_configuration = planar_values[0] if planar_values else 1
             if samples_per_pixel < 1 or planar_configuration not in (1, 2):
                 raise TiffFormatError("TIFF sample or planar configuration is invalid.")
-            if planar_configuration == 2 and not tiled:
-                raise TiffFormatError("Separate-planar strip directories are unsupported.")
             compression_values = integer_values(259)
             compression = compression_values[0] if compression_values else 1
             subfile_values = integer_values(254)
