@@ -104,3 +104,30 @@ allowlist. It does not crawl collections, perform search pagination, or fetch
 the selected asset. The resulting asset reference can be passed to the existing
 HTTPS adapter and external feature pipeline when its media type is supported.
 Catalog and asset hosts are intentionally governed independently.
+
+
+## Live STAC provider smoke test
+
+An opt-in integration test at `tests/integration/test_live_stac.py` exercises
+the real catalog transport and Item resolver against a public provider. It is
+disabled unless all of these environment variables are supplied:
+
+- `FOUNDRY_STAC_ITEM_URL`: one known Item endpoint, without query parameters.
+- `FOUNDRY_STAC_CATALOG_HOST`: the exact catalog hostname.
+- `FOUNDRY_STAC_ASSET_HOSTS`: comma-separated exact asset hostnames.
+- `FOUNDRY_STAC_ASSET_KEY`: the asset key to resolve.
+
+Run it with `python -m pytest -m integration tests/integration/test_live_stac.py`.
+The smoke test resolves metadata and checks the resulting asset locator; it
+does not download or process the asset. Provider availability is best-effort,
+so this test is intentionally not part of deterministic pull-request CI.
+
+**Format boundary:** STAC is a discovery/metadata standard, not a raster
+processing implementation. Earth-observation catalogs commonly advertise
+Cloud Optimized GeoTIFF (COG) assets. The current source-backed execution path
+is vector-only and accepts only the formats declared by its vector Capability
+and incremental readers (GeoJSON FeatureCollection and NDJSON). A resolved
+COG reference is useful provenance, but cannot yet be sent to
+`vector.buffer`. Raster range reads, raster window readers, grid/tile
+semantics and raster Capabilities must be implemented as a separate path;
+do not disguise raster bytes as vector features.
