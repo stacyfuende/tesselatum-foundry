@@ -141,7 +141,10 @@ class HttpSourceAdapter:
 
     def _request(self, reference: ExternalDataReference, *, method: str) -> urllib.request.Request:
         self._validate_uri(reference)
-        headers = self.headers_resolver(reference)
+        try:
+            headers = self.headers_resolver(reference)
+        except Exception:
+            raise SourceAccessError("Runtime source credentials are unavailable.") from None
         if not isinstance(headers, Mapping):
             raise SourceAccessError("Runtime source credentials are unavailable.")
         safe_headers: dict[str, str] = {}
