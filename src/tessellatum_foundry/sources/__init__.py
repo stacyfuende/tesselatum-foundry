@@ -15,6 +15,7 @@ from .models import (
     SourceLimitExceeded,
 )
 from .protocols import FeatureReader, RangeSourceAdapter, SourceAdapter
+from .raster import BudgetedRasterRangeReader, RasterContractError, RasterMetadata, RasterWindow
 from .readers import (
     FeatureReaderError,
     GeoJsonFeatureCollectionReader,
@@ -28,6 +29,10 @@ from .stac_http import StacSearchTransportError, UrllibStacSearchTransport
 
 __all__ = [
     "ExternalDataReference",
+    "BudgetedRasterRangeReader",
+    "RasterContractError",
+    "RasterMetadata",
+    "RasterWindow",
     "FeatureBatch",
     "FeatureBatchError",
     "FeatureExceedsBatchLimit",
