@@ -178,9 +178,12 @@ class TiffRangeReader:
             subifds = integer_values(330)
             next_field = raw[count * entry_size:count * entry_size + next_size]
             next_offset = struct.unpack(endian + ("Q" if big else "I"), next_field)[0]
-            if next_offset:
-                pending.append(next_offset)
-            pending.extend(subifds)
+            new_references = ([next_offset] if next_offset else []) + list(subifds)
+            if len(directories) + len(pending) + len(new_references) > max_directories:
+                raise TiffFormatError(
+                    "TIFF directory graph exceeds its configured limit."
+                )
+            pending.extend(new_references)
             directories.append(
                 TiffDirectory(
                     offset, width, height, tiled, block_offsets, block_counts, subifds, next_offset
