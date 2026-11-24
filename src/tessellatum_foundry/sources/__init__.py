@@ -21,6 +21,7 @@ from .readers import (
     NdjsonFeatureReader,
 )
 from .stream import ExternalFeatureStreamError, iter_external_feature_batches
+from .stac import StacResolutionError, parse_stac_item, resolve_stac_asset
 
 __all__ = [
     "ExternalDataReference",
@@ -39,6 +40,9 @@ __all__ = [
     "SourceDescriptor",
     "SourceIntegrityError",
     "SourceLimitExceeded",
+    "StacResolutionError",
+    "parse_stac_item",
+    "resolve_stac_asset",
     "iter_feature_batches",
     "iter_external_feature_batches",
 ]
