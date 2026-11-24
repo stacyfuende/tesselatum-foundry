@@ -230,7 +230,7 @@ def test_https_adapter_rejects_truncated_range_and_encoded_response():
         adapter.read_range(reference(), offset=0, length=4)
 
     encoded = range_response(b"abcd", offset=0, total=100)
-    encoded.headers["Content-Encoding"] = "gzip"
+    encoded.headers.replace_header("Content-Encoding", "gzip")
     adapter = HttpSourceAdapter(
         allowed_hosts={"data.example.test"},
         opener=lambda _request, **_kwargs: encoded,
