@@ -83,14 +83,37 @@ def resolve_stac_asset(
     href = asset.get("href")
     if not isinstance(href, str) or not href:
         raise StacResolutionError("Selected STAC asset href is required.")
-    parsed = urlsplit(href)
-    host = (parsed.hostname or "").lower().rstrip(".")
-    hosts = {value.strip().lower().rstrip(".") for value in allowed_hosts}
+    if not isinstance(allowed_hosts, (set, frozenset)) or not allowed_hosts:
+        raise StacResolutionError("A non-empty exact asset-host allowlist is required.")
+    hosts: set[str] = set()
+    for value in allowed_hosts:
+        if (
+            not isinstance(value, str)
+            or not value.strip()
+            or "*" in value
+            or "/" in value
+            or ":" in value
+            or "@" in value
+        ):
+            raise StacResolutionError("Asset hosts must be exact DNS hostnames.")
+        normalized = value.strip().lower().rstrip(".")
+        if not normalized or any(character.isspace() for character in normalized):
+            raise StacResolutionError("Asset hosts must be exact DNS hostnames.")
+        hosts.add(normalized)
+
+    try:
+        parsed = urlsplit(href)
+        host = (parsed.hostname or "").lower().rstrip(".")
+        port = parsed.port
+    except ValueError:
+        raise StacResolutionError(
+            "STAC asset href is not an allowlisted HTTPS resource."
+        ) from None
     if (
-        parsed.scheme != "https"
+        parsed.scheme.lower() != "https"
         or not host
         or host not in hosts
-        or parsed.port not in (None, 443)
+        or port not in (None, 443)
         or parsed.username is not None
         or parsed.password is not None
         or parsed.query
