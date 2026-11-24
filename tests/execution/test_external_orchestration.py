@@ -70,7 +70,7 @@ def test_authorization_is_checked_before_source_resolution_and_worker(tmp_path):
         transaction_root=tmp_path / "staging",
     )
 
-    with pytest.raises(PermissionError):
+    with pytest.raises(PermissionError) as raised:
         orchestrator.execute(
             run_id=run["run_id"],
             cell=cell,
@@ -80,6 +80,7 @@ def test_authorization_is_checked_before_source_resolution_and_worker(tmp_path):
             artifact_version="1.0.0",
         )
 
+    assert "must-not-be-persisted" not in str(raised.value)
     failed = runs.get_run(run["run_id"])
     assert failed["status"] == "failed"
     assert failed["error"]["code"] == "external_run.preflight_failed"
