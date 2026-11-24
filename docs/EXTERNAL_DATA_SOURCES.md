@@ -242,3 +242,19 @@ does not prove COG ordering/alignment/layout, and does not decompress tiles or
 strips. The returned grid therefore has no CRS unless supplied by a later
 georeferencing resolver. Do not expose arbitrary pixel windows as executable
 until those remaining checks and a bounded block decoder are implemented.
+
+
+### TIFF directory graph traversal
+
+The TIFF reader also exposes a bounded directory index. It follows the primary
+next-IFD chain and recursively referenced SubIFDs using a queue, rejects cycles
+and duplicate directory references, limits total directory count and per-IFD
+entry count, and records each directory's dimensions and strip/tile byte
+ranges. This is enough to inventory the image-directory graph and identify
+candidate reduced-resolution images without reading their pixel blocks.
+
+The directory index is not yet a COG conformance verdict. It does not establish
+that SubIFDs are valid reduced-resolution overviews, validate overview scale
+relationships, prove IFD/tile ordering or byte-range alignment, parse GeoKeys
+into a normalized CRS, or decode/compress image blocks. Those checks remain
+required before exposing COG windows as a production capability.
