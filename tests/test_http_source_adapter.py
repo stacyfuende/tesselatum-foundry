@@ -21,6 +21,7 @@ class FakeResponse:
         for key, value in (headers or {}).items():
             self.headers[key] = value
         self.read_sizes: list[int] = []
+        self.status = 200
 
     def __enter__(self):
         return self
@@ -151,3 +152,87 @@ def test_https_adapter_rejects_content_length_mismatch():
     )
     with pytest.raises(SourceIntegrityError, match="size changed"):
         list(adapter.iter_chunks(reference()))
+
+
+
+def range_response(payload, *, offset, total, etag='"v1"', status=206):
+    response = FakeResponse(
+        payload,
+        {
+            "Content-Range": f"bytes {offset}-{offset + len(payload) - 1}/{total}",
+            "Content-Length": str(len(payload)),
+            "ETag": etag,
+            "Content-Encoding": "identity",
+        },
+    )
+    response.status = status
+    return response
+
+
+def test_https_adapter_reads_exact_byte_range_with_validator():
+    response = range_response(b"II*\\x00", offset=0, total=4096)
+    requests = []
+
+    def opener(request, *, timeout):
+        requests.append(request)
+        return response
+
+    adapter = HttpSourceAdapter(
+        allowed_hosts={"data.example.test"},
+        headers_resolver=lambda _ref: {"Authorization": "Bearer runtime-secret"},
+        opener=opener,
+    )
+    payload = adapter.read_range(
+        reference(etag='"v1"'), offset=0, length=4
+    )
+    assert payload == b"II*\\x00"
+    assert requests[0].get_header("Range") == "bytes=0-3"
+    assert requests[0].get_header("If-match") == '"v1"'
+    assert requests[0].get_header("Authorization") == "Bearer runtime-secret"
+    assert response.read_sizes == [5]
+
+
+def test_https_adapter_rejects_range_fallback_and_wrong_content_range():
+    full_response = FakeResponse(b"complete object")
+    full_response.status = 200
+    adapter = HttpSourceAdapter(
+        allowed_hosts={"data.example.test"},
+        opener=lambda _request, **_kwargs: full_response,
+    )
+    with pytest.raises(SourceIntegrityError, match="did not honor"):
+        adapter.read_range(reference(), offset=0, length=4)
+
+    wrong = range_response(b"abcd", offset=1, total=100)
+    adapter = HttpSourceAdapter(
+        allowed_hosts={"data.example.test"},
+        opener=lambda _request, **_kwargs: wrong,
+    )
+    with pytest.raises(SourceIntegrityError, match="Content-Range"):
+        adapter.read_range(reference(), offset=0, length=4)
+
+
+def test_https_adapter_rejects_truncated_range_and_encoded_response():
+    truncated = range_response(b"abc", offset=0, total=100)
+    adapter = HttpSourceAdapter(
+        allowed_hosts={"data.example.test"},
+        opener=lambda _request, **_kwargs: truncated,
+    )
+    with pytest.raises(SourceIntegrityError, match="incomplete"):
+        adapter.read_range(reference(), offset=0, length=4)
+
+    encoded = range_response(b"abcd", offset=0, total=100)
+    encoded.headers["Content-Encoding"] = "gzip"
+    adapter = HttpSourceAdapter(
+        allowed_hosts={"data.example.test"},
+        opener=lambda _request, **_kwargs: encoded,
+    )
+    with pytest.raises(SourceIntegrityError, match="content encoding"):
+        adapter.read_range(reference(), offset=0, length=4)
+
+
+def test_https_adapter_bounds_requested_range():
+    adapter = HttpSourceAdapter(allowed_hosts={"data.example.test"})
+    with pytest.raises(SourceLimitExceeded, match="range limit"):
+        adapter.read_range(reference(), offset=0, length=5, max_range_bytes=4)
+    with pytest.raises(ValueError, match="offset"):
+        adapter.read_range(reference(), offset=-1, length=4)
