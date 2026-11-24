@@ -6,7 +6,6 @@ pixel blocks.
 """
 from __future__ import annotations
 
-import math
 import struct
 from dataclasses import dataclass
 
@@ -55,9 +54,17 @@ class TiffRangeReader:
         max_ifd_entries: int = 4096,
         max_tag_bytes: int = 1024 * 1024,
     ) -> None:
-        if isinstance(max_ifd_entries, bool) or not isinstance(max_ifd_entries, int) or max_ifd_entries < 1:
+        if (
+            isinstance(max_ifd_entries, bool)
+            or not isinstance(max_ifd_entries, int)
+            or max_ifd_entries < 1
+        ):
             raise ValueError("max_ifd_entries must be a positive integer.")
-        if isinstance(max_tag_bytes, bool) or not isinstance(max_tag_bytes, int) or max_tag_bytes < 1:
+        if (
+            isinstance(max_tag_bytes, bool)
+            or not isinstance(max_tag_bytes, int)
+            or max_tag_bytes < 1
+        ):
             raise ValueError("max_tag_bytes must be a positive integer.")
         self.source = source
         self.max_ifd_entries = max_ifd_entries
@@ -86,7 +93,8 @@ class TiffRangeReader:
             count_fmt, offset_fmt = "H", "I"
         elif magic == 43:
             big = True
-            if len(header) < 16 or struct.unpack(endian + "H", header[4:6])[0] != 8 or header[6:8] != b"\x00\x00":
+            offset_size = struct.unpack(endian + "H", header[4:6])[0]
+            if len(header) < 16 or offset_size != 8 or header[6:8] != b"\x00\x00":
                 raise TiffFormatError("BigTIFF offset-size declaration is unsupported.")
             ifd_offset = struct.unpack(endian + "Q", header[8:16])[0]
             count_size, entry_size, next_size, inline_size = 8, 20, 8, 8
