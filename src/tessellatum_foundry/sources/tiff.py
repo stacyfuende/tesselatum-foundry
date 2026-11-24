@@ -116,6 +116,7 @@ class TiffRangeReader:
             size = count * entry_size + next_size
             raw = self._read_checked(entries_start, size, file_size)
             tags: dict[int, tuple[int, int, bytes]] = {}
+            seen_tags: set[int] = set()
             for index in range(count):
                 entry = raw[index * entry_size:(index + 1) * entry_size]
                 if big:
@@ -124,8 +125,9 @@ class TiffRangeReader:
                 else:
                     tag, typ, value_count = struct.unpack(endian + "HHI", entry[:8])
                     value_field = entry[8:12]
-                if tag in tags:
+                if tag in seen_tags:
                     raise TiffFormatError(f"TIFF directory contains duplicate tag {tag}.")
+                seen_tags.add(tag)
                 if typ not in _TYPE_FORMATS:
                     continue
                 unit = _TYPE_FORMATS[typ][1]
