@@ -3,11 +3,11 @@
 from __future__ import annotations
 
 import hashlib
+import re
 import urllib.error
 import urllib.request
 from collections.abc import Callable, Iterable, Iterator, Mapping
 from email.message import Message
-import re
 from typing import Any
 from urllib.parse import urlsplit
 
