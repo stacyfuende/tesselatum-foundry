@@ -103,7 +103,6 @@ def test_requires_stac_item_identity_and_collection():
         )
 
 
-
 @pytest.mark.parametrize(
     "href",
     [
@@ -120,7 +119,10 @@ def test_rejects_invalid_or_non_default_asset_ports(href):
         )
 
 
-@pytest.mark.parametrize("allowed_hosts", [set(), {"*.example.test"}, {"https://data.example.test"}, {""}])
+@pytest.mark.parametrize(
+    "allowed_hosts",
+    [set(), {"*.example.test"}, {"https://data.example.test"}, {""}],
+)
 def test_requires_nonempty_exact_dns_asset_host_allowlist(allowed_hosts):
     with pytest.raises(StacResolutionError, match="allowlist|exact DNS"):
         resolve_stac_asset(
