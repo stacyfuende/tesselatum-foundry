@@ -211,7 +211,16 @@ def test_https_adapter_rejects_range_fallback_and_wrong_content_range():
 
 
 def test_https_adapter_rejects_truncated_range_and_encoded_response():
-    truncated = range_response(b"abc", offset=0, total=100)
+    truncated = FakeResponse(
+        b"abc",
+        {
+            "Content-Range": "bytes 0-3/100",
+            "Content-Length": "4",
+            "ETag": '"v1"',
+            "Content-Encoding": "identity",
+        },
+    )
+    truncated.status = 206
     adapter = HttpSourceAdapter(
         allowed_hosts={"data.example.test"},
         opener=lambda _request, **_kwargs: truncated,
