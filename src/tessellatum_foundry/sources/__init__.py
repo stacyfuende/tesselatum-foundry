@@ -6,6 +6,7 @@ from .batches import (
     FeatureExceedsBatchLimit,
     iter_feature_batches,
 )
+from .http import HttpSourceAdapter, SourceAccessError
 from .local import LocalFileSourceAdapter
 from .models import (
     ExternalDataReference,
@@ -30,8 +31,10 @@ __all__ = [
     "FeatureReaderError",
     "ExternalFeatureStreamError",
     "GeoJsonFeatureCollectionReader",
+    "HttpSourceAdapter",
     "LocalFileSourceAdapter",
     "NdjsonFeatureReader",
+    "SourceAccessError",
     "SourceAdapter",
     "SourceDescriptor",
     "SourceIntegrityError",
