@@ -26,6 +26,7 @@ from .stac import StacResolutionError, parse_stac_item, resolve_stac_asset
 from .stac_client import StacItemSourceResolver
 from .stac_search import StacApiSearchClient, StacSearchError
 from .stac_http import StacSearchTransportError, UrllibStacSearchTransport
+from .tiff import TiffFormatError, TiffLayout, TiffRaster, TiffRangeReader
 
 __all__ = [
     "ExternalDataReference",
@@ -33,6 +34,10 @@ __all__ = [
     "RasterContractError",
     "RasterMetadata",
     "RasterWindow",
+    "TiffFormatError",
+    "TiffLayout",
+    "TiffRaster",
+    "TiffRangeReader",
     "FeatureBatch",
     "FeatureBatchError",
     "FeatureExceedsBatchLimit",
