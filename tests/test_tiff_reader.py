@@ -275,3 +275,44 @@ def test_directory_index_preserves_source_budget_errors():
 
     with pytest.raises(SourceLimitExceeded):
         tiff_reader.read_directory_index(file_size=len(payload))
+
+def test_directory_index_follows_primary_ifd_chain():
+    payload = bytearray(classic_tiff())
+    first_ifd_size = struct.unpack_from("<H", payload, 8)[0] * 12 + 2 + 4
+    second_offset = len(payload)
+    next_pointer = 8 + first_ifd_size - 4
+    struct.pack_into("<I", payload, next_pointer, second_offset)
+    # Reuse the first IFD as a second primary-chain directory; its data ranges
+    # remain valid and the directory offset is distinct.
+    payload.extend(payload[8:8 + first_ifd_size])
+    tiff_reader, _ = reader(bytes(payload))
+    directories = tiff_reader.read_directory_index(file_size=len(payload))
+    assert len(directories) == 2
+    assert directories[0].next_ifd_offset == second_offset
+    assert directories[1].offset == second_offset
+
+
+def test_directory_index_rejects_tile_table_that_does_not_cover_grid():
+    payload = bytearray(classic_tiff(tiled=True))
+    entry_count = struct.unpack_from("<H", payload, 8)[0]
+    for index in range(entry_count):
+        entry = 10 + index * 12
+        tag = struct.unpack_from("<H", payload, entry)[0]
+        if tag == 256:
+            struct.pack_into("<I", payload, entry + 8, 64)
+            break
+    tiff_reader, _ = reader(bytes(payload))
+    with pytest.raises(TiffFormatError, match="tile table does not match"):
+        tiff_reader.read_directory_index(file_size=len(payload))
+
+
+def test_directory_index_exposes_tiled_directory_contract():
+    payload = classic_tiff(tiled=True)
+    tiff_reader, _ = reader(payload)
+    directory = tiff_reader.read_directory_index(file_size=len(payload))[0]
+    assert directory.tiled is True
+    assert directory.tile_width == 32
+    assert directory.tile_height == 16
+    assert directory.samples_per_pixel == 1
+    assert directory.planar_configuration == 1
+    assert directory.compression == 1
