@@ -26,6 +26,7 @@ from .stac import StacResolutionError, parse_stac_item, resolve_stac_asset
 from .stac_client import StacItemSourceResolver
 from .stac_search import StacApiSearchClient, StacSearchError
 from .stac_http import StacSearchTransportError, UrllibStacSearchTransport
+from .cog_structure import TiffStructureAssessment, assess_cog_structure
 from .tiff import TiffDirectory, TiffFormatError, TiffLayout, TiffRaster, TiffRangeReader
 
 __all__ = [
@@ -35,6 +36,8 @@ __all__ = [
     "RasterMetadata",
     "RasterWindow",
     "TiffDirectory",
+    "TiffStructureAssessment",
+    "assess_cog_structure",
     "TiffFormatError",
     "TiffLayout",
     "TiffRaster",
