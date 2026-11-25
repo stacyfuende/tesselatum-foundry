@@ -37,7 +37,6 @@ def assess_cog_structure(directories: tuple[TiffDirectory, ...]) -> TiffStructur
     if first.tile_width is None or first.tile_height is None:
         issues.append("Primary directory has no tile dimensions.")
     else:
-        tile_shape = (first.tile_width, first.tile_height)
         checks.append("Primary tile dimensions are available.")
 
     for index, directory in enumerate(directories[1:], start=1):
