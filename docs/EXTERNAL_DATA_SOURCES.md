@@ -260,8 +260,4 @@ image grid (including separate-planar sample planes). The index follows both
 primary next-IFD links and SubIFD links; it does not assume every later IFD is
 an overview.
 
-The directory index is not yet a COG conformance verdict. It does not establish
-that SubIFDs are valid reduced-resolution overviews, validate overview scale
-relationships, prove IFD/tile ordering or byte-range alignment, parse GeoKeys
-into a normalized CRS, or decode/compress image blocks. Those checks remain
-required before exposing COG windows as a production capability.
+A conservative `assess_cog_structure` helper reports whether inspected directories pass a limited set of COG-like checks: tiled primary image, smaller directories marked reduced-resolution, matching tile dimensions, and compatible sample/planar layouts. This is **not** a COG conformance verdict. It does not establish normative IFD/tile ordering or byte-range alignment, parse GeoKeys into normalized CRS, validate compression semantics, or decode pixel blocks. Production COG capability still requires those checks and a bounded decoder.
