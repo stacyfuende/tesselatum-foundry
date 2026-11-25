@@ -27,7 +27,7 @@ from .stac_client import StacItemSourceResolver
 from .stac_search import StacApiSearchClient, StacSearchError
 from .stac_http import StacSearchTransportError, UrllibStacSearchTransport
 from .cog_structure import TiffStructureAssessment, assess_cog_structure
-from .tiff import TiffDirectory, TiffFormatError, TiffLayout, TiffRaster, TiffRangeReader
+from .tiff import TiffDirectory, TiffFormatError, TiffLayout, TiffRaster, TiffRangeReader\nfrom .tile_selection import RasterTileSelection, select_tiff_tiles
 
 __all__ = [
     "ExternalDataReference",
@@ -41,7 +41,7 @@ __all__ = [
     "TiffFormatError",
     "TiffLayout",
     "TiffRaster",
-    "TiffRangeReader",
+    "TiffRangeReader",\n    "RasterTileSelection",\n    "select_tiff_tiles",
     "FeatureBatch",
     "FeatureBatchError",
     "FeatureExceedsBatchLimit",
