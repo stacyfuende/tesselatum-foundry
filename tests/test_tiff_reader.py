@@ -10,6 +10,8 @@ from tessellatum_foundry.sources import (
     SourceLimitExceeded,
     TiffFormatError,
     TiffRangeReader,
+    TiffDirectory,
+    assess_cog_structure,
 )
 
 
@@ -317,3 +319,47 @@ def test_directory_index_exposes_tiled_directory_contract():
     assert directory.samples_per_pixel == 1
     assert directory.planar_configuration == 1
     assert directory.compression == 1
+
+
+def test_cog_structure_assessment_is_explicitly_conservative():
+    primary = TiffDirectory(
+        offset=8, width=1024, height=1024, tiled=True,
+        block_offsets=(1000,), block_byte_counts=(100,),
+        subifd_offsets=(300,), next_ifd_offset=0,
+        tile_width=256, tile_height=256, samples_per_pixel=3,
+        planar_configuration=1, compression=7, new_subfile_type=0,
+    )
+    overview = TiffDirectory(
+        offset=300, width=256, height=256, tiled=True,
+        block_offsets=(2000,), block_byte_counts=(100,),
+        subifd_offsets=(), next_ifd_offset=0,
+        tile_width=256, tile_height=256, samples_per_pixel=3,
+        planar_configuration=1, compression=7, new_subfile_type=1,
+    )
+    result = assess_cog_structure((primary, overview))
+    assert result.candidate is True
+    assert not result.issues
+    assert "Primary directory is tiled." in result.checks
+    assert "Directory 1 is marked reduced-resolution." in result.checks
+
+
+def test_cog_structure_assessment_rejects_non_overview_directory():
+    primary = TiffDirectory(
+        offset=8, width=100, height=100, tiled=True,
+        block_offsets=(1000,), block_byte_counts=(100,),
+        subifd_offsets=(), next_ifd_offset=0,
+        tile_width=64, tile_height=64, samples_per_pixel=1,
+        planar_configuration=1, compression=1, new_subfile_type=0,
+    )
+    same_size = TiffDirectory(
+        offset=200, width=100, height=100, tiled=False,
+        block_offsets=(1200,), block_byte_counts=(100,),
+        subifd_offsets=(), next_ifd_offset=0,
+        tile_width=None, tile_height=None, samples_per_pixel=1,
+        planar_configuration=1, compression=1, new_subfile_type=0,
+    )
+    result = assess_cog_structure((primary, same_size))
+    assert result.candidate is False
+    assert any("not smaller" in issue for issue in result.issues)
+    assert any("not marked" in issue for issue in result.issues)
+    assert any("strip-based" in issue for issue in result.issues)
