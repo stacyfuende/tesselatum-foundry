@@ -41,9 +41,8 @@ def assess_cog_structure(directories: tuple[TiffDirectory, ...]) -> TiffStructur
         checks.append("Primary tile dimensions are available.")
 
     for index, directory in enumerate(directories[1:], start=1):
-        parent = directories[index - 1]
-        if directory.width >= parent.width or directory.height >= parent.height:
-            issues.append(f"Directory {index} is not smaller than the preceding directory.")
+        if directory.width >= first.width or directory.height >= first.height:
+            issues.append(f"Directory {index} is not smaller than the primary image.")
         else:
             checks.append(f"Directory {index} dimensions decrease.")
 
