@@ -261,3 +261,22 @@ primary next-IFD links and SubIFD links; it does not assume every later IFD is
 an overview.
 
 A conservative `assess_cog_structure` helper reports whether inspected directories pass a limited set of COG-like checks: tiled primary image, smaller directories marked reduced-resolution, matching tile dimensions, and compatible sample/planar layouts. This is **not** a COG conformance verdict. It does not establish normative IFD/tile ordering or byte-range alignment, parse GeoKeys into normalized CRS, validate compression semantics, or decode pixel blocks. Production COG capability still requires those checks and a bounded decoder.
+
+
+## Raster window tile planning
+
+The raster source layer now includes `select_tiff_tiles`, which maps a validated
+zero-based `RasterWindow` to the TIFF tile byte ranges that intersect it. The
+planner accounts for tile-grid edges and both chunky and planar-separated
+sample layouts. Its output includes the complete encoded tile range and the
+pixel intersection within the tile, allowing a later decoder to crop the
+requested window without reading unrelated tiles.
+
+The planner enforces a maximum selected-tile count and validates the directory
+tile-table shape against the raster dimensions and sample layout. The resulting
+ranges can be fetched through `BudgetedRasterRangeReader`, which applies the
+shared request/byte budget and requires a strong ETag on the source reference.
+
+This is range selection, not pixel decoding. Compression handling, decompression
+bomb limits, decoded-memory budgets, resampling, and a complete COG conformance
+validator remain separate work.
