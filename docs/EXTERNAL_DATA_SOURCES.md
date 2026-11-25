@@ -280,3 +280,19 @@ shared request/byte budget and requires a strong ETag on the source reference.
 This is range selection, not pixel decoding. Compression handling, decompression
 bomb limits, decoded-memory budgets, resampling, and a complete COG conformance
 validator remain separate work.
+
+
+## Sequential raster tile range retrieval
+
+`read_selected_tiff_tiles` consumes the selections produced by
+`select_tiff_tiles` and fetches one encoded tile range at a time through
+`BudgetedRasterRangeReader`. Each yielded tile includes its selection,
+encoded bytes and SHA-256 digest. The iterator does not retain previously
+yielded payloads; callers should process and release each tile before
+advancing. All reads share the same cumulative request and byte budgets and
+the same strong-ETag source validator.
+
+The returned bytes are still compressed/encoded TIFF tile data. This component
+does not decompress, interpret sample values, assemble a multi-tile window or
+enforce decoded-array memory limits. Those must be provided by a subsequent
+format-aware decoder before the raster path can be treated as executable.
