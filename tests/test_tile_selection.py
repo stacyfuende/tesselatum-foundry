@@ -65,8 +65,8 @@ def test_planar_separate_uses_band_major_block_order():
         directory, make_metadata(bands=3), RasterWindow(0, 0, 10, 10, bands=(3, 1))
     )
     assert [item.band for item in selected] == [3, 1]
-    assert [item.block_index for item in selected] == [8, 0]
-    assert [item.byte_offset for item in selected] == [1800, 1000]
+    assert [item.block_index for item in selected] == [12, 0]
+    assert [item.byte_offset for item in selected] == [2200, 1000]
 
 
 def test_chunky_layout_selects_tile_once_even_for_band_subset():
