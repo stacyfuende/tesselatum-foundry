@@ -35,7 +35,7 @@ def tiled_geotiff():
         fmt = {3: "H", 4: "I", 12: "d"}[typ]
         packed = struct.pack("<" + fmt * count, *values)
         if len(packed) <= 4:
-            field = packed.ljust(4, b"\\x00")
+            field = packed.ljust(4, b"\x00")
         else:
             field = struct.pack("<I", extra_start + len(extra))
             extra.extend(packed)
