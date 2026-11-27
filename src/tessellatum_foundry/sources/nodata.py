@@ -52,7 +52,7 @@ def window_validity_mask(
     ):
         raise RasterContractError("Raster window buffer band selection is inconsistent.")
     if buffer.dtypes != tuple(metadata.dtypes[band - 1] for band in buffer.bands):
-        raise RasterContractError("Raster window buffer dtypes do not match selected metadata bands.")
+        raise RasterContractError(\n            "Raster window buffer dtypes do not match selected metadata bands."\n        )
     selected_nodata = tuple(metadata.nodata[band - 1] for band in buffer.bands)
     if not metadata.nodata:
         selected_nodata = (None,) * len(buffer.bands)
