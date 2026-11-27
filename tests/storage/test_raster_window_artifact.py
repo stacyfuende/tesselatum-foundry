@@ -51,7 +51,7 @@ def test_raster_window_artifact_rejects_trailing_or_truncated_bytes():
     )
     with pytest.raises(RasterWindowArtifactError, match="payload length"):
         decode_raster_window_artifact(payload + b"unexpected")
-    with pytest.raises(RasterWindowArtifactError, match="truncated"):
+    with pytest.raises(RasterWindowArtifactError, match="payload length"):
         decode_raster_window_artifact(payload[:-1])
 
 
