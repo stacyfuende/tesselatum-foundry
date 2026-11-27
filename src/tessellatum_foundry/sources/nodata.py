@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import math
 import struct
+from dataclasses import dataclass
 from collections.abc import Iterable, Sequence
 
 from .raster import RasterContractError, RasterMetadata
@@ -87,3 +88,97 @@ def window_validity_mask(
             band_offset += sample_widths[band_index]
         mask.append(valid)
     return tuple(mask)
+
+
+
+@dataclass(frozen=True, slots=True)
+class NoDataArithmeticResult:
+    """Single-band float64 result and its explicit per-pixel validity mask."""
+
+    buffer: RasterWindowBuffer
+    valid: tuple[bool, ...]
+
+
+def apply_nodata_aware_binary(
+    left: RasterWindowBuffer,
+    right: RasterWindowBuffer,
+    left_metadata: RasterMetadata,
+    right_metadata: RasterMetadata,
+    *,
+    operation: str,
+) -> NoDataArithmeticResult:
+    """Apply a pixelwise binary operation with strict grid and NoData semantics.
+
+    Inputs must be single-band windows on the same grid and pixel coordinates.
+    Invalid input pixels propagate to the output as NaN; division by zero and
+    non-finite results are invalid as well. Output samples are float64 in
+    little-endian order. No implicit alignment, resampling or reprojection is
+    performed.
+    """
+    operations = {
+        "add": lambda a, b: a + b,
+        "subtract": lambda a, b: a - b,
+        "multiply": lambda a, b: a * b,
+        "divide": lambda a, b: a / b,
+    }
+    if operation not in operations:
+        raise RasterContractError("Unsupported NoData arithmetic operation.")
+    if left.window != right.window or left.bands != right.bands:
+        raise RasterContractError("Raster arithmetic inputs must have identical windows and bands.")
+    if len(left.bands) != 1:
+        raise RasterContractError("Raster arithmetic currently requires one selected band.")
+    for first, second in (
+        (left_metadata.width, right_metadata.width),
+        (left_metadata.height, right_metadata.height),
+        (left_metadata.transform, right_metadata.transform),
+        (left_metadata.crs, right_metadata.crs),
+    ):
+        if first != second:
+            raise RasterContractError("Raster arithmetic inputs must share the same grid and CRS.")
+    left_mask = window_validity_mask(left, left_metadata)
+    right_mask = window_validity_mask(right, right_metadata)
+    dtype_formats = {
+        "uint8": "B", "int8": "b", "uint16": "H", "int16": "h",
+        "uint32": "I", "int32": "i", "uint64": "Q", "int64": "q",
+        "float32": "f", "float64": "d",
+    }
+    left_dtype = left.dtypes[0]
+    right_dtype = right.dtypes[0]
+    if left_dtype not in dtype_formats or right_dtype not in dtype_formats:
+        raise RasterContractError("Unsupported dtype for raster arithmetic.")
+    left_prefix = "<" if left.byte_order == "little" else ">"
+    right_prefix = "<" if right.byte_order == "little" else ">"
+    left_width = struct.calcsize(dtype_formats[left_dtype])
+    right_width = struct.calcsize(dtype_formats[right_dtype])
+    output = bytearray()
+    valid_mask = []
+    count = left.window.width * left.window.height
+    for index in range(count):
+        left_value = struct.unpack_from(
+            left_prefix + dtype_formats[left_dtype], left.samples, index * left_width
+        )[0]
+        right_value = struct.unpack_from(
+            right_prefix + dtype_formats[right_dtype], right.samples, index * right_width
+        )[0]
+        valid = left_mask[index] and right_mask[index]
+        if operation == "divide" and right_value == 0:
+            valid = False
+        if valid:
+            try:
+                value = float(operations[operation](left_value, right_value))
+            except (OverflowError, ZeroDivisionError):
+                valid = False
+            else:
+                valid = math.isfinite(value)
+        if not valid:
+            value = float("nan")
+        output.extend(struct.pack("<d", value))
+        valid_mask.append(valid)
+    result_buffer = RasterWindowBuffer(
+        window=left.window,
+        bands=left.bands,
+        dtypes=("float64",),
+        byte_order="little",
+        samples=bytes(output),
+    )
+    return NoDataArithmeticResult(result_buffer, tuple(valid_mask))
