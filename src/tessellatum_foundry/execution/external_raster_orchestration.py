@@ -105,6 +105,7 @@ class ExternalRasterWindowRunOrchestrator:
             raise ExecutionPreconditionError("A non-empty actor identity is required.")
 
         reference = ExternalDataReference(**reference_data)
+        report_id: str | None = None
         try:
             self.source_authorizer(reference, actor_id)
             adapter = self.source_adapter_resolver(reference)
@@ -366,6 +367,11 @@ class ExternalRasterWindowRunOrchestrator:
                                 "message": f"Raster Run execution failed ({type(error).__name__}).",
                                 "retryable": False,
                             },
+                            **(
+                                {"validation_report_ids": [report_id]}
+                                if report_id is not None
+                                else {}
+                            ),
                         },
                         event_type="external_raster_window_failed",
                     )
