@@ -51,7 +51,7 @@ def test_derives_unique_factor_from_dimensions_without_scanning_grid_size():
 
 
 def test_derives_overview_factors_from_even_grid_dimensions():
-    assert overview_factors_from_dimensions(8, 8, ((4, 4),)) == (2)
+    assert overview_factors_from_dimensions(8, 8, ((4, 4),)) == (2,)
 
 
 @pytest.mark.parametrize(
