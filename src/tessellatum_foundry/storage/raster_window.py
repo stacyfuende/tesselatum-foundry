@@ -9,7 +9,8 @@ from __future__ import annotations
 import json
 import struct
 from dataclasses import dataclass
-from typing import Any, Mapping
+from collections.abc import Mapping
+from typing import Any
 
 from tessellatum_foundry.sources.window_assembly import RasterWindowBuffer
 
