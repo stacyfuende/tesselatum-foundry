@@ -210,7 +210,8 @@ def decode_deflate_tiff_tile(
         or directory.block_byte_counts[selection.block_index] != len(payload)
         or selection.byte_length != len(payload)
     ):
-        raise RasterContractError("Compressed tile payload does not match its directory byte count.")
+        message = "Compressed tile payload does not match its directory byte count."
+        raise RasterContractError(message)
     if directory.tile_width is None or directory.tile_height is None:
         raise RasterContractError("Deflate decoding requires a tiled TIFF directory.")
     if selection.band == 0 and directory.planar_configuration == 1:
