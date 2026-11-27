@@ -33,6 +33,7 @@ from .tile_reads import RetrievedRasterTile, read_selected_tiff_tiles
 from .tile_decode import (
     DecodedRasterTile,
     decode_deflate_tiff_tile,
+    decode_tiff_tile,
     decode_uncompressed_tiff_tile,
 )
 
@@ -56,6 +57,7 @@ __all__ = [
     "DecodedRasterTile",
     "decode_uncompressed_tiff_tile",
     "decode_deflate_tiff_tile",
+    "decode_tiff_tile",
     "FeatureBatch",
     "FeatureBatchError",
     "FeatureExceedsBatchLimit",
