@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from dataclasses import replace
+
 import pytest
 
 from tessellatum_foundry.sources import (
@@ -137,9 +139,7 @@ def test_rejects_short_or_overlong_uncompressed_tile():
 
 def test_rejects_selection_not_matching_directory_table():
     tile = selection()
-    bad = RasterTileSelection(
-        **{**tile.__dict__, "byte_offset": tile.byte_offset + 1}
-    )
+    bad = replace(tile, byte_offset=tile.byte_offset + 1)
     with pytest.raises(RasterContractError, match="does not match"):
         decode_uncompressed_tiff_tile(
             bytes(16 * 16 * 3), bad, directory(), metadata(), byte_order="little"
