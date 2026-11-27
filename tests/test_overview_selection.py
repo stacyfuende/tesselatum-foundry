@@ -118,3 +118,20 @@ def test_rejects_non_tiled_selected_overview():
         select_tiff_overview(
             (base, overview), metadata((2,), width=64, height=64), target_downsample=2
         )
+
+
+
+def test_selected_overview_directory_drives_actual_tile_window_selection():
+    base = tiff_directory(64, 64, reduced=False, offset=1)
+    overview = tiff_directory(32, 32, reduced=True, offset=2)
+    selected = select_tiff_overview(
+        (base, overview), metadata((), width=64, height=64), target_downsample=2
+    )
+    tiles = select_tiff_tiles(
+        selected.directory,
+        selected.metadata,
+        RasterWindow(row_offset=0, column_offset=0, height=16, width=16),
+    )
+    assert len(tiles) == 1
+    assert tiles[0].block_index == 0
+    assert tiles[0].byte_offset == overview.block_offsets[0]
