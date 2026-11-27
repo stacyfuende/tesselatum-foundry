@@ -246,6 +246,16 @@ def test_deflate_decoder_rejects_trailing_or_truncated_stream(suffix):
         )
 
 
+def test_deflate_decoder_rejects_output_larger_than_exact_tile_layout():
+    raw = bytes(16 * 16 * 3 + 1)
+    payload, tile, layout = compressed_fixture(raw)
+
+    with pytest.raises(RasterContractError, match="decoded size"):
+        decode_deflate_tiff_tile(
+            payload, tile, layout, metadata(), byte_order="little"
+        )
+
+
 def test_deflate_decoder_enforces_compressed_input_budget():
     raw = bytes(16 * 16 * 3)
     payload, tile, layout = compressed_fixture(raw)
