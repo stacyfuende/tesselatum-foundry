@@ -72,3 +72,49 @@ def test_overview_factor_derivation_ignores_non_reduced_directories():
         SimpleNamespace(width=4, height=4, new_subfile_type=1),
     )
     assert overview_factors_from_tiff_directories(8, 8, dirs) == (2,)
+
+
+
+def tiff_directory(width, height, *, reduced, tile_width=16, tile_height=16, offset=0):
+    across = (width + tile_width - 1) // tile_width
+    down = (height + tile_height - 1) // tile_height
+    return SimpleNamespace(
+        offset=offset, width=width, height=height, tiled=True,
+        block_offsets=tuple(range(100 + offset, 100 + offset + across * down)),
+        block_byte_counts=tuple(64 for _ in range(across * down)),
+        subifd_offsets=(), next_ifd_offset=0,
+        tile_width=tile_width, tile_height=tile_height,
+        samples_per_pixel=1, planar_configuration=1, compression=1,
+        new_subfile_type=1 if reduced else 0, predictor=1,
+    )
+
+
+def test_binds_selected_overview_directory_to_scaled_grid_metadata():
+    base = tiff_directory(64, 64, reduced=False, offset=1)
+    overview = tiff_directory(32, 32, reduced=True, offset=2)
+    selected = select_tiff_overview(
+        (base, overview), metadata((2, 4)), target_downsample=2
+    )
+    assert selected.factor == 2
+    assert selected.directory is overview
+    assert (selected.metadata.width, selected.metadata.height) == (32, 32)
+    assert selected.metadata.transform == (0, 2, 0, 0, 0, -2)
+    assert selected.metadata.block_shapes == ((16, 16),)
+
+
+def test_rejects_missing_or_ambiguous_base_directory():
+    base = tiff_directory(64, 64, reduced=False)
+    with pytest.raises(RasterContractError):
+        select_tiff_overview(
+            (base, base), metadata(()), target_downsample=1
+        )
+
+
+def test_rejects_non_tiled_selected_overview():
+    base = tiff_directory(64, 64, reduced=False)
+    overview = tiff_directory(32, 32, reduced=True)
+    overview = SimpleNamespace(**{**overview.__dict__, "tiled": False})
+    with pytest.raises(RasterContractError):
+        select_tiff_overview(
+            (base, overview), metadata((2,)), target_downsample=2
+        )
