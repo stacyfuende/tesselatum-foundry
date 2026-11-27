@@ -326,3 +326,58 @@ def _sample_offsets(widths: tuple[int, ...]) -> tuple[int, ...]:
         offset += width
     return tuple(offsets)
 
+def decode_tiff_tile(
+    payload: bytes,
+    selection: RasterTileSelection,
+    directory: TiffDirectory,
+    metadata: RasterMetadata,
+    *,
+    byte_order: str,
+    max_compressed_bytes: int = 16 * 1024 * 1024,
+    max_decoded_bytes: int = 64 * 1024 * 1024,
+    max_pixels: int = 16 * 1024 * 1024,
+) -> DecodedRasterTile:
+    """Decode one supported TIFF tile using explicit compression/predictor gates."""
+    if directory.compression in (8, 32946):
+        return decode_deflate_tiff_tile(
+            payload,
+            selection,
+            directory,
+            metadata,
+            byte_order=byte_order,
+            max_compressed_bytes=max_compressed_bytes,
+            max_decoded_bytes=max_decoded_bytes,
+            max_pixels=max_pixels,
+        )
+    if directory.compression != 1:
+        raise RasterContractError("Unsupported TIFF tile compression.")
+    if directory.predictor == 1:
+        return decode_uncompressed_tiff_tile(
+            payload,
+            selection,
+            directory,
+            metadata,
+            byte_order=byte_order,
+            max_decoded_bytes=max_decoded_bytes,
+            max_pixels=max_pixels,
+        )
+    if directory.predictor != 2:
+        raise RasterContractError("Unsupported TIFF predictor.")
+    validated = decode_uncompressed_tiff_tile(
+        payload,
+        selection,
+        replace(directory, predictor=1),
+        metadata,
+        byte_order=byte_order,
+        max_decoded_bytes=max_decoded_bytes,
+        max_pixels=max_pixels,
+    )
+    samples = _undo_horizontal_predictor(
+        validated.samples,
+        tile_width=directory.tile_width,
+        tile_height=directory.tile_height,
+        sample_dtypes=validated.sample_dtypes,
+        byte_order=byte_order,
+    )
+    return replace(validated, samples=samples)
+
