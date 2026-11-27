@@ -101,7 +101,7 @@ def main() -> None:
         allowed_hosts=ALLOWED_ASSET_HOSTS,
     )
     etag = discover_strong_etag(reference.uri)
-    reference = replace(reference, etag=etag, media_type="image/tiff")
+    reference = replace(reference, etag=etag, media_type="image/tiff", selection={})
     adapter = HttpSourceAdapter(
         allowed_hosts=ALLOWED_ASSET_HOSTS,
         timeout_seconds=45,
