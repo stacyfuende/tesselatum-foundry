@@ -86,3 +86,12 @@ def test_planner_does_not_mutate_cell_template(experiment, cell):
     original = deepcopy(cell)
     plan_experiment(experiment, cell)
     assert cell == original
+
+def test_experiment_manifest_schema_accepts_fixture(experiment):
+    ContractRegistry().validate("experiment.schema.json", experiment)
+
+
+def test_experiment_manifest_schema_rejects_overlarge_variant_limit(experiment):
+    experiment["max_variants"] = 101
+    with pytest.raises(Exception):
+        ContractRegistry().validate("experiment.schema.json", experiment)
