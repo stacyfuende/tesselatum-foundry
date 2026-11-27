@@ -29,7 +29,9 @@ def policy():
 
 
 def test_low_risk_routine_choice_is_automatic(policy):
-    result = evaluate_autonomy("fit-layout", {"impact": "low", "reversibility": "reversible"}, policy)
+    result = evaluate_autonomy(
+        "fit-layout", {"impact": "low", "reversibility": "reversible"}, policy
+    )
     assert result["mode"] == "automatic"
     assert not result["requires_approval"]
 
@@ -39,7 +41,10 @@ def test_capability_profile_contributes_risk_baseline(policy):
     result = evaluate_autonomy("read-source", {}, policy, capability=capability)
     assert result["context"]["impact"] == "moderate"
     assert result["mode"] == "guided"
-    assert any("Incomplete capability autonomy declaration" in reason for reason in result["reasons"])
+    assert any(
+        "Incomplete capability autonomy declaration" in reason
+        for reason in result["reasons"]
+    )
 
 
 def test_irreversible_action_requires_explicit_authorisation(policy):
