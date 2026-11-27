@@ -296,3 +296,24 @@ The returned bytes are still compressed/encoded TIFF tile data. This component
 does not decompress, interpret sample values, assemble a multi-tile window or
 enforce decoded-array memory limits. Those must be provided by a subsequent
 format-aware decoder before the raster path can be treated as executable.
+
+## Bounded uncompressed TIFF tile sample decoding
+
+`decode_uncompressed_tiff_tile` is the first deliberately narrow pixel-decoding
+boundary. It accepts one retrieved tile, verifies that its selection matches
+the directory's tile table, checks the sample layout and decoded-size budgets,
+and exposes the sample buffer with its TIFF byte order and per-sample dtypes.
+Chunky data remains pixel-interleaved; planar-separated data must identify one
+one-based band. TIFF edge tiles are validated using their full encoded tile
+dimensions, including padding outside the image grid.
+
+This initial decoder accepts only Compression=1 (uncompressed), Predictor=1,
+and supported byte-aligned integer/float sample dtypes. It rejects packed
+samples, compression codecs, predictors, malformed payload lengths and tiles
+over the configured decoded-byte or pixel limits. It does not yet decompress
+Deflate/LZW/JPEG, undo predictors, normalize byte order, convert photometric
+interpretations, rescale samples, or assemble a multi-tile raster window.
+The returned sample bytes retain the source TIFF byte order; consumers must
+interpret them using the returned dtype and byte-order metadata. This is a
+bounded raw-sample extraction primitive, not yet a general-purpose raster
+decoder.
