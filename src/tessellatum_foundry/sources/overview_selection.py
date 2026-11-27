@@ -1,10 +1,21 @@
-"""Deterministic overview choice for raster reads."""
+"""Deterministic overview choice and TIFF directory binding for raster reads."""
 from __future__ import annotations
 
 import math
 from collections.abc import Iterable
+from dataclasses import dataclass, replace
 
 from .raster import RasterContractError, RasterMetadata
+from .tiff import TiffDirectory
+
+
+@dataclass(frozen=True, slots=True)
+class SelectedTiffOverview:
+    """A concrete TIFF directory paired with metadata on that directory's grid."""
+
+    factor: int
+    directory: TiffDirectory
+    metadata: RasterMetadata
 
 
 def select_overview_factor(
@@ -39,12 +50,7 @@ def overview_factors_from_dimensions(
     base_height: int,
     overview_dimensions: Iterable[tuple[int, int]],
 ) -> tuple[int, ...]:
-    """Derive unique integer factors using bounded arithmetic, including odd grids.
-
-    The interval intersection avoids scanning every possible factor, which
-    would make a small metadata operation proportional to raster dimensions.
-    Only reduced-resolution dimensions consistent with ceil(base/factor) pass.
-    """
+    """Derive unique integer factors using bounded arithmetic, including odd grids."""
     if any(
         isinstance(value, bool) or not isinstance(value, int) or value < 1
         for value in (base_width, base_height)
@@ -54,10 +60,7 @@ def overview_factors_from_dimensions(
     maximum = max(base_width, base_height)
     factors: set[int] = set()
     for dimensions in overview_dimensions:
-        if (
-            not isinstance(dimensions, (tuple, list))
-            or len(dimensions) != 2
-        ):
+        if not isinstance(dimensions, (tuple, list)) or len(dimensions) != 2:
             raise RasterContractError("Overview dimensions must be width/height pairs.")
         width, height = dimensions
         if any(
@@ -66,9 +69,7 @@ def overview_factors_from_dimensions(
         ):
             raise RasterContractError("Overview dimensions must be positive integers.")
         if width >= base_width or height >= base_height:
-            raise RasterContractError(
-                "Overview dimensions must be smaller than the base grid."
-            )
+            raise RasterContractError("Overview dimensions must be smaller than the base grid.")
 
         width_min, width_max = _factor_interval(base_width, width, maximum)
         height_min, height_max = _factor_interval(base_height, height, maximum)
@@ -93,16 +94,75 @@ def overview_factors_from_dimensions(
 def overview_factors_from_tiff_directories(
     base_width: int,
     base_height: int,
-    directories: Iterable[object],
+    directories: Iterable[TiffDirectory],
 ) -> tuple[int, ...]:
-    """Derive overview factors from reduced-resolution TIFF directories.
-
-    Only directories marked with NewSubfileType bit 0 are considered. The
-    caller must supply directories from a bounded, validated TIFF index.
-    """
+    """Derive overview factors from directories marked reduced-resolution."""
     reduced = [
         (directory.width, directory.height)
         for directory in directories
-        if getattr(directory, "new_subfile_type", 0) & 1
+        if directory.new_subfile_type & 1
     ]
     return overview_factors_from_dimensions(base_width, base_height, reduced)
+
+
+def select_tiff_overview(
+    directories: Iterable[TiffDirectory],
+    metadata: RasterMetadata,
+    *,
+    target_downsample: float,
+) -> SelectedTiffOverview:
+    """Choose an indexed TIFF IFD and produce metadata aligned to its pixel grid.
+
+    The directory index must come from TiffRangeReader.read_directory_index().
+    Selection is fail-closed: duplicate base IFDs, ambiguous overview dimensions,
+    unsupported strip layouts, or inconsistent band metadata are rejected.
+    """
+    indexed = tuple(directories)
+    base_matches = [
+        directory for directory in indexed
+        if not (directory.new_subfile_type & 1)
+        and (directory.width, directory.height) == (metadata.width, metadata.height)
+    ]
+    if len(base_matches) != 1:
+        raise RasterContractError("TIFF index must contain exactly one matching base image directory.")
+
+    factors = overview_factors_from_tiff_directories(
+        metadata.width, metadata.height, indexed
+    )
+    enriched = replace(metadata, overview_factors=factors)
+    factor = select_overview_factor(enriched, target_downsample=target_downsample)
+    if factor == 1:
+        directory = base_matches[0]
+    else:
+        expected_dimensions = (
+            (metadata.width + factor - 1) // factor,
+            (metadata.height + factor - 1) // factor,
+        )
+        matches = [
+            item for item in indexed
+            if item.new_subfile_type & 1
+            and (item.width, item.height) == expected_dimensions
+        ]
+        if len(matches) != 1:
+            raise RasterContractError("Selected TIFF overview does not map to exactly one image directory.")
+        directory = matches[0]
+
+    if directory.samples_per_pixel != metadata.band_count:
+        raise RasterContractError("Selected TIFF directory band count does not match raster metadata.")
+    if not directory.tiled or directory.tile_width is None or directory.tile_height is None:
+        raise RasterContractError("Selected TIFF overview is not tiled and cannot use tile-window reads.")
+
+    transform = list(metadata.transform)
+    for index in (1, 2, 4, 5):
+        transform[index] *= factor
+    selected_metadata = replace(
+        enriched,
+        width=directory.width,
+        height=directory.height,
+        transform=tuple(transform),
+        block_shapes=tuple(
+            (directory.tile_height, directory.tile_width)
+            for _ in range(metadata.band_count)
+        ),
+    )
+    return SelectedTiffOverview(factor, directory, selected_metadata)
