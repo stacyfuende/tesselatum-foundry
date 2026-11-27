@@ -27,7 +27,7 @@ from tessellatum_foundry.execution.runs import RunRepository
 from tessellatum_foundry.sources.http import HttpSourceAdapter
 from tessellatum_foundry.sources.models import SourceIntegrityError
 from tessellatum_foundry.sources.raster import BudgetedRasterRangeReader
-from tessellatum_foundry.sources.stac import parse_stac_item, resolve_stac_asset
+from tessellatum_foundry.sources.stac import resolve_stac_asset
 from tessellatum_foundry.sources.tiff import TiffRangeReader
 from tessellatum_foundry.storage.artifacts import FileSystemArtifactStore
 from tessellatum_foundry.storage.raster_window import decode_raster_window_artifact
