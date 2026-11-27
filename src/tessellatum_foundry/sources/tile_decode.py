@@ -199,8 +199,8 @@ def decode_deflate_tiff_tile(
         raise TypeError("TIFF tile payload must be bytes.")
     if directory.compression not in (8, 32946):
         raise RasterContractError("TIFF tile does not use a supported Deflate compression code.")
-    if directory.predictor != 1:
-        raise RasterContractError("TIFF predictors are not supported by this decoder.")
+    if directory.predictor not in (1, 2):
+        raise RasterContractError("Unsupported TIFF predictor for Deflate tile decoding.")
     if len(payload) > max_compressed_bytes:
         raise RasterContractError("Compressed TIFF tile exceeds the configured byte limit.")
     if (
@@ -250,9 +250,18 @@ def decode_deflate_tiff_tile(
             "TIFF Deflate stream is incomplete, has trailing data, or violates its decoded size."
         )
 
+    if directory.predictor == 2:
+        decoded = _undo_horizontal_predictor(
+            decoded,
+            tile_width=directory.tile_width,
+            tile_height=directory.tile_height,
+            sample_dtypes=dtypes,
+            byte_order=byte_order,
+        )
     decoded_directory = replace(
         directory,
         compression=1,
+        predictor=1,
         block_byte_counts=tuple(
             expected_bytes if index == selection.block_index else count
             for index, count in enumerate(directory.block_byte_counts)
@@ -268,4 +277,51 @@ def decode_deflate_tiff_tile(
         max_decoded_bytes=max_decoded_bytes,
         max_pixels=max_pixels,
     )
+
+def _undo_horizontal_predictor(
+    samples: bytes,
+    *,
+    tile_width: int,
+    tile_height: int,
+    sample_dtypes: tuple[str, ...],
+    byte_order: str,
+) -> bytes:
+    """Reverse TIFF Predictor=2 in-place on a bounded copy of one tile."""
+    if any(dtype.startswith("float") for dtype in sample_dtypes):
+        raise RasterContractError("Horizontal predictor is supported only for integer samples.")
+    widths = tuple(_DTYPE_BYTES[dtype] for dtype in sample_dtypes)
+    bits = tuple(width * 8 for width in widths)
+    pixel_stride = sum(widths)
+    row_stride = tile_width * pixel_stride
+    output = bytearray(samples)
+    for row in range(tile_height):
+        row_start = row * row_stride
+        for column in range(1, tile_width):
+            pixel_start = row_start + column * pixel_stride
+            previous_start = pixel_start - pixel_stride
+            for sample_width, sample_bits, channel_offset in zip(
+                widths, bits, _sample_offsets(widths)
+            ):
+                current = pixel_start + channel_offset
+                previous = previous_start + channel_offset
+                encoded = int.from_bytes(
+                    output[current:current + sample_width], byte_order
+                )
+                prior = int.from_bytes(
+                    output[previous:previous + sample_width], byte_order
+                )
+                value = (encoded + prior) % (1 << sample_bits)
+                output[current:current + sample_width] = value.to_bytes(
+                    sample_width, byte_order
+                )
+    return bytes(output)
+
+
+def _sample_offsets(widths: tuple[int, ...]) -> tuple[int, ...]:
+    offsets = []
+    offset = 0
+    for width in widths:
+        offsets.append(offset)
+        offset += width
+    return tuple(offsets)
 
