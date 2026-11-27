@@ -334,3 +334,26 @@ Raw decoded samples retain source byte order and use the same lazy pixel
 iterator as uncompressed tiles. The unified `decode_tiff_tile` entry point dispatches only to the explicitly supported compression and predictor combinations. Raw Deflate streams, LZW, JPEG, packed samples,
 photometric conversion, and multi-tile window assembly are not supported.
 
+
+
+## Bounded TIFF raster window assembly
+
+`assemble_tiff_window` composes the tile planner and decoder outputs into
+one requested pixel window. It requires the exact deterministic tile sequence
+from `select_tiff_tiles`, rejects missing, duplicate, reordered or extra tiles,
+and verifies each decoded tile's byte order, sample dtypes, sample count and
+encoded tile dimensions before copying its intersection into the output.
+
+The result is pixel-interleaved regardless of the TIFF's source planar layout.
+A requested band subset is preserved in the caller's band order; chunky tiles
+are extracted by sample offsets, while planar-separated tiles are merged into
+the corresponding output channels. The final output allocation is checked
+against `max_output_bytes` before it is created. Source byte order and raw
+numeric dtypes are retained; no resampling, nodata interpretation, color
+conversion or CRS transformation is performed.
+
+This is bounded single-window assembly, not yet a complete raster execution
+capability. The caller remains responsible for choosing a suitable overview,
+establishing CRS/georeferencing semantics, applying source and decoded-tile
+budgets, and routing the assembled buffer into an independently validated
+spatial computation.
