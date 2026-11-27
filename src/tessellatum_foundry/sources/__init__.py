@@ -2,6 +2,7 @@
 
 from .batches import FeatureBatch, FeatureBatchError, FeatureExceedsBatchLimit, iter_feature_batches
 from .cog_structure import TiffStructureAssessment, assess_cog_structure
+from .grid import RasterResampleResult, plan_destination_grid, resample_raster_window
 from .http import HttpSourceAdapter, SourceAccessError
 from .local import LocalFileSourceAdapter
 from .models import (
@@ -46,6 +47,7 @@ from .window_read import TiffWindowRead, read_tiff_window
 
 __all__ = [
     "ExternalDataReference", "BudgetedRasterRangeReader", "RasterContractError",
+    "RasterResampleResult", "plan_destination_grid", "resample_raster_window",
     "RasterMetadata", "RasterWindow", "TiffDirectory", "TiffStructureAssessment",
     "assess_cog_structure", "TiffFormatError", "TiffLayout", "TiffRaster",
     "TiffRangeReader", "RasterTileSelection", "select_tiff_tiles",
