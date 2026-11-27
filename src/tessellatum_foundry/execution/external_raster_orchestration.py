@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import time
 import uuid
 from collections.abc import Callable
 from pathlib import Path
@@ -169,6 +170,7 @@ class ExternalRasterWindowRunOrchestrator:
                     "source_dataset_id": reference.dataset_id,
                 },
             )
+            execution_started = time.perf_counter()
 
             bands = tuple(requested.get("bands", ()))
             window = RasterWindow(
@@ -307,6 +309,7 @@ class ExternalRasterWindowRunOrchestrator:
                     "raster_window": provenance,
                 },
             )
+            duration_ms = max(0, int((time.perf_counter() - execution_started) * 1000))
             succeeded = self.run_repository.reconcile_committed_output(
                 run_id,
                 artifact_store=self.artifact_store,
@@ -315,7 +318,7 @@ class ExternalRasterWindowRunOrchestrator:
                 output_port="window",
                 validation_report_id=report_id,
                 resource_usage={
-                    "duration_ms": 0,
+                    "duration_ms": duration_ms,
                     "scratch_bytes": len(payload),
                 },
             )
@@ -385,7 +388,10 @@ class ExternalRasterWindowRunOrchestrator:
             artifact_version=artifact_version,
             output_port="window",
             validation_report_id=report_id,
-            resource_usage={"duration_ms": 0, "scratch_bytes": artifact["size_bytes"]},
+            resource_usage={
+                "duration_ms": 0,
+                "scratch_bytes": artifact["size_bytes"],
+            },
         )
 
     def _implementation_checksum(self) -> str:
