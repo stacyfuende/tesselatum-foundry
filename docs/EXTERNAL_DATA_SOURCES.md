@@ -440,3 +440,26 @@ This contract does not imply formal COG validation, general CRS transformation, 
 
 
 External raster Geo-Cell bindings use `spatial.kind = raster` with an explicit CRS and declared width, height, band count, and optional sample dtypes/resolution. Vector bindings retain their required geometry-type declaration. The binding records metadata and a source reference, not a copy of the external raster.
+
+
+## External raster.window execution
+
+The first raster execution path is now connected from a source-backed Geo-Cell to a governed Run and immutable Artifact.
+
+- `ExternalRasterWindowRunFactory` creates a queued Run only for the exact registered `raster.window@1.0.0` contract. It requires a strong ETag, an explicit CRS and raster grid, a valid selected band/window, and a same-CRS Foundry raster-window output contract. Source bytes remain external and no input Artifact snapshot is fabricated.
+- `ExternalRasterWindowRunOrchestrator` performs runtime authorization and adapter resolution, obtains a source descriptor, validates the observed TIFF grid and embedded CRS against the Geo-Cell, and executes the bounded TIFF reader.
+- One `BudgetedRasterRangeReader` is shared across base metadata, directory indexing, overview selection and tile retrieval. Request count, total requested bytes and per-range bytes are cumulative for the entire operation; the HTTP adapter pins every range with the declared strong ETag.
+- The concrete IFD and overview factor are selected and recorded. The output critic independently checks the requested window, band order, dtypes, byte length, validity-mask cardinality and byte order. NoData is represented as an explicit packed validity mask.
+- The output is published as the versioned Foundry Raster Window Container (`TFRW 1.0.0`) using the existing immutable content-addressed Artifact store. The header contains a window-local affine transform, CRS, sample layout and source/IFD provenance. It is not GeoTIFF/COG and does not claim COG conformance.
+- A passing execution-output report is saved before publication. The Run is completed through the existing committed-output reconciliation path. If the process is interrupted after Artifact metadata commits, `reconcile_committed_output` can complete the Run from the Artifact's producer and validation-report references.
+- Native in-process TIFF execution is recorded explicitly as `worker_type: local_native`; it is not misrepresented as a Docker worker. Its implementation manifest remains non-conformant until the new end-to-end suite passes CI.
+
+The current raster implementation supports tiled classic TIFF/BigTIFF structures and the compression/predictor combinations already implemented by the bounded tile decoder. It rejects unsupported layouts, unavailable file sizes, missing/weak ETags, unresolved CRS, source-grid mismatches, and budget overruns. It does not yet reproject, resample, write GeoTIFF/COG, implement arbitrary TIFF compression/predictors, or provide production distributed execution.
+
+### Remaining raster gates
+
+- Run the full raster conformance suite against representative real-world tiled TIFF/BigTIFF and COG sources, including edge tiles, multi-band planar/chunky layouts, NoData variants and overview chains.
+- Promote the implementation manifest to `passed` only after the end-to-end conformance suite passes in CI.
+- Add a durable publication journal/recovery policy equivalent to the streaming transaction journal for the raster Artifact path; current recovery reconciles a committed immutable Artifact but does not resume source reads.
+- Integrate source-rights evidence and method suitability checks into raster preflight and validation.
+- Implement explicit destination-grid/resampling capabilities as separate versioned operations; `raster.window` is extraction only.
