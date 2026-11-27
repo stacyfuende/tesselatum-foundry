@@ -82,7 +82,9 @@ def test_external_raster_factory_queues_run_without_ingesting_source(tmp_path):
     ("mutate", "message"),
     [
         (lambda cell: cell["inputs"]["raster"]["reference"].pop("etag"), "strong ETag"),
-        (lambda cell: cell["inputs"]["raster"]["spatial"].update(kind="vector"), "kind='raster'"),
+        (lambda cell: cell["inputs"]["raster"]["spatial"].update(
+            kind="vector", geometry_types=["Polygon"]
+        ), "kind='raster'"),
         (lambda cell: cell["parameters"].update(width=2000), "extends beyond"),
         (lambda cell: cell["output_contracts"]["window"].update(
             crs={"authority": "EPSG", "code": 4326}
