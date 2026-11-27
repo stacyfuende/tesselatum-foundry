@@ -46,6 +46,20 @@ def execution_inputs():
                     "capability_id": "vector.buffer",
                     "version": "1.0.0",
                 },
+                "constraints": {
+                    "measurement_crs": {"authority": "EPSG", "code": 32737},
+                    "linear_unit": "metre",
+                },
+                "output_contracts": {
+                    "result": {
+                        "data_kind": "vector",
+                        "media_types": [
+                            "application/vnd.tessellatum.spatial-feature-collection+json"
+                        ],
+                        "crs": {"authority": "EPSG", "code": 32737},
+                        "geometry_types": ["Polygon", "MultiPolygon"],
+                    },
+                },
             },
         },
         "resolved_input_bindings": {
