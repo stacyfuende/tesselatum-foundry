@@ -107,7 +107,7 @@ def compile_product_blueprint_recipe(
             )
 
         cell_id = "bp-" + hashlib.sha256(
-            f"{compilation_fingerprint}:{node_id}".encode("utf-8")
+            f"{compilation_fingerprint}:{node_id}".encode()
         ).hexdigest()[:32]
         cell_ref = {"cell_id": cell_id, "version": "1.0.0"}
         cell_refs[node_id] = cell_ref
@@ -124,7 +124,7 @@ def compile_product_blueprint_recipe(
                     "source": "cell_output",
                     "cell_id": cell_refs.get(upstream_id, {}).get("cell_id")
                     or "bp-" + hashlib.sha256(
-                        f"{compilation_fingerprint}:{upstream_id}".encode("utf-8")
+                        f"{compilation_fingerprint}:{upstream_id}".encode()
                     ).hexdigest()[:32],
                     "cell_version": "1.0.0",
                     "output_port": output_port,
