@@ -28,7 +28,10 @@ def directory(*, planar=1, compression=1, predictor=1, width=18, height=10):
     # Two tiles across, one down; each encoded tile is 16 x 16.
     planes = len(metadata().dtypes) if planar == 2 else 1
     offsets = tuple(100 + index * 1024 for index in range(2 * planes))
-    counts = tuple(1024 for _ in offsets)
+    if planar == 1:
+        counts = (16 * 16 * 3, 16 * 16 * 3)
+    else:
+        counts = (16 * 16, 16 * 16 * 2, 16 * 16, 16 * 16 * 2)
     return TiffDirectory(
         offset=8, width=width, height=height, tiled=True,
         block_offsets=offsets, block_byte_counts=counts,
@@ -39,10 +42,10 @@ def directory(*, planar=1, compression=1, predictor=1, width=18, height=10):
     )
 
 
-def selection(*, band=0, column=1, block=1, width=2, height=10):
+def selection(*, band=0, column=1, block=1, width=2, height=10, length=16 * 16 * 3):
     return RasterTileSelection(
         band=band, tile_row=0, tile_column=column, block_index=block,
-        byte_offset=100 + block * 1024, byte_length=1024,
+        byte_offset=100 + block * 1024, byte_length=length,
         tile_row_offset=0, tile_column_offset=column * 16,
         tile_height=height, tile_width=width,
         window_row_offset=0, window_column_offset=column * 16,
@@ -85,7 +88,7 @@ def test_edge_tile_payload_still_uses_full_encoded_tile_dimensions():
 def test_planar_tile_decodes_only_selected_band():
     source = metadata()
     layout = directory(planar=2)
-    tile = selection(band=2, block=3)
+    tile = selection(band=2, block=3, length=16 * 16 * 2)
     payload = bytes(16 * 16 * 2)
 
     result = decode_uncompressed_tiff_tile(
