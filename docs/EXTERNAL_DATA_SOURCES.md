@@ -389,5 +389,4 @@ resampling or NoData propagation between derived outputs.
 does not exceed the requested downsample target. This conservative policy
 avoids selecting an overview coarser than the requested output scale. Factor
 1 (the full-resolution source) is returned when no overview qualifies.
-The selector is independent of I/O and does not yet inspect overview IFD
-pixel data or automatically derive target scale from a destination grid.
+`overview_factors_from_dimensions` derives only unique integer reductions whose dimensions match the TIFF ceil-reduction convention, including odd-sized base grids. `overview_factors_from_tiff_directories` uses only directories marked reduced-resolution in a validated directory index. Ambiguous dimension-derived factors are rejected rather than guessed. The selector is independent of pixel I/O and does not yet automatically derive target scale from a destination grid or execute overview tile reads.
