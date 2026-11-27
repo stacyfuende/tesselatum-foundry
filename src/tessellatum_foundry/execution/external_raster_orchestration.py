@@ -114,16 +114,15 @@ class ExternalRasterWindowRunOrchestrator:
                 raise ExecutionPreconditionError("Raster source must expose a trustworthy byte size.")
             declared = binding["spatial"]["raster"]
             requested = run["normalized_parameters"]
-            base_reader = TiffRangeReader(
-                BudgetedRasterRangeReader(
-                    adapter,
-                    reference,
-                    max_requests=self.max_requests,
-                    max_total_bytes=self.max_source_bytes,
-                    max_range_bytes=self.max_range_bytes,
-                )
+            bounded = BudgetedRasterRangeReader(
+                adapter,
+                reference,
+                max_requests=self.max_requests,
+                max_total_bytes=self.max_source_bytes,
+                max_range_bytes=self.max_range_bytes,
             )
-            base = base_reader.read(file_size=descriptor.byte_size)
+            reader = TiffRangeReader(bounded)
+            base = reader.read(file_size=descriptor.byte_size)
             if (
                 base.metadata.width != declared["width"]
                 or base.metadata.height != declared["height"]
@@ -141,14 +140,30 @@ class ExternalRasterWindowRunOrchestrator:
                     "Observed TIFF CRS differs from the declared external raster CRS."
                 )
 
-            bounded = BudgetedRasterRangeReader(
-                adapter,
-                reference,
-                max_requests=self.max_requests,
-                max_total_bytes=self.max_source_bytes,
-                max_range_bytes=self.max_range_bytes,
+            started = self.run_repository.transition(
+                run_id,
+                expected_status="queued",
+                new_status="running",
+                fields={
+                    "started_at": utc_timestamp(),
+                    "worker": {"worker_id": self.WORKER_ID, "worker_type": "local_native"},
+                    "implementation": {
+                        "implementation_id": self.IMPLEMENTATION_ID,
+                        "version": self.IMPLEMENTATION_VERSION,
+                        "manifest_checksum": self._implementation_checksum(),
+                    },
+                    "cache": {
+                        "status": "bypassed",
+                        "reason": "external_source_integrity_not_cacheable",
+                    },
+                },
+                event_type="external_raster_window_started",
+                event_detail={
+                    "source_provider": reference.provider,
+                    "source_dataset_id": reference.dataset_id,
+                },
             )
-            reader = TiffRangeReader(bounded)
+
             bands = tuple(requested.get("bands", ()))
             window = RasterWindow(
                 row_offset=requested["row_offset"],
@@ -175,7 +190,7 @@ class ExternalRasterWindowRunOrchestrator:
             inspection = inspect_raster_window_output(
                 buffer=result.buffer,
                 metadata=selected_metadata,
-                requested_window=selected_window,
+                requested_window=window,
                 requested_bands=result.buffer.bands,
                 validity=validity,
                 max_output_bytes=self.max_output_bytes,
@@ -215,29 +230,6 @@ class ExternalRasterWindowRunOrchestrator:
             if not inspection.passed:
                 raise ExecutionPreconditionError("Raster output failed independent validation.")
 
-            started = self.run_repository.transition(
-                run_id,
-                expected_status="queued",
-                new_status="running",
-                fields={
-                    "started_at": utc_timestamp(),
-                    "worker": {"worker_id": self.WORKER_ID, "worker_type": "local_native"},
-                    "implementation": {
-                        "implementation_id": self.IMPLEMENTATION_ID,
-                        "version": self.IMPLEMENTATION_VERSION,
-                        "manifest_checksum": self._implementation_checksum(),
-                    },
-                    "cache": {
-                        "status": "bypassed",
-                        "reason": "external_source_integrity_not_cacheable",
-                    },
-                },
-                event_type="external_raster_window_started",
-                event_detail={
-                    "source_provider": reference.provider,
-                    "source_dataset_id": reference.dataset_id,
-                },
-            )
             grid = {
                 "width": selected_metadata.width,
                 "height": selected_metadata.height,
