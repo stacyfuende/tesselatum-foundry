@@ -15,6 +15,10 @@ from tessellatum_foundry.execution.recipes import (
     RecipeExecutionResult,
     RecipeExecutionService,
 )
+from tessellatum_foundry.storage.definitions import (
+    DefinitionIntegrityError,
+    ImmutableDefinitionError,
+)
 from tessellatum_foundry.validation.contracts import ContractRegistry
 from tessellatum_foundry.validation.graph import validate_recipe_graph
 
@@ -363,7 +367,12 @@ def execute_product_blueprint_plan(
         )
     except RecipeExecutionPreconditionError as error:
         raise ProductExecutionPreconditionError(str(error)) from error
-    except (ValueError, OSError) as error:
+    except (
+        DefinitionIntegrityError,
+        ImmutableDefinitionError,
+        ValueError,
+        OSError,
+    ) as error:
         raise ProductExecutionPreconditionError(
             f"Immutable product definitions could not be registered: {error}"
         ) from error
