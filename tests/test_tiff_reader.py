@@ -25,7 +25,7 @@ class MemoryRanges:
         return self.payload[offset:offset + length]
 
 
-def classic_tiff(*, endian="<", tiled=False):
+def classic_tiff(*, endian="<", tiled=False, predictor=1):
     """Build a small georeferenced classic TIFF with one image directory."""
     tags = [
         (256, 4, 1, (32,)),
@@ -34,6 +34,7 @@ def classic_tiff(*, endian="<", tiled=False):
         (259, 3, 1, (1,)),
         (262, 3, 1, (1,)),
         (277, 3, 1, (1,)),
+        (317, 3, 1, (predictor,)),
         (278 if not tiled else 323, 4, 1, (16 if not tiled else 16,)),
         (339, 3, 1, (1,)),
         (33550, 12, 3, (2.0, 2.0, 0.0)),
@@ -319,6 +320,13 @@ def test_directory_index_exposes_tiled_directory_contract():
     assert directory.samples_per_pixel == 1
     assert directory.planar_configuration == 1
     assert directory.compression == 1
+
+
+def test_directory_index_records_tiff_predictor():
+    payload = classic_tiff(tiled=True, predictor=2)
+    tiff_reader, _ = reader(payload)
+    directory = tiff_reader.read_directory_index(file_size=len(payload))[0]
+    assert directory.predictor == 2
 
 
 def test_cog_structure_assessment_is_explicitly_conservative():
