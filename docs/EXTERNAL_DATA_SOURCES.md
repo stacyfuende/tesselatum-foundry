@@ -414,3 +414,16 @@ results are invalid. Invalid outputs are represented as float64 NaN and an
 explicit validity tuple is returned alongside the output buffer. Inputs must
 already share an identical window/grid: this operation does not align,
 reproject, resample or silently substitute missing values.
+
+
+### Destination grids and resampling boundary
+
+The raster layer now plans outward-snapped destination grids for north-up,
+unrotated rasters in an explicit source CRS, with a caller-selected resolution,
+anchor and pixel budget. Same-CRS nearest-neighbour and bilinear resampling are
+available for covered single-band windows. Bilinear interpolation requires all
+non-zero-weight neighbours to be valid; NoData is not silently renormalized.
+Pixels outside the source extent are marked invalid, while missing in-bounds
+source-window coverage is an error. This is an explicit same-CRS foundation,
+not a general reprojection engine: rotated grids and cross-CRS transformation
+remain unsupported.
