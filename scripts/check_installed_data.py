@@ -15,7 +15,9 @@ def main() -> None:
     capabilities.get("raster.window", "1.0.0")
     raster_manifest = implementations.get("raster-window-python", "1.0.0")
     if raster_manifest["conformance"]["status"] != "passed":
-        raise SystemExit("Raster implementation must pass its conformance suite before distribution.")
+        raise SystemExit(
+            "Raster implementation must pass its conformance suite before distribution."
+        )
     implementations.require_conformant(
         implementation_id="vector-buffer-shapely",
         version="1.0.0",
