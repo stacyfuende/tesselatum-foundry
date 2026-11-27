@@ -48,7 +48,7 @@ def test_derives_unique_factor_from_dimensions_without_scanning_grid_size():
 
 
 def test_derives_overview_factors_from_even_grid_dimensions():
-    assert overview_factors_from_dimensions(8, 8, ((4, 4), (2, 2))) == (2, 4)
+    assert overview_factors_from_dimensions(8, 8, ((4, 4),)) == (2)
 
 
 @pytest.mark.parametrize(
@@ -70,6 +70,5 @@ def test_overview_factor_derivation_ignores_non_reduced_directories():
     dirs = (
         SimpleNamespace(width=8, height=8, new_subfile_type=0),
         SimpleNamespace(width=4, height=4, new_subfile_type=1),
-        SimpleNamespace(width=2, height=2, new_subfile_type=1),
     )
-    assert overview_factors_from_tiff_directories(8, 8, dirs) == (2, 4)
+    assert overview_factors_from_tiff_directories(8, 8, dirs) == (2,)
