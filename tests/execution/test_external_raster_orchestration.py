@@ -164,6 +164,9 @@ def test_external_raster_run_executes_validates_and_publishes_foundry_artifact(t
     }
     assert decoded.header["provenance"]["source_etag"] == '"dem-v1"'
     assert decoded.header["grid"]["crs"] == "EPSG:3857"
+    assert decoded.header["grid"]["width"] == 9
+    assert decoded.header["grid"]["height"] == 8
+    assert decoded.header["grid"]["transform"] == [500030.0, 10.0, 0.0, 999980.0, 0.0, -10.0]
     assert len(decoded.validity) == 72
     report = runs.get_validation_report(
         artifact["metadata"]["validation_report_id"]
