@@ -278,6 +278,7 @@ def decode_deflate_tiff_tile(
         max_pixels=max_pixels,
     )
 
+
 def _undo_horizontal_predictor(
     samples: bytes,
     *,
@@ -285,7 +286,7 @@ def _undo_horizontal_predictor(
     tile_height: int,
     sample_dtypes: tuple[str, ...],
     byte_order: str,
- ) -> bytearray:
+) -> bytearray:
     """Reverse TIFF Predictor=2 in-place on one bounded mutable tile buffer."""
     if any(dtype.startswith("float") for dtype in sample_dtypes):
         raise RasterContractError("Horizontal predictor is supported only for integer samples.")
