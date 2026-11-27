@@ -64,6 +64,18 @@ def evaluate_autonomy(
         profile = capability.get("autonomy", {})
         if not isinstance(profile, dict):
             raise AutonomyPolicyError("capability autonomy declaration must be an object.")
+        required_profile = {
+            "impact", "reversibility", "uncertainty", "sensitivity",
+            "cost_band", "side_effect", "external_access", "approval_required",
+        }
+        missing_profile = sorted(required_profile - profile.keys())
+        if missing_profile:
+            mode = max((mode, "guided"), key=_LEVEL.get)
+            reasons.append(
+                "Incomplete capability autonomy declaration; guided review required: "
+                + ", ".join(missing_profile)
+                + "."
+            )
         for key, levels in _ORDERED.items():
             declared, observed = profile.get(key), resolved.get(key)
             if declared in levels:
