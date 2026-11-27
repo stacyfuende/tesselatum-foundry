@@ -390,3 +390,15 @@ does not exceed the requested downsample target. This conservative policy
 avoids selecting an overview coarser than the requested output scale. Factor
 1 (the full-resolution source) is returned when no overview qualifies.
 `overview_factors_from_dimensions` derives only unique integer reductions whose dimensions match the TIFF ceil-reduction convention, including odd-sized base grids. It uses bounded interval arithmetic rather than scanning every possible factor, so the metadata operation does not scale with raster dimensions. `overview_factors_from_tiff_directories` uses only directories marked reduced-resolution in a validated directory index. Ambiguous dimension-derived factors are rejected rather than guessed.\n\n`select_tiff_overview` now binds the chosen factor to exactly one concrete TIFF image directory. It validates the base IFD, selects the corresponding reduced-resolution IFD, and returns metadata with the overview dimensions, scaled affine pixel vectors and tile block shape. That returned directory and metadata can be passed directly to `select_tiff_tiles`, `read_selected_tiff_tiles`, tile decoding and window assembly; the same pipeline therefore reads the selected overview's actual byte ranges rather than merely reporting a factor. Selection remains caller-directed through `target_downsample`: destination-grid planning, CRS transformation and resampling are not implied.
+
+
+### End-to-end TIFF window reads
+
+The `read_tiff_window` source operation now connects the bounded directory
+index, explicit overview choice, tile-window planner, sequential range reads,
+supported tile decoders and bounded window assembler. It returns both the
+selected IFD/grid metadata and the assembled raw sample buffer. The requested
+window is expressed on the selected overview's pixel grid; the caller supplies
+the target downsample. The operation uses the same ETag-pinned cumulative
+range budget for metadata and pixel reads and does not infer a destination
+grid, reproject, resample, or enter the general Run/Artifact lifecycle.
