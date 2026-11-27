@@ -94,7 +94,9 @@ def encode_raster_window_artifact(
             header, sort_keys=True, separators=(",", ":"), ensure_ascii=False, allow_nan=False
         ).encode("utf-8")
     except (TypeError, ValueError) as error:
-        raise RasterWindowArtifactError("Grid and provenance metadata must be finite JSON data.") from error
+        raise RasterWindowArtifactError(
+            "Grid and provenance metadata must be finite JSON data."
+        ) from error
     if len(header_bytes) > _MAX_HEADER_BYTES:
         raise RasterWindowArtifactError("Raster-window metadata header exceeds its size limit.")
     return (
@@ -139,7 +141,9 @@ def decode_raster_window_artifact(payload: bytes) -> RasterWindowArtifact:
             raise ValueError
         sample_length = width * height * sum(_DTYPE_BYTES[dtype] for dtype in dtypes)
     except (KeyError, TypeError, ValueError) as error:
-        raise RasterWindowArtifactError("Raster-window Artifact dimensions or dtypes are invalid.") from error
+        raise RasterWindowArtifactError(
+            "Raster-window Artifact dimensions or dtypes are invalid."
+        ) from error
     pixel_count = width * height
     validity_length = (pixel_count + 7) // 8
     if (
@@ -150,7 +154,9 @@ def decode_raster_window_artifact(payload: bytes) -> RasterWindowArtifact:
         or header.get("byte_order") not in {"little", "big"}
         or header.get("pixel_interleave") != "pixel"
     ):
-        raise RasterWindowArtifactError("Raster-window Artifact declared lengths or encodings are inconsistent.")
+        raise RasterWindowArtifactError(
+            "Raster-window Artifact declared lengths or encodings are inconsistent."
+        )
     samples_start = header_end
     validity_start = samples_start + sample_length
     expected_end = validity_start + validity_length
