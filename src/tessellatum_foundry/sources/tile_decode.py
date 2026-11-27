@@ -88,13 +88,21 @@ def decode_uncompressed_tiff_tile(
         or directory.block_byte_counts[selection.block_index] != selection.byte_length
     ):
         raise RasterContractError("Tile selection does not match the TIFF directory table.")
+    expected_selection_width = min(
+        directory.tile_width,
+        directory.width - selection.tile_column * directory.tile_width,
+    )
+    expected_selection_height = min(
+        directory.tile_height,
+        directory.height - selection.tile_row * directory.tile_height,
+    )
     if (
-        selection.tile_width != directory.tile_width
-        or selection.tile_height != directory.tile_height
-        or selection.tile_width < 1
-        or selection.tile_height < 1
+        selection.tile_width != expected_selection_width
+        or selection.tile_height != expected_selection_height
+        or expected_selection_width < 1
+        or expected_selection_height < 1
     ):
-        raise RasterContractError("Selected tile dimensions do not match the TIFF directory.")
+        raise RasterContractError("Selected tile dimensions do not match the TIFF directory grid.")
     if selection.band == 0:
         if directory.planar_configuration != 1:
             raise RasterContractError("A planar TIFF tile must identify its one-based band.")
