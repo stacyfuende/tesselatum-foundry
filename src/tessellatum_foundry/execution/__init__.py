@@ -1,6 +1,6 @@
 """Foundry execution orchestration and Run lifecycle components."""
 
-from .experiments import ExperimentPlanError, plan_experiment
+from .experiments import (\n    ExperimentExecutionError,\n    ExperimentPlanError,\n    execute_experiment,\n    plan_experiment,\n)
 from .capabilities import CapabilityRegistry, CapabilityRegistryError
 from .implementations import ImplementationRegistry, ImplementationRegistryError
 from .docker_worker import (
