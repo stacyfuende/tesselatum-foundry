@@ -290,7 +290,11 @@ def test_directory_index_follows_primary_ifd_chain():
     struct.pack_into("<I", payload, next_pointer, second_offset)
     # Reuse the first IFD as a second primary-chain directory; its data ranges
     # remain valid and the directory offset is distinct.
-    payload.extend(payload[8:8 + first_ifd_size])
+    second_ifd = bytearray(payload[8:8 + first_ifd_size])
+    # The copied directory is terminal; retain shared pixel metadata but do not
+    # copy the newly patched primary-chain pointer into the second IFD.
+    second_ifd[-4:] = bytes(4)
+    payload.extend(second_ifd)
     tiff_reader, _ = reader(bytes(payload))
     directories = tiff_reader.read_directory_index(file_size=len(payload))
     assert len(directories) == 2
