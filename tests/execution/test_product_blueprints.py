@@ -93,3 +93,11 @@ def test_planner_does_not_mutate_blueprint():
     original = deepcopy(item)
     plan_product_blueprint(item, capabilities=CapabilityRegistry())
     assert item == original
+
+def test_dependency_resolution_is_independent_of_blueprint_declaration_order():
+    item = blueprint()
+    item["reasoning"]["nodes"].reverse()
+    result = plan_product_blueprint(item, capabilities=CapabilityRegistry())
+    assert result["status"] == "planned"
+    assert result["node_order"] == ["project", "buffer"]
+
