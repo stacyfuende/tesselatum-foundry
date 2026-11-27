@@ -23,7 +23,9 @@ The compiler:
 8. Requires every product output to map to a declared reasoning-node output.
 9. Validates the generated Cell and Recipe contracts and checks the Recipe graph before returning the compiled package.
 
-The execution handoff re-plans the original blueprint against the current policy and capability registry. A changed plan fingerprint is rejected. Only plans whose autonomy decisions are all automatic may enter the Recipe Execution Service. Guided and explicit decisions stop before any Run is created. The Recipe service remains responsible for canonical capability and implementation conformance, artifact resolution, spatial preconditions, per-Cell Runs, output validation, and provenance.
+The execution handoff re-plans the original blueprint against the current policy and capability registry. A changed plan fingerprint is rejected. Only plans whose autonomy decisions are all automatic may enter the Recipe Execution Service. Guided and explicit decisions stop before any Run is created.
+
+Before execution, generated Cells and the Recipe are registered in the immutable Versioned Definition Store. The handoff then calls the existing `execute_registered` path, rather than passing ephemeral definitions directly to the runner. A stable factory identity records who created these reusable definitions; the initiating actor ID is still passed to the Run service for execution provenance. The Recipe service remains responsible for canonical capability and implementation conformance, artifact resolution, spatial preconditions, per-Cell Runs, output validation, and Run provenance.
 
 Generated Recipe and Cell IDs include a compilation fingerprint so different resolved inputs or output contracts do not reuse the same execution identity.
 
@@ -34,8 +36,9 @@ Generated Recipe and Cell IDs include a compilation fingerprint so different res
 - Input resources must already be resolved into valid Artifact or typed external-source bindings. Source discovery, licensing verification, and evidence freshness resolution are not performed here.
 - Cell templates must declare the spatial output CRS and geometry contracts. The existing Recipe spatial validator checks these against resolved inputs before execution.
 - Product acceptance checks are carried by the plan but are not yet evaluated by a product-level release service. Successful Cell Runs are not equivalent to an accepted or published product.
-- This adapter does not persist generated Cell/Recipe definitions, package a customer experience, deploy, or publish outputs.
+- Generated definitions are persisted before execution. If registration is interrupted, unused immutable Cell definitions may remain; no Run begins until the complete Recipe is registered and the registered execution path is invoked.
+- This adapter does not package a customer experience, deploy, or publish outputs.
 
 ## Consequences
 
-The first executable bridge now exists: a fully automatic, fully resolved Product Blueprint can be compiled into the same Recipe/Cell graph consumed by the existing Run service. The next milestone is a product-level acceptance and assembly service, followed by a real end-to-end execution against an existing registered worker and immutable input Artifact.
+The first executable bridge now exists: a fully automatic, fully resolved Product Blueprint can be compiled into immutable registered Cell/Recipe definitions and handed to the existing registered Recipe Run service. The next milestone is a product-level acceptance and assembly service, followed by a real end-to-end execution against an existing registered worker and immutable input Artifact.
