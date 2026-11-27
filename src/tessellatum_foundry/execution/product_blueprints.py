@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-from collections import defaultdict, deque
-from copy import deepcopy
 import hashlib
 import json
+from collections import defaultdict, deque
+from copy import deepcopy
 from typing import Any
 
 from jsonschema import Draft202012Validator
