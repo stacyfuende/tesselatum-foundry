@@ -1,0 +1,484 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:tessellatum-foundry:schema:spatial-product-blueprint:1.0.0",
+  "title": "Foundry Spatial Product Blueprint",
+  "description": "Declarative, outcome-first specification for producing and operating a spatial product using registered Foundry capabilities.",
+  "type": "object",
+  "required": [
+    "blueprint_id",
+    "version",
+    "title",
+    "intent",
+    "evidence",
+    "reasoning",
+    "outputs",
+    "acceptance"
+  ],
+  "properties": {
+    "blueprint_id": {
+      "type": "string",
+      "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._-]{1,127}$"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\\\.[0-9]+\\\\.[0-9]+$"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 4000
+    },
+    "intent": {
+      "type": "object",
+      "required": [
+        "outcome",
+        "audience"
+      ],
+      "properties": {
+        "outcome": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4000
+        },
+        "audience": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "decision_context": {
+          "type": "string",
+          "maxLength": 2000
+        },
+        "geographic_scope": {
+          "type": "object",
+          "properties": {
+            "description": {
+              "type": "string"
+            },
+            "geometry_ref": {
+              "type": "string"
+            },
+            "bbox": {
+              "type": "array",
+              "minItems": 4,
+              "maxItems": 4,
+              "items": {
+                "type": "number"
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        "constraints": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "id",
+              "description"
+            ],
+            "properties": {
+              "id": {
+                "$ref": "#/$defs/id"
+              },
+              "description": {
+                "type": "string",
+                "minLength": 1
+              },
+              "kind": {
+                "enum": [
+                  "hard",
+                  "soft",
+                  "legal",
+                  "operational",
+                  "presentation"
+                ]
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "success_criteria": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "evidence": {
+      "type": "object",
+      "required": [
+        "requirements"
+      ],
+      "properties": {
+        "requirements": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "id",
+              "role"
+            ],
+            "properties": {
+              "id": {
+                "$ref": "#/$defs/id"
+              },
+              "role": {
+                "type": "string",
+                "minLength": 1
+              },
+              "required": {
+                "type": "boolean",
+                "default": true
+              },
+              "source_constraints": {
+                "type": "object"
+              },
+              "freshness": {
+                "type": "object",
+                "properties": {
+                  "max_age_seconds": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "as_of": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                },
+                "additionalProperties": false
+              },
+              "quality_requirements": {
+                "type": "object"
+              },
+              "rights_requirements": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "provided_references": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "id",
+              "uri"
+            ],
+            "properties": {
+              "id": {
+                "$ref": "#/$defs/id"
+              },
+              "uri": {
+                "type": "string",
+                "format": "uri"
+              },
+              "media_type": {
+                "type": "string"
+              },
+              "role": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "reasoning": {
+      "type": "object",
+      "required": [
+        "nodes"
+      ],
+      "properties": {
+        "nodes": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 100,
+          "items": {
+            "type": "object",
+            "required": [
+              "id",
+              "capability"
+            ],
+            "properties": {
+              "id": {
+                "$ref": "#/$defs/id"
+              },
+              "capability": {
+                "type": "string",
+                "minLength": 1
+              },
+              "capability_version": {
+                "type": "string"
+              },
+              "inputs": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string"
+                }
+              },
+              "parameters": {
+                "type": "object"
+              },
+              "depends_on": {
+                "type": "array",
+                "uniqueItems": true,
+                "items": {
+                  "$ref": "#/$defs/id"
+                }
+              },
+              "method_evidence": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "purpose": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "max_nodes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100,
+          "default": 50
+        }
+      },
+      "additionalProperties": false
+    },
+    "autonomy": {
+      "type": "object",
+      "properties": {
+        "default_mode": {
+          "enum": [
+            "automatic",
+            "guided",
+            "explicit"
+          ]
+        },
+        "rules": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "decision",
+              "mode"
+            ],
+            "properties": {
+              "decision": {
+                "type": "string",
+                "minLength": 1
+              },
+              "mode": {
+                "enum": [
+                  "automatic",
+                  "guided",
+                  "explicit"
+                ]
+              },
+              "rationale": {
+                "type": "string"
+              },
+              "conditions": {
+                "type": "object"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "require_approval_for": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "external_publication",
+              "sensitive_data_access",
+              "material_cost",
+              "irreversible_action",
+              "legal_commitment",
+              "recurring_operation"
+            ]
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "outputs": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "product_type",
+          "experience"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "#/$defs/id"
+          },
+          "product_type": {
+            "enum": [
+              "map",
+              "application",
+              "report",
+              "dossier",
+              "dataset",
+              "api",
+              "monitoring_service",
+              "map_series",
+              "other"
+            ]
+          },
+          "experience": {
+            "type": "string",
+            "minLength": 1
+          },
+          "specification_ref": {
+            "type": "string"
+          },
+          "delivery_targets": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "release_policy": {
+            "type": "object",
+            "properties": {
+              "mode": {
+                "enum": [
+                  "on_demand",
+                  "scheduled",
+                  "event_driven",
+                  "continuous"
+                ]
+              },
+              "schedule": {
+                "type": "string"
+              },
+              "approval_required": {
+                "type": "boolean"
+              }
+            },
+            "additionalProperties": false
+          },
+          "presentation_parameters": {
+            "type": "object"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "acceptance": {
+      "type": "object",
+      "required": [
+        "checks"
+      ],
+      "properties": {
+        "checks": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": [
+              "id",
+              "kind",
+              "description"
+            ],
+            "properties": {
+              "id": {
+                "$ref": "#/$defs/id"
+              },
+              "kind": {
+                "enum": [
+                  "evidence",
+                  "computation",
+                  "product",
+                  "experience",
+                  "operation"
+                ]
+              },
+              "description": {
+                "type": "string",
+                "minLength": 1
+              },
+              "required": {
+                "type": "boolean",
+                "default": true
+              },
+              "validator": {
+                "type": "string"
+              },
+              "parameters": {
+                "type": "object"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "on_failure": {
+          "enum": [
+            "block_release",
+            "release_with_warning",
+            "require_review"
+          ],
+          "default": "block_release"
+        }
+      },
+      "additionalProperties": false
+    },
+    "resource_limits": {
+      "type": "object",
+      "properties": {
+        "max_runtime_seconds": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "max_bytes_read": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "max_artifact_bytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "max_cost_minor_units": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "max_parallel_tasks": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 32
+        }
+      },
+      "additionalProperties": false
+    },
+    "metadata": {
+      "type": "object"
+    }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._-]{0,127}$"
+    }
+  },
+  "additionalProperties": false
+}
