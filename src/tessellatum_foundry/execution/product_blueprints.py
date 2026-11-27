@@ -138,31 +138,6 @@ def plan_product_blueprint(
                     })
                 else:
                     dependencies[node_id].add(source_node)
-                    upstream = resolved.get(source_node)
-                    if upstream is not None:
-                        available = {item["port_id"] for item in upstream["capability"].get("output_ports", [])}
-                        if output_port not in available:
-                            findings.append({
-                                "code": "unknown_output_port",
-                                "node_id": node_id,
-                                "message": f"Node {source_node!r} has no output port {output_port!r}.",
-                            })
-                        else:
-                            source_port = next(
-                                item for item in upstream["capability"].get("output_ports", [])
-                                if item["port_id"] == output_port
-                            )
-                            target_kind = port_map.get(port_id, {}).get("data_kind")
-                            source_kind = source_port.get("data_kind")
-                            if target_kind not in {None, "any"} and source_kind not in {target_kind, "any"}:
-                                findings.append({
-                                    "code": "incompatible_data_kind",
-                                    "node_id": node_id,
-                                    "message": (
-                                        f"Input {port_id!r} expects {target_kind!r}, but "
-                                        f"{source_node}.{output_port} produces {source_kind!r}."
-                                    ),
-                                })
 
         for dependency in dependencies[node_id]:
             if dependency not in node_by_id:
@@ -185,6 +160,47 @@ def plan_product_blueprint(
             })
 
         resolved[node_id] = {"capability": capability, "bindings": bindings}
+
+    # Validate upstream ports after every node has been resolved, independent of declaration order.
+    for node in nodes:
+        node_id = node["id"]
+        target = resolved.get(node_id)
+        if target is None:
+            continue
+        target_ports = {
+            port["port_id"]: port
+            for port in target["capability"].get("input_ports", [])
+        }
+        for port_id, source in node.get("inputs", {}).items():
+            if "." not in source or source.startswith("evidence:"):
+                continue
+            source_node, output_port = source.split(".", 1)
+            upstream = resolved.get(source_node)
+            if upstream is None:
+                continue
+            source_ports = {
+                port["port_id"]: port
+                for port in upstream["capability"].get("output_ports", [])
+            }
+            source_port = source_ports.get(output_port)
+            if source_port is None:
+                findings.append({
+                    "code": "unknown_output_port",
+                    "node_id": node_id,
+                    "message": f"Node {source_node!r} has no output port {output_port!r}.",
+                })
+                continue
+            target_kind = target_ports.get(port_id, {}).get("data_kind")
+            source_kind = source_port.get("data_kind")
+            if target_kind not in {None, "any"} and source_kind not in {target_kind, "any"}:
+                findings.append({
+                    "code": "incompatible_data_kind",
+                    "node_id": node_id,
+                    "message": (
+                        f"Input {port_id!r} expects {target_kind!r}, but "
+                        f"{source_node}.{output_port} produces {source_kind!r}."
+                    ),
+                })
 
     if missing_capabilities:
         findings.extend({
