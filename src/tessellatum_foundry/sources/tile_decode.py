@@ -7,6 +7,8 @@ assemble windows.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from struct import unpack_from
+from collections.abc import Iterator
 
 from .raster import RasterContractError, RasterMetadata
 from .tile_selection import RasterTileSelection
@@ -27,6 +29,25 @@ class DecodedRasterTile:
     sample_dtypes: tuple[str, ...]
     sample_count: int
     sample_bytes: int
+
+    def iter_pixels(self) -> Iterator[tuple[int | float, ...]]:
+        """Yield one pixel at a time without materializing a decoded array."""
+        formats = {
+            "uint8": "B", "int8": "b",
+            "uint16": "H", "int16": "h",
+            "uint32": "I", "int32": "i", "float32": "f",
+            "uint64": "Q", "int64": "q", "float64": "d",
+        }
+        prefix = "<" if self.byte_order == "little" else ">"
+        widths = tuple(_DTYPE_BYTES[dtype] for dtype in self.sample_dtypes)
+        pixel_count = self.sample_count // len(self.sample_dtypes)
+        offset = 0
+        for _ in range(pixel_count):
+            values = []
+            for dtype, width in zip(self.sample_dtypes, widths):
+                values.append(unpack_from(prefix + formats[dtype], self.samples, offset)[0])
+                offset += width
+            yield tuple(values)
 
 
 _DTYPE_BYTES = {
