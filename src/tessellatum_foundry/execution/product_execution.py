@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import re
 from copy import deepcopy
 from typing import Any
@@ -57,6 +58,22 @@ def compile_product_blueprint_recipe(
         raise ProductExecutionPreconditionError("Plan nodes are empty or contain duplicate IDs.")
     node_ids = {node["node_id"] for node in nodes}
     fingerprint = plan["plan_fingerprint"]
+    try:
+        compilation_fingerprint = hashlib.sha256(json.dumps(
+            {
+                "plan_fingerprint": fingerprint,
+                "cell_templates": cell_templates,
+                "resolved_input_bindings": resolved_input_bindings,
+                "output_bindings": output_bindings,
+            },
+            sort_keys=True,
+            separators=(",", ":"),
+            allow_nan=False,
+        ).encode("utf-8")).hexdigest()
+    except (TypeError, ValueError) as error:
+        raise ProductExecutionPreconditionError(
+            "Resolved execution inputs must be canonical JSON data."
+        ) from error
     cell_refs: dict[str, dict[str, str]] = {}
     cells: dict[tuple[str, str], dict[str, Any]] = {}
     capability_map: dict[tuple[str, str], dict[str, Any]] = {}
@@ -80,7 +97,7 @@ def compile_product_blueprint_recipe(
             )
 
         cell_id = "bp-" + hashlib.sha256(
-            f"{fingerprint}:{node_id}".encode("utf-8")
+            f"{compilation_fingerprint}:{node_id}".encode("utf-8")
         ).hexdigest()[:32]
         cell_ref = {"cell_id": cell_id, "version": "1.0.0"}
         cell_refs[node_id] = cell_ref
@@ -96,7 +113,7 @@ def compile_product_blueprint_recipe(
                     "source": "cell_output",
                     "cell_id": cell_refs.get(upstream_id, {}).get("cell_id")
                     or "bp-" + hashlib.sha256(
-                        f"{fingerprint}:{upstream_id}".encode("utf-8")
+                        f"{compilation_fingerprint}:{upstream_id}".encode("utf-8")
                     ).hexdigest()[:32],
                     "cell_version": "1.0.0",
                     "output_port": output_port,
@@ -221,7 +238,7 @@ def compile_product_blueprint_recipe(
 
     blueprint = plan.get("blueprint", {})
     recipe = {
-        "recipe_id": "product-" + re.sub(r"[^A-Za-z0-9._-]", "-", blueprint["blueprint_id"])[:100],
+        "recipe_id": "product-" + re.sub(r"[^A-Za-z0-9._-]", "-", blueprint["blueprint_id"])[:100] + "-" + compilation_fingerprint[:12],
         "version": blueprint["version"],
         "title": blueprint["title"],
         "nodes": [
@@ -230,7 +247,10 @@ def compile_product_blueprint_recipe(
         ],
         "edges": recipe_edges,
         "declared_outputs": declared_outputs,
-        "metadata": {"product_plan_fingerprint": fingerprint},
+        "metadata": {
+            "product_plan_fingerprint": fingerprint,
+            "compilation_fingerprint": compilation_fingerprint,
+        },
     }
     contracts.validate("recipe.schema.json", recipe)
     graph_findings = validate_recipe_graph(
@@ -249,6 +269,7 @@ def compile_product_blueprint_recipe(
         "cells": cells,
         "capabilities": capability_map,
         "plan_fingerprint": fingerprint,
+        "compilation_fingerprint": compilation_fingerprint,
     }
 
 
