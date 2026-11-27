@@ -77,7 +77,7 @@ __all__ = [
     "window_validity_mask",
     "select_overview_factor",
     "overview_factors_from_dimensions",
-    "overview_factors_from_tiff_directories",
+    "overview_factors_from_tiff_directories",\n    "SelectedTiffOverview",\n    "select_tiff_overview",
     "FeatureBatch",
     "FeatureBatchError",
     "FeatureExceedsBatchLimit",
