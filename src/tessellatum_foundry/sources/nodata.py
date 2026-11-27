@@ -55,8 +55,9 @@ def window_validity_mask(
         raise RasterContractError(
             "Raster window buffer dtypes do not match selected metadata bands."
         )
-    selected_nodata = tuple(metadata.nodata[band - 1] for band in buffer.bands)
-    if not metadata.nodata:
+    if metadata.nodata:
+        selected_nodata = tuple(metadata.nodata[band - 1] for band in buffer.bands)
+    else:
         selected_nodata = (None,) * len(buffer.bands)
     samples = buffer.samples
     widths = {"uint8": 1, "int8": 1, "uint16": 2, "int16": 2,
