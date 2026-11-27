@@ -312,3 +312,22 @@ def test_automatic_plan_is_handed_to_existing_recipe_run_service():
     assert service.called
     assert service.arguments["actor_id"] == "test-actor"
     assert service.arguments["recipe"]["metadata"]["product_plan_fingerprint"] == plan["plan_fingerprint"]
+
+
+def test_compilation_identity_changes_when_resolved_artifact_changes():
+    registry = CapabilityRegistry()
+    blueprint = simple_blueprint()
+    plan = plan_product_blueprint(blueprint, capabilities=registry)
+    inputs = execution_inputs()
+    first = compile_product_blueprint_recipe(
+        plan, capabilities=registry, **inputs
+    )
+    changed = execution_inputs()
+    changed["resolved_input_bindings"]["buffer.features"]["artifact"]["version"] = "2.0.0"
+    second = compile_product_blueprint_recipe(
+        plan, capabilities=registry, **changed
+    )
+
+    assert first["plan_fingerprint"] == second["plan_fingerprint"]
+    assert first["compilation_fingerprint"] != second["compilation_fingerprint"]
+    assert first["recipe"]["recipe_id"] != second["recipe"]["recipe_id"]
