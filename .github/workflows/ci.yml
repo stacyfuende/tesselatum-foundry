@@ -63,5 +63,16 @@ jobs:
         run: docker build --file workers/vector_buffer/Dockerfile.remote --tag "$FOUNDRY_VECTOR_BUFFER_REMOTE_IMAGE" .
       - name: Run tests, including Docker and PostGIS execution
         run: python -m pytest
-      - name: Run live external Nairobi Sentinel-2 raster execution
+
+  live-external-raster:
+    name: Live external Nairobi Sentinel-2 raster execution
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install Foundry runtime
+        run: python -m pip install -e .
+      - name: Execute real external raster smoke test
         run: python scripts/live_external_raster_smoke.py
