@@ -5,7 +5,6 @@ from __future__ import annotations
 import time
 import uuid
 from collections.abc import Callable
-from pathlib import Path
 from typing import Any
 
 from pyproj import CRS
@@ -93,7 +92,9 @@ class ExternalRasterWindowRunOrchestrator:
             "capability_id": canonical["capability_id"],
             "version": canonical["version"],
         } or run.get("cell") != {"cell_id": cell["cell_id"], "version": cell["version"]}:
-            raise ExecutionPreconditionError("Run identity differs from the supplied Cell or Capability.")
+            raise ExecutionPreconditionError(
+                "Run identity differs from the supplied Cell or Capability."
+            )
         binding = cell.get("inputs", {}).get("raster")
         if not isinstance(binding, dict) or binding.get("source") != "external":
             raise ExecutionPreconditionError("Run must use an external raster input.")
@@ -110,10 +111,14 @@ class ExternalRasterWindowRunOrchestrator:
             self.source_authorizer(reference, actor_id)
             adapter = self.source_adapter_resolver(reference)
             if adapter is None or not adapter.supports(reference):
-                raise ExecutionPreconditionError("No configured adapter supports this raster source.")
+                raise ExecutionPreconditionError(
+                    "No configured adapter supports this raster source."
+                )
             descriptor = adapter.describe(reference)
             if descriptor.byte_size is None or descriptor.byte_size < 8:
-                raise ExecutionPreconditionError("Raster source must expose a trustworthy byte size.")
+                raise ExecutionPreconditionError(
+                    "Raster source must expose a trustworthy byte size."
+                )
             declared = binding["spatial"]["raster"]
             requested = run["normalized_parameters"]
             bounded = BudgetedRasterRangeReader(
@@ -345,7 +350,9 @@ class ExternalRasterWindowRunOrchestrator:
                         "error": {
                             "code": "external_raster_window.preflight_failed",
                             "message": f"Raster Run preflight failed ({type(error).__name__}).",
-                            "retryable": isinstance(error, (OSError, TimeoutError, ConnectionError)),
+                            "retryable": isinstance(
+                                error, (OSError, TimeoutError, ConnectionError)
+                            ),
                         },
                     },
                     event_type="external_raster_window_preflight_failed",
