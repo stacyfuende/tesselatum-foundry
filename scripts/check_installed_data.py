@@ -9,8 +9,17 @@ def main() -> None:
     contracts = ContractRegistry()
     implementations = ImplementationRegistry(contracts=contracts)
     capabilities = CapabilityRegistry(contracts=contracts)
-    if len(contracts.schemas) != 11:
-        raise SystemExit(f"Expected 11 installed schemas, found {len(contracts.schemas)}.")
+    required_schemas = {
+        "autonomy_policy.schema.json",
+        "cartographic_specification.schema.json",
+        "spatial_product_blueprint.schema.json",
+    }
+    missing_schemas = sorted(required_schemas - contracts.schemas.keys())
+    if missing_schemas:
+        raise SystemExit(
+            "Installed distribution is missing required schemas: "
+            + ", ".join(missing_schemas)
+        )
     capabilities.get("vector.buffer", "1.0.0")
     capabilities.get("raster.window", "1.0.0")
     raster_manifest = implementations.get("raster-window-python", "1.0.0")
