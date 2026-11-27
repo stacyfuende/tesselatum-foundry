@@ -14,6 +14,7 @@ from tessellatum_foundry.sources import (
     TiffDirectory,
     decode_uncompressed_tiff_tile,
     decode_deflate_tiff_tile,
+    decode_tiff_tile,
 )
 
 
@@ -304,5 +305,35 @@ def test_deflate_horizontal_predictor_rejects_floating_point_samples():
     with pytest.raises(RasterContractError, match="only for integer"):
         decode_deflate_tiff_tile(
             payload, tile, layout, float_metadata, byte_order="little"
+        )
+
+def test_uncompressed_tiff_tile_decoder_reverses_horizontal_predictor():
+    encoded = bytearray()
+    expected = []
+    for row in range(16):
+        previous = (0, 0)
+        for column in range(16):
+            current = (column + row, 2000 + column * 2 + row)
+            delta = (
+                (current[0] - previous[0]) % 256,
+                (current[1] - previous[1]) % 65536,
+            )
+            encoded.extend(struct.pack("<BH", *delta))
+            expected.append(current)
+            previous = current
+    layout = replace(directory(), predictor=2)
+
+    result = decode_tiff_tile(
+        bytes(encoded), selection(), layout, metadata(), byte_order="little"
+    )
+
+    assert list(result.iter_pixels()) == expected
+
+
+def test_unified_decoder_rejects_unsupported_compression():
+    layout = replace(directory(), compression=5)
+    with pytest.raises(RasterContractError, match="Unsupported TIFF tile compression"):
+        decode_tiff_tile(
+            bytes(16 * 16 * 3), selection(), layout, metadata(), byte_order="little"
         )
 
