@@ -73,3 +73,11 @@ __all__ = [
     "WorkerTimeoutError",
     "WorkerUnavailableError",
 ]
+
+from tessellatum_foundry.execution.external_raster_orchestration import (
+    ExternalRasterWindowRunOrchestrator,
+)
+
+__all__ = [
+    "ExternalRasterWindowRunOrchestrator",
+]
