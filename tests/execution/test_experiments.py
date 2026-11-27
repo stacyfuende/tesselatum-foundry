@@ -93,5 +93,5 @@ def test_experiment_manifest_schema_accepts_fixture(experiment):
 
 def test_experiment_manifest_schema_rejects_overlarge_variant_limit(experiment):
     experiment["max_variants"] = 101
-    with pytest.raises(Exception):
+    with pytest.raises(ContractValidationError):
         ContractRegistry().validate("experiment.schema.json", experiment)
