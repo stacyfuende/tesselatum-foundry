@@ -7,6 +7,8 @@ import pytest
 from tessellatum_foundry.sources import (
     RasterContractError,
     RasterMetadata,
+    overview_factors_from_dimensions,
+    overview_factors_from_tiff_directories,
     select_overview_factor,
 )
 
@@ -39,24 +41,35 @@ def test_rejects_invalid_downsample_target(target):
         select_overview_factor(metadata((2, 4)), target_downsample=target)
 
 
-
-def test_derives_overview_factors_from_odd_grid_dimensions():
+def test_derives_unique_factor_from_dimensions_without_scanning_grid_size():
     assert overview_factors_from_dimensions(
-        5, 5, ((3, 3), (2, 2))
-    ) == (2, 3)
+        100_000_000, 100_000_000, ((50_000_000, 50_000_000),)
+    ) == (2,)
 
 
-@pytest.mark.parametrize("dims", [((5, 5),), ((3, 2),), ((0, 2),)])
-def test_rejects_invalid_overview_dimensions(dims):
+def test_derives_overview_factors_from_even_grid_dimensions():
+    assert overview_factors_from_dimensions(8, 8, ((4, 4), (2, 2))) == (2, 4)
+
+
+@pytest.mark.parametrize(
+    "args",
+    [
+        (0, 8, ()),
+        (8, 8, ((8, 4),)),
+        (8, 8, ((0, 4),)),
+        (8, 8, ((4, 3),)),
+        (5, 5, ((2, 2),)),  # both factors 3 and 4 produce ceil(5/factor) == 2
+    ],
+)
+def test_rejects_invalid_or_ambiguous_overview_dimensions(args):
     with pytest.raises(RasterContractError):
-        overview_factors_from_dimensions(5, 5, dims)
-
+        overview_factors_from_dimensions(*args)
 
 
 def test_overview_factor_derivation_ignores_non_reduced_directories():
     dirs = (
-        SimpleNamespace(width=5, height=5, new_subfile_type=0),
-        SimpleNamespace(width=3, height=3, new_subfile_type=1),
+        SimpleNamespace(width=8, height=8, new_subfile_type=0),
+        SimpleNamespace(width=4, height=4, new_subfile_type=1),
         SimpleNamespace(width=2, height=2, new_subfile_type=1),
     )
-    assert overview_factors_from_tiff_directories(5, 5, dirs) == (2, 3)
+    assert overview_factors_from_tiff_directories(8, 8, dirs) == (2, 4)
