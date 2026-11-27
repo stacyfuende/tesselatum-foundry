@@ -88,6 +88,17 @@ def decode_uncompressed_tiff_tile(
         or directory.block_byte_counts[selection.block_index] != selection.byte_length
     ):
         raise RasterContractError("Tile selection does not match the TIFF directory table.")
+    across = (directory.width + directory.tile_width - 1) // directory.tile_width
+    down = (directory.height + directory.tile_height - 1) // directory.tile_height
+    if (
+        isinstance(selection.tile_row, bool)
+        or not isinstance(selection.tile_row, int)
+        or isinstance(selection.tile_column, bool)
+        or not isinstance(selection.tile_column, int)
+        or not 0 <= selection.tile_row < down
+        or not 0 <= selection.tile_column < across
+    ):
+        raise RasterContractError("Selected TIFF tile coordinates are outside the tile grid.")
     expected_selection_width = min(
         directory.tile_width,
         directory.width - selection.tile_column * directory.tile_width,
@@ -126,7 +137,7 @@ def decode_uncompressed_tiff_tile(
     expected_bytes = pixels * bytes_per_pixel
     if expected_bytes > max_decoded_bytes:
         raise RasterContractError("TIFF tile exceeds the configured decoded byte limit.")
-    if len(payload) != expected_bytes:
+    if selection.byte_length != expected_bytes or len(payload) != expected_bytes:
         raise RasterContractError("Uncompressed TIFF tile length does not match its sample layout.")
 
     return DecodedRasterTile(
