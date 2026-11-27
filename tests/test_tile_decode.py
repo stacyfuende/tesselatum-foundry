@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import replace
 import struct
+import zlib
 
 import pytest
 
@@ -12,6 +13,7 @@ from tessellatum_foundry.sources import (
     RasterTileSelection,
     TiffDirectory,
     decode_uncompressed_tiff_tile,
+    decode_deflate_tiff_tile,
 )
 
 
@@ -186,3 +188,85 @@ def test_rejects_packed_samples_and_invalid_byte_order():
         decode_uncompressed_tiff_tile(
             bytes(16 * 16 * 3), selection(), directory(), metadata(), byte_order="native"
         )
+
+def compressed_fixture(raw):
+    payload = zlib.compress(raw)
+    layout = directory(compression=8)
+    counts = list(layout.block_byte_counts)
+    counts[1] = len(payload)
+    layout = replace(layout, block_byte_counts=tuple(counts))
+    tile = replace(selection(), byte_length=len(payload))
+    return payload, tile, layout
+
+
+def test_decodes_bounded_zlib_deflate_tile():
+    raw = struct.pack("<BH", 9, 2049) * (16 * 16)
+    payload, tile, layout = compressed_fixture(raw)
+
+    result = decode_deflate_tiff_tile(
+        payload, tile, layout, metadata(), byte_order="little"
+    )
+
+    assert result.sample_bytes == len(raw)
+    assert next(result.iter_pixels()) == (9, 2049)
+
+
+def test_deflate_decoder_rejects_expansion_beyond_output_budget():
+    raw = bytes(16 * 16 * 3)
+    payload, tile, layout = compressed_fixture(raw)
+
+    with pytest.raises(RasterContractError, match="decoded byte limit"):
+        decode_deflate_tiff_tile(
+            payload, tile, layout, metadata(), byte_order="little",
+            max_decoded_bytes=100,
+        )
+
+
+@pytest.mark.parametrize("suffix", [b"trailing", b""])
+def test_deflate_decoder_rejects_trailing_or_truncated_stream(suffix):
+    raw = bytes(16 * 16 * 3)
+    payload, tile, layout = compressed_fixture(raw)
+    if suffix:
+        payload += suffix
+        counts = list(layout.block_byte_counts)
+        counts[1] = len(payload)
+        layout = replace(layout, block_byte_counts=tuple(counts))
+        tile = replace(tile, byte_length=len(payload))
+    else:
+        payload = payload[:-2]
+        counts = list(layout.block_byte_counts)
+        counts[1] = len(payload)
+        layout = replace(layout, block_byte_counts=tuple(counts))
+        tile = replace(tile, byte_length=len(payload))
+
+    with pytest.raises(RasterContractError, match="incomplete|trailing"):
+        decode_deflate_tiff_tile(
+            payload, tile, layout, metadata(), byte_order="little"
+        )
+
+
+def test_deflate_decoder_enforces_compressed_input_budget():
+    raw = bytes(16 * 16 * 3)
+    payload, tile, layout = compressed_fixture(raw)
+
+    with pytest.raises(RasterContractError, match="compressed TIFF tile"):
+        decode_deflate_tiff_tile(
+            payload, tile, layout, metadata(), byte_order="little",
+            max_compressed_bytes=1,
+        )
+
+
+def test_deflate_decoder_rejects_predictors_and_unknown_compression():
+    raw = bytes(16 * 16 * 3)
+    payload, tile, layout = compressed_fixture(raw)
+    predicted = replace(layout, predictor=2)
+    with pytest.raises(RasterContractError, match="predictors"):
+        decode_deflate_tiff_tile(
+            payload, tile, predicted, metadata(), byte_order="little"
+        )
+    unknown = replace(layout, compression=5)
+    with pytest.raises(RasterContractError, match="Deflate compression"):
+        decode_deflate_tiff_tile(
+            payload, tile, unknown, metadata(), byte_order="little"
+        )
+
