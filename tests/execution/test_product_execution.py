@@ -293,12 +293,29 @@ def test_automatic_plan_is_handed_to_existing_recipe_run_service():
     blueprint = simple_blueprint()
     plan = plan_product_blueprint(blueprint, capabilities=registry)
 
-    class CaptureRecipeService:
-        called = False
+    class MemoryDefinitions:
+        def __init__(self):
+            self.cells = {}
+            self.recipes = {}
 
-        def execute(self, **kwargs):
+        def put_cell(self, cell, *, created_by):
+            self.cells[cell["cell_id"]] = (cell, created_by)
+
+        def put_recipe(self, recipe, *, created_by):
+            self.recipes[recipe["recipe_id"]] = (recipe, created_by)
+
+    class CaptureRecipeService:
+        def __init__(self):
+            self.called = False
+            self.definitions = MemoryDefinitions()
+
+        def execute_registered(self, *, recipe_id, version, actor_id):
             self.called = True
-            self.arguments = kwargs
+            self.arguments = {
+                "recipe_id": recipe_id,
+                "version": version,
+                "actor_id": actor_id,
+            }
             return "run-result"
 
     service = CaptureRecipeService()
@@ -314,8 +331,11 @@ def test_automatic_plan_is_handed_to_existing_recipe_run_service():
     assert result == "run-result"
     assert service.called
     assert service.arguments["actor_id"] == "test-actor"
+    assert len(service.definitions.cells) == 1
+    assert len(service.definitions.recipes) == 1
+    saved_recipe = next(iter(service.definitions.recipes.values()))[0]
     assert (
-        service.arguments["recipe"]["metadata"]["product_plan_fingerprint"]
+        saved_recipe["metadata"]["product_plan_fingerprint"]
         == plan["plan_fingerprint"]
     )
 
