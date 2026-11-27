@@ -8,6 +8,10 @@ from tessellatum_foundry.execution.experiments import (
     ExperimentPlanError,
     plan_experiment,
 )
+from tessellatum_foundry.validation.contracts import (
+    ContractRegistry,
+    ContractValidationError,
+)
 
 
 @pytest.fixture
@@ -62,7 +66,10 @@ def test_variant_keys_are_deterministic_and_change_with_parameters(experiment, c
 
 
 def test_method_evidence_attaches_to_variant(experiment, cell):
-    paper_plan = next(item for item in plan_experiment(experiment, cell) if item["method_id"] == "paper-method")
+    paper_plan = next(
+        item for item in plan_experiment(experiment, cell)
+        if item["method_id"] == "paper-method"
+    )
     assert paper_plan["evidence"][0]["reference"] == "doi:10.1234/example"
 
 
@@ -86,6 +93,7 @@ def test_planner_does_not_mutate_cell_template(experiment, cell):
     original = deepcopy(cell)
     plan_experiment(experiment, cell)
     assert cell == original
+
 
 def test_experiment_manifest_schema_accepts_fixture(experiment):
     ContractRegistry().validate("experiment.schema.json", experiment)
