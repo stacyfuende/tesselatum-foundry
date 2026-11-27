@@ -1,154 +1,136 @@
-# Foundry Frontend Concept
+# Foundry Product Experience
 
-**Product direction:** a spatial computational laboratory, not a traditional GIS desktop, notebook, or monitoring dashboard.
+**Product direction:** an autonomous spatial product factory. Foundry is not a GIS desktop, spatial notebook, or toolbox with a conversational layer.
 
-Foundry's interface is organized around the user's question and the experiment—not around a layer list. The conversational assistant is the front door, while the computation workspace makes the underlying methods, parameters, data, evidence, runs, and outputs inspectable.
+The customer expresses an outcome. Foundry resolves evidence, plans and executes registered capabilities, assembles a product, validates it, and publishes or operates it. The interface exposes consequential decisions and useful results; implementation mechanics remain inspectable but do not define the default workflow.
 
-## Design principles
+## Product principles
 
-1. **Question-first.** Start with "What are you trying to find out?" rather than asking users to configure a GIS project.
-2. **Conversation + workspace.** Chat is not the entire interface. Every consequential suggestion can open a structured experiment, data inspection, method comparison, or result view.
-3. **Inspectable computation.** A user can inspect the selected source, method, parameter values, evidence, cell declaration, run status, validation, and provenance.
-4. **Experiment as first-class object.** Variants, baselines, parameter sweeps, comparison metrics, and failure cases are visible together.
-5. **Maps are evidence, not wallpaper.** Map and imagery views appear when spatial context materially matters; charts, tables, distributions, and explanations are equally important.
-6. **Progressive complexity.** Beginners can ask in natural language. Experts can open the method panel, edit parameters, inspect the manifest, and access reproducibility details.
-7. **No silent magic.** Unsupported operations, transformations, data access limits, uncertainty, and execution failures are stated.
+1. **Outcome before instrument.** Start with what someone needs to decide, understand, communicate, deliver, or monitor. Do not start with a project, layer, algorithm, or file.
+2. **Hide mechanics, not consequences.** Routine reversible operations are automatic. Material assumptions and trade-offs are surfaced. High-impact, costly, sensitive, or irreversible actions require authorisation.
+3. **Evidence before assertion.** Every material result can be traced to source evidence, transformations, methods, parameters, versions, validation, and known limitations.
+4. **Capabilities, not tool menus.** The engine composes registered, typed, bounded capabilities. It never executes arbitrary LLM-generated code.
+5. **Products, not projects.** The durable customer object is a product instance with releases, artefacts, evidence, and an operational lifecycle.
+6. **Presentation is a discipline.** Cartography, documents, applications, APIs, and monitoring have their own specifications and quality criteria. They are not generic exports.
+7. **Progressive agency.** Foundry acts automatically where safe, guides decisions where judgement matters, and asks permission where consequences demand it.
+8. **No silent magic.** Record decisions, uncertainty, limitations, resource budgets, and failures. A polished output must not conceal weak evidence.
 
-## Primary application shell
+## The six conceptual boundaries
 
-Desktop: three working zones, with a slim global navigation rail.
+These are responsibilities in one platform, not six separate applications:
 
-- **Left rail (56–72 px):** Foundry mark; New investigation; Experiments; Data sources; Methods; Runs; Artifacts; settings/account.
-- **Main work area:** conversation or active experiment. A top title strip shows the investigation and its status.
-- **Context panel (about 320 px, collapsible):** selected source, methods, parameter controls, provenance, and experiment details. This panel changes with the active task.
+- **Intent:** desired outcome, question, decision, audience, constraints, and success conditions.
+- **Evidence:** source references, observations, measurements, derived facts, freshness, coverage, rights, quality, uncertainty, and provenance.
+- **Reasoning:** registered methods, algorithms, models, assumptions, comparisons, constraints, and sensitivity.
+- **Product:** the useful deliverable or ongoing service, described independently of its presentation.
+- **Experience:** how the product is consumed: cartography, document, application, API, or other interface and medium.
+- **Operation:** publishing, releases, refreshes, monitoring, alerts, feedback, and retirement.
 
-On mobile, the rail becomes bottom navigation; context and comparison panels become full-screen sheets. The experiment remains usable without desktop-only hover behavior.
+## What is deliberately not the user-facing architecture
 
-## Screen 1 — Foundry home / investigation
+The following may remain useful internal representations or expert inspection tools, but they are not primary customer concepts:
 
-A quiet, editorial interface with a large prompt, recent work, and a few concrete starting examples.
+| Legacy convention | Foundry treatment |
+|---|---|
+| GIS project | Product context and working state |
+| Layer tree | Evidence and spatial resources |
+| Processing toolbox | Registered capability catalogue |
+| Processing model | Typed, versioned recipe/plan |
+| Manual CRS dialog | Spatial reference resolution with recorded rationale |
+| Manual map layout workflow | Cartographic specification and composition engine |
+| Geoprocessing history | Execution provenance and product lineage |
+| Export wizard | Product release and delivery |
+| Repeated manual updates | Product operation policy |
+| Project file as the deliverable | Product instance, releases, and artefacts |
 
-**Prompt:** "What do you want to investigate?"
+Do not delete useful algorithms, data structures, or expert controls merely because their historical interface is being retired. Preserve sound computation; replace the interaction model and abstractions around it.
 
-Examples:
-- Compare two ways to estimate a surface from observations.
-- Test how a site-selection score changes when the weights change.
-- Find a suitable external dataset for this question.
-- Reproduce a method described in a paper.
+## Autonomy model
 
-Recent investigations show a short title, last activity, state, and the number of Runs or artifacts. Avoid noisy dashboard widgets.
+Every consequential decision is classified by impact, reversibility, uncertainty, cost, sensitivity, and user preference.
 
-## Screen 2 — Investigation workspace
+- **Automatic:** routine, bounded, reversible choices with acceptable confidence. Execute and record the decision.
+- **Guided:** choices that materially affect interpretation or quality. Recommend a default, explain trade-offs, and support alternatives or sensitivity tests.
+- **Explicit authorisation:** high-impact, irreversible, legally significant, privacy-sensitive, externally published, or materially costly actions.
 
-```
-┌─ Foundry ──────────────────────────────────────────────────────────────┐
-│ Investigation: Nairobi vegetation signal                       Saved │
-├─────────────┬─────────────────────────────────────┬──────────────────┤
-│ Conversation│ Active work                         │ Inspector        │
-│             │                                     │                  │
-│ User asks   │  Data source                        │ Source details   │
-│ a question  │  Sentinel-2 / red band               │ Provider         │
-│             │       ↓                              │ Asset / date     │
-│ Assistant   │  Experiment                          │ CRS / resolution│
-│ explains    │  baseline + variants                 │ Access budget   │
-│ choices     │       ↓                              │                  │
-│             │  Compare results                      │ Method details   │
-│ Follow-up   │  Map / chart / metrics / table       │ Parameters      │
-│ prompts     │                                     │ Provenance      │
-├─────────────┴─────────────────────────────────────┴──────────────────┤
-│ [Ask a follow-up…]                         [Run experiment]          │
-└─────────────────────────────────────────────────────────────────────┘
-```
+The classification is contextual. A projection may be automatic for a small local map but require guidance for a continental analysis. A colour choice may be cosmetic in one context and misleading in another. Never classify a decision solely by whether it looks technical.
 
-The conversation can ask clarifying questions, explain a method, suggest alternatives, or interpret evidence. The structured workspace is the durable state: experiment definition, selected data, variants, and outputs. The assistant should not pretend a run occurred merely because it described one.
+## Product creation lifecycle
 
-## Screen 3 — Data/source explorer
+1. **Understand** — resolve intent, audience, constraints, success criteria, and missing information.
+2. **Resolve** — discover and assess evidence, rights, coverage, freshness, quality, and feasibility.
+3. **Plan** — select registered capabilities, methods, product specifications, autonomy decisions, and budgets.
+4. **Build** — execute through trusted Foundry Run services.
+5. **Validate** — test evidence, computation, product-specific quality, and declared acceptance criteria.
+6. **Assemble** — produce the appropriate experience and delivery artefacts.
+7. **Release** — publish or deliver a versioned product with provenance.
+8. **Operate** — refresh, monitor, alert, revise, and retire under an explicit policy.
 
-Sources are represented as reference cards, not as Foundry-owned copies.
+The planner may reuse valid prior work. Changes should invalidate and rebuild only affected dependencies when lineage and contracts prove that reuse is safe.
 
-Each source card exposes:
-- Provider and source URL/identifier.
-- Dataset/item/asset selection.
-- Spatial and temporal extent.
-- CRS, resolution, bands/fields, and data type where discoverable.
-- License/access constraints when available.
-- Estimated bounded-read size and Foundry's actual access budget.
-- Availability/health check with timestamp.
-- Provenance and reproducibility caveats.
+## Product surfaces
 
-The source picker should search supported catalogs, allow a URL or STAC reference, and show a preview/metadata before adding it to an experiment. Source access and actual reads remain controlled by Foundry's backend contracts.
+The default application has three destinations:
 
-## Screen 4 — Method laboratory
+### Create
+A natural-language and structured entry point for describing the intended outcome. Foundry asks only consequential questions. It previews the resolved plan, assumptions, costs, and permissions before execution where needed.
 
-A method is a card with a plain-language explanation and a technical expansion.
+### Products
+A catalogue of product instances, not a list of GIS projects. Each product has a preview, purpose, release history, status, evidence, and available actions.
 
-Card content:
-- Method name and what it estimates/does.
-- When it is appropriate.
-- Assumptions and limitations.
-- Required inputs.
-- Parameters with units, allowed ranges, defaults, and sensitivity guidance.
-- Implementation/engine and conformance status.
-- Evidence links (paper, docs, benchmark, or user-provided source).
+### Engine
+An expert surface for evidence sources, capabilities, methods, recipes, experiments, Runs, artefacts, validation, budgets, and provenance. It is available when needed and never required for ordinary product creation.
 
-Users can choose "Use this method", "Compare", or "Inspect". For paper-based work, evidence is attached to the method/experiment, and the system clearly distinguishes the paper's documented procedure from Foundry's implementation.
+The product itself gets the interface appropriate to its purpose. A cartographic publication should not be forced into a dashboard shell; an interactive decision tool should not be forced into a static map layout.
 
-## Screen 5 — Experiment builder
+## Product and experience specifications
 
-An experiment has a baseline, method alternatives, and parameter axes. The UI should visually show how many variants will be generated and prevent unbounded expansion.
+A general Product Blueprint defines intent, evidence requirements, reasoning graph, constraints, autonomy policy, acceptance criteria, and one or more product outputs.
 
-Example:
-- Baseline: method X, threshold 0.4.
-- Method alternatives: X / Y.
-- Parameter axis: threshold 0.2, 0.4, 0.6.
-- Total: 6 variants.
-- Run budget and source budget are visible before execution.
+Specialised specifications define how a product is realised:
 
-Parameter controls are generated from capability schemas where possible. Advanced users can inspect/edit the declarative manifest. No free-form LLM-generated scripts are executed.
+- **Cartographic specification:** audience, communication purpose, geography, projection, scale, physical dimensions, medium, resolution, layers, symbolisation, typography, labels, legend, annotations, composition, accessibility, and export targets.
+- **Document/dossier specification:** narrative structure, evidence requirements, citations, tables, figures, page geometry, audience, and publication format.
+- **Application specification:** user tasks, information architecture, interactions, permissions, responsive behaviour, and deployment target.
+- **Service specification:** contract, interface, authentication, latency/resource expectations, versioning, and availability.
+- **Operational specification:** refresh triggers, monitoring conditions, alert policies, retention, and service-level expectations.
 
-## Screen 6 — Experiment results
+A specification is declarative and validated. Rendering and execution are performed by registered engines, not by arbitrary generated scripts.
 
-A result view has four synchronized sections:
+## Quality and trust
 
-1. **Summary:** what was tested, run status, best-supported observations, and warnings.
-2. **Comparison:** metrics table, method/parameter matrix, and difference plots.
-3. **Spatial view:** map, imagery, result overlay, or difference view where the output supports spatial visualization.
-4. **Evidence & reproducibility:** source references, method/capability versions, exact parameters, Run IDs, validation report, artifacts, timestamps, checksums, and known limits.
+Validation is layered:
 
-The comparison view should make it easy to switch between:
-- Side-by-side variants.
-- Baseline vs selected variant.
-- Difference/overlap.
-- Metric table.
-- Parameter sensitivity chart.
+- Evidence validity: source identity, access, rights, freshness, coverage, and data quality.
+- Computational validity: capability conformance, parameter constraints, budgets, deterministic/reproducible behaviour where promised.
+- Product validity: whether the output satisfies its declared purpose and acceptance criteria.
+- Experience validity: legibility, accessibility, layout integrity, responsive behaviour, and interaction correctness where applicable.
+- Operational validity: release integrity, refresh behaviour, monitoring, and rollback/retirement controls.
 
-Metrics must not be presented as universal quality scores; the user chooses/understands the comparison criteria.
+A product cannot be labelled successful merely because computation completed. Product-specific acceptance checks must pass or be clearly reported as incomplete.
 
-## Screen 7 — Run detail
+## Interface direction
 
-Run lifecycle timeline: queued → resolving inputs → executing → validating → succeeded/failed.
+- Quiet, precise, editorial, and outcome-oriented; warm neutral/graphite foundations with restrained terracotta accent.
+- Lead with product previews and decisions, not maps as wallpaper or technical dashboards.
+- Use the right medium for the job: maps, charts, tables, reports, interfaces, and evidence views are complementary.
+- Make expert detail discoverable, not compulsory.
+- Keyboard accessible, responsive, semantic, readable, and usable without colour-only status.
+- No generic AI sparkle motifs, decorative progress, or fabricated success states.
 
-Each step shows events, resource/access budgets, relevant warnings, and outputs. Failed variants are preserved and displayed beside successful variants so partial experiments remain informative. Re-run and clone controls create new Run records; they do not mutate old results.
+## Implementation sequence
 
-## Visual language
+1. Establish the architecture decision and the general Product Blueprint contract.
+2. Define autonomy/decision policy and capability declarations.
+3. Implement planning and dependency validation without arbitrary code execution.
+4. Connect plans to real Run services and product artefact packaging.
+5. Implement the Cartographic Specification and a real cartographic rendering/QA path.
+6. Deliver one end-to-end flagship spatial product.
+7. Add further experience engines only as required by real product jobs.
+8. Build the Create / Products / Engine frontend on top of proven services.
 
-- **Foundation:** warm neutral / light parchment or soft graphite, restrained borders, spacious layout.
-- **Accent:** burnt terracotta/orange for active action and selected states; use sparingly.
-- **Typography:** strong modern sans for UI; optional compact monospace for IDs, parameter values, manifests, and provenance.
-- **Visuals:** crisp data displays, quiet map backgrounds, clear legends, purposeful charts; no excessive glassmorphism, gradient blobs, or generic AI sparkle motifs.
-- **Motion:** short, purposeful state transitions; no decorative loading loops. Execution status uses explicit progress and event activity.
-- **Accessibility:** keyboard-first navigation, semantic controls, contrast, no color-only status, reduced motion, and chart/table equivalents.
+## Current implementation boundary
 
-## Initial implementation sequence
+The branch contains working bounded external raster access, a live Nairobi Sentinel-2 execution proof, raster window processing and validation, experiment planning/execution primitives, and raster comparison. Those are valuable engine capabilities, not a complete product factory.
 
-1. App shell, investigation list, responsive navigation.
-2. Investigation workspace with chat placeholder and durable experiment state.
-3. Source explorer and metadata/source cards.
-4. Experiment builder from the current Experiment schema and planner.
-5. Run detail using real Foundry Run lifecycle/events.
-6. Result comparison and artifact viewer, initially for the supported raster-window artifact.
-7. Connect conversational planning to registered capabilities only; the LLM proposes/edits declarations, backend validates, and execution goes through registered Run services.
-
-## Scope honesty
-
-This document describes the intended frontend experience. The current branch has backend computation, external raster access, experiment planning, bounded experiment execution, and exact-grid raster comparison foundations. It does **not** yet contain this frontend, a production hosted API, a general method catalogue, arbitrary paper reproduction, or universal raster visualization. The first frontend slice should be wired to the capabilities and Run lifecycle that actually exist.
+The general Product Blueprint, autonomy engine, product planner integration, cartographic engine, publishing/operations system, and customer-facing frontend remain to be implemented. Do not present a concept, schema, or callback seam as an end-to-end product capability.
