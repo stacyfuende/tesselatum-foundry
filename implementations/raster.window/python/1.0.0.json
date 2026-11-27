@@ -8,10 +8,8 @@
   "entrypoint": "tessellatum_foundry.execution.external_raster_orchestration:ExternalRasterWindowRunOrchestrator",
   "network_access": "restricted",
   "conformance": {
-    "status": "passed",
-    "suite_version": "raster-window-conformance/1.0.0",
-    "last_run_at": "2026-11-27T00:00:00Z",
-    "report_uri": "https://github.com/stacyfuende/tesselatum-foundry/actions"
+    "status": "not_run",
+    "suite_version": "raster-window-conformance/1.0.0"
   },
   "determinism": "deterministic"
 }
