@@ -36,6 +36,7 @@ from .tile_reads import RetrievedRasterTile, read_selected_tiff_tiles
 from .tile_selection import RasterTileSelection, select_tiff_tiles
 from .tiff import TiffDirectory, TiffFormatError, TiffLayout, TiffRaster, TiffRangeReader
 from .window_assembly import RasterWindowBuffer, assemble_tiff_window
+from .window_read import TiffWindowRead, read_tiff_window
 
 __all__ = [
     "ExternalDataReference", "BudgetedRasterRangeReader", "RasterContractError",
@@ -44,7 +45,8 @@ __all__ = [
     "TiffRangeReader", "RasterTileSelection", "select_tiff_tiles",
     "RetrievedRasterTile", "read_selected_tiff_tiles", "DecodedRasterTile",
     "decode_uncompressed_tiff_tile", "decode_deflate_tiff_tile", "decode_tiff_tile",
-    "RasterWindowBuffer", "assemble_tiff_window", "sample_is_valid",
+    "RasterWindowBuffer", "assemble_tiff_window", "TiffWindowRead", "read_tiff_window",
+    "sample_is_valid",
     "build_validity_mask", "window_validity_mask", "select_overview_factor",
     "overview_factors_from_dimensions", "overview_factors_from_tiff_directories",
     "SelectedTiffOverview", "select_tiff_overview", "FeatureBatch",
