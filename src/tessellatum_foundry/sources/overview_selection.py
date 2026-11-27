@@ -18,7 +18,7 @@ def select_overview_factor(
     if (
         isinstance(target_downsample, bool)
         or not isinstance(target_downsample, (int, float))
-        or target_downsample < 1
+        or not math.isfinite(target_downsample)\n        or target_downsample < 1
     ):
         raise RasterContractError("Target downsample must be a number >= 1.")
     factors = metadata.overview_factors
