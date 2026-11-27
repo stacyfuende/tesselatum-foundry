@@ -124,7 +124,9 @@ def select_tiff_overview(
         and (directory.width, directory.height) == (metadata.width, metadata.height)
     ]
     if len(base_matches) != 1:
-        raise RasterContractError("TIFF index must contain exactly one matching base image directory.")
+        raise RasterContractError(
+            "TIFF index must contain exactly one matching base image directory."
+        )
 
     factors = overview_factors_from_tiff_directories(
         metadata.width, metadata.height, indexed
@@ -144,13 +146,19 @@ def select_tiff_overview(
             and (item.width, item.height) == expected_dimensions
         ]
         if len(matches) != 1:
-            raise RasterContractError("Selected TIFF overview does not map to exactly one image directory.")
+            raise RasterContractError(
+                "Selected TIFF overview does not map to exactly one image directory."
+            )
         directory = matches[0]
 
     if directory.samples_per_pixel != metadata.band_count:
-        raise RasterContractError("Selected TIFF directory band count does not match raster metadata.")
+        raise RasterContractError(
+            "Selected TIFF directory band count does not match raster metadata."
+        )
     if not directory.tiled or directory.tile_width is None or directory.tile_height is None:
-        raise RasterContractError("Selected TIFF overview is not tiled and cannot use tile-window reads.")
+        raise RasterContractError(
+            "Selected TIFF overview is not tiled and cannot use tile-window reads."
+        )
 
     transform = list(metadata.transform)
     for index in (1, 2, 4, 5):
