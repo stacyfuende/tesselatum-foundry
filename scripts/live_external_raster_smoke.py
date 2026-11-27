@@ -14,6 +14,8 @@ import urllib.parse
 import urllib.request
 from dataclasses import replace
 from pathlib import Path
+
+from pyproj import CRS
 from urllib.parse import urlsplit
 
 from tessellatum_foundry.execution.capabilities import CapabilityRegistry
@@ -134,6 +136,13 @@ def main() -> None:
     metadata = source_raster.metadata
     if not metadata.crs:
         raise RuntimeError("Live Sentinel-2 COG has no supported embedded CRS.")
+    crs_authority = CRS.from_user_input(metadata.crs).to_authority()
+    if crs_authority is None:
+        raise RuntimeError("Live Sentinel-2 COG CRS has no authority identifier.")
+    crs_declaration = {
+        "authority": crs_authority[0],
+        "code": int(crs_authority[1]),
+    }
     if metadata.width < 64 or metadata.height < 64 or metadata.band_count != 1:
         raise RuntimeError(
             "Live red-band COG does not meet the one-band 64x64 smoke-test contract."
@@ -149,7 +158,7 @@ def main() -> None:
                 "reference": reference.to_dict(),
                 "spatial": {
                     "kind": "raster",
-                    "crs": metadata.crs,
+                    "crs": crs_declaration,
                     "raster": {
                         "width": metadata.width,
                         "height": metadata.height,
@@ -180,7 +189,7 @@ def main() -> None:
             "window": {
                 "data_kind": "raster",
                 "media_types": ["application/vnd.tessellatum.raster-window"],
-                "crs": metadata.crs,
+                "crs": crs_declaration,
             }
         },
     }
