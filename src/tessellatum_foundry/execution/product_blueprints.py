@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from collections import defaultdict, deque
 from copy import deepcopy
+import hashlib
+import json
 from typing import Any
 
 from jsonschema import Draft202012Validator
@@ -70,9 +72,13 @@ def plan_product_blueprint(
     requirements = {
         item["id"]: item for item in blueprint["evidence"]["requirements"]
     }
-    supplied_roles = {
-        item.get("role") for item in blueprint["evidence"].get("provided_references", [])
-    }
+    provided_references = blueprint["evidence"].get("provided_references", [])
+    supplied_roles = {item.get("role") for item in provided_references}
+    reference_by_id = {item["id"]: item for item in provided_references}
+    if len(reference_by_id) != len(provided_references):
+        raise ProductBlueprintPlanError("Blueprint contains duplicate evidence reference IDs.")
+    if len(requirements) != len(blueprint["evidence"]["requirements"]):
+        raise ProductBlueprintPlanError("Blueprint contains duplicate evidence requirement IDs.")
     missing_evidence = [
         {"id": item["id"], "role": item["role"], "required": item.get("required", True)}
         for item in requirements.values()
@@ -122,11 +128,18 @@ def plan_product_blueprint(
         for port_id, source in bindings.items():
             if source.startswith("evidence:"):
                 reference_id = source.split(":", 1)[1]
-                if reference_id not in evidence_ids:
+                reference = reference_by_id.get(reference_id)
+                if reference is None:
                     findings.append({
                         "code": "unresolved_evidence",
                         "node_id": node_id,
                         "message": f"Evidence reference {reference_id!r} is not supplied.",
+                    })
+                elif not reference.get("role"):
+                    findings.append({
+                        "code": "evidence_role_missing",
+                        "node_id": node_id,
+                        "message": f"Evidence reference {reference_id!r} has no declared role.",
                     })
             elif "." in source:
                 source_node, output_port = source.split(".", 1)
@@ -247,25 +260,49 @@ def plan_product_blueprint(
         decisions.append({"node_id": node_id, **decision})
 
     for output in blueprint["outputs"]:
-        if output.get("release_policy", {}).get("approval_required"):
+        release = output.get("release_policy", {})
+        # Delivery targets represent a release boundary. Never let a false
+        # approval_required flag suppress policy evaluation for external delivery.
+        if output.get("delivery_targets") or release.get("approval_required"):
             decisions.append({
                 "node_id": output["id"],
                 **evaluate_autonomy(
                     "external-publication",
-                    {"external_publication": True, "impact": "moderate"},
+                    {
+                        "external_publication": bool(output.get("delivery_targets")),
+                        "impact": "moderate",
+                    },
                     policy,
                     requested_mode=requested_mode,
                 ),
             })
 
     blocking = bool(findings or missing_evidence)
+    approval_required = any(item["requires_approval"] for item in decisions)
+    capability_fingerprints = {
+        node_id: hashlib.sha256(json.dumps(
+            resolved[node_id]["capability"], sort_keys=True,
+            separators=(",", ":"), allow_nan=False,
+        ).encode("utf-8")).hexdigest()
+        for node_id in sorted(resolved)
+    }
+    plan_material = {
+        "blueprint": blueprint,
+        "policy": policy,
+        "capabilities": capability_fingerprints,
+    }
+    plan_fingerprint = hashlib.sha256(json.dumps(
+        plan_material, sort_keys=True, separators=(",", ":"), allow_nan=False,
+    ).encode("utf-8")).hexdigest()
     return {
+        "plan_fingerprint": plan_fingerprint,
         "blueprint": {
             "blueprint_id": blueprint["blueprint_id"],
             "version": blueprint["version"],
             "title": blueprint["title"],
         },
-        "status": "blocked" if blocking else "planned",
+        "status": "blocked" if blocking else ("approval_required" if approval_required else "planned"),
+        "approval_required": approval_required,
         "executable": False,
         "execution_note": "Planning only: no Runs, artifacts, deployments, or publications were created.",
         "node_order": order,
