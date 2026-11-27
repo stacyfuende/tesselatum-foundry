@@ -33,6 +33,7 @@ from .tile_reads import RetrievedRasterTile, read_selected_tiff_tiles
 from .window_assembly import RasterWindowBuffer, assemble_tiff_window
 from .nodata import build_validity_mask, sample_is_valid, window_validity_mask
 from .overview_selection import select_overview_factor
+from .overview_selection import select_overview_factor
 from .tile_decode import (
     DecodedRasterTile,
     decode_deflate_tiff_tile,
@@ -66,6 +67,7 @@ __all__ = [
     "sample_is_valid",
     "build_validity_mask",
     "window_validity_mask",
+    "select_overview_factor",
     "select_overview_factor",
     "FeatureBatch",
     "FeatureBatchError",
