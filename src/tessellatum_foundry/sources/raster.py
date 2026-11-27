@@ -178,8 +178,6 @@ class BudgetedRasterRangeReader:
             or reference.etag.startswith("W/")
         ):
             raise RasterContractError("Raster range reads require a strong source ETag.")
-        if max_range_bytes > max_total_bytes:
-            raise ValueError("max_range_bytes cannot exceed max_total_bytes.")
         self.adapter = adapter
         self.reference = reference
         self.max_requests = max_requests
