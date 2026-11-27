@@ -411,4 +411,12 @@ class ExternalRasterWindowRunOrchestrator:
         from tessellatum_foundry.execution.implementations import ImplementationRegistry
 
         registry = ImplementationRegistry(contracts=self.contracts)
-        return registry.manifest_checksum(self.IMPLEMENTATION_ID, self.IMPLEMENTATION_VERSION)
+        registry.require_conformant(
+            implementation_id=self.IMPLEMENTATION_ID,
+            version=self.IMPLEMENTATION_VERSION,
+            capability_id="raster.window",
+            capability_version="1.0.0",
+        )
+        return registry.manifest_checksum(
+            self.IMPLEMENTATION_ID, self.IMPLEMENTATION_VERSION
+        )
