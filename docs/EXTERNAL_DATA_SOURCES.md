@@ -427,3 +427,13 @@ Pixels outside the source extent are marked invalid, while missing in-bounds
 source-window coverage is an error. This is an explicit same-CRS foundation,
 not a general reprojection engine: rotated grids and cross-CRS transformation
 remain unsupported.
+
+## Raster window capability
+
+The canonical `raster.window@1.0.0` Capability defines a bounded read from an externally held tiled TIFF/BigTIFF. Its normalized parameters identify a pixel window, optional one-based band order, and a caller-selected target downsample. The reader selects a concrete base or overview IFD and reads only the tiles required by that window.
+
+The current output media type, `application/vnd.tessellatum.raster-window`, identifies a Foundry raw-sample window buffer. It is not a GeoTIFF/COG export and must not be advertised as one. The output critic checks requested window identity, band order, selected-grid dtype compatibility, exact byte length, explicit byte order, and optional per-pixel validity-mask length.
+
+The capability is cache-disabled: source range reads require a strong ETag, and this first execution contract does not yet define a complete cache identity over source validator, IFD selection, decoder implementation, and every read budget. A later publisher may serialize the validated raw window into a separately versioned interoperable raster format.
+
+This contract does not imply formal COG validation, general CRS transformation, rotated-grid resampling, arbitrary compression support, or multi-band arithmetic.
