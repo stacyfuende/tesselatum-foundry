@@ -87,12 +87,16 @@ class ExternalRasterWindowRunFactory:
 
         binding = cell.get("inputs", {}).get("raster")
         if not isinstance(binding, dict) or binding.get("source") != "external":
-            raise ExecutionPreconditionError("The raster input must use an external source binding.")
+            raise ExecutionPreconditionError(
+                "The raster input must use an external source binding."
+            )
         reference = binding.get("reference")
         try:
             self.contracts.validate("external-data-reference.schema.json", reference)
         except ContractValidationError as error:
-            raise ExecutionPreconditionError(f"External raster reference is invalid: {error}") from error
+            raise ExecutionPreconditionError(
+                f"External raster reference is invalid: {error}"
+            ) from error
 
         parsed_uri = urlsplit(reference["uri"])
         if (
@@ -135,18 +139,29 @@ class ExternalRasterWindowRunFactory:
         parameters.setdefault("target_downsample", 1)
         bands = tuple(parameters.get("bands", ()))
         if bands and any(band > raster["band_count"] for band in bands):
-            raise ExecutionPreconditionError("Requested band is absent from the declared raster grid.")
+            raise ExecutionPreconditionError(
+                "Requested band is absent from the declared raster grid."
+            )
         if (
             parameters["column_offset"] + parameters["width"] > raster["width"]
             or parameters["row_offset"] + parameters["height"] > raster["height"]
         ):
-            raise ExecutionPreconditionError("Requested window extends beyond the declared raster grid.")
+            raise ExecutionPreconditionError(
+                "Requested window extends beyond the declared raster grid."
+            )
 
         output_contract = cell["output_contracts"].get("window")
-        if not isinstance(output_contract, dict) or output_contract.get("data_kind") != "raster":
-            raise ExecutionPreconditionError("Geo-Cell must declare a raster 'window' output contract.")
+        if (
+            not isinstance(output_contract, dict)
+            or output_contract.get("data_kind") != "raster"
+        ):
+            raise ExecutionPreconditionError(
+                "Geo-Cell must declare a raster 'window' output contract."
+            )
         if self.OUTPUT_MEDIA_TYPE not in output_contract.get("media_types", []):
-            raise ExecutionPreconditionError("Output contract must accept the Foundry raster-window media type.")
+            raise ExecutionPreconditionError(
+                "Output contract must accept the Foundry raster-window media type."
+            )
         if output_contract.get("crs") is None:
             raise ExecutionPreconditionError("Raster window output contract must declare its CRS.")
         try:
@@ -171,17 +186,24 @@ class ExternalRasterWindowRunFactory:
             }:
                 raise ExecutionPreconditionError("A retry must use the same Capability version.")
             if previous.get("source_references", []) != source_references:
-                raise ExecutionPreconditionError("A retry must preserve the exact external source reference.")
+                raise ExecutionPreconditionError(
+                    "A retry must preserve the exact external source reference."
+                )
             if previous.get("normalized_parameters") != parameters:
                 raise ExecutionPreconditionError("A retry must preserve normalized parameters.")
             if previous.get("input_snapshots") != []:
-                raise ExecutionPreconditionError("A source-backed retry cannot introduce Artifact snapshots.")
+                raise ExecutionPreconditionError(
+                    "A source-backed retry cannot introduce Artifact snapshots."
+                )
             attempt = previous["attempt"] + 1
 
         return self.run_repository.create_queued_run(
             run_id=f"run:{uuid.uuid4().hex}",
             cell={"cell_id": cell["cell_id"], "version": cell["version"]},
-            capability={"capability_id": canonical["capability_id"], "version": canonical["version"]},
+            capability={
+                "capability_id": canonical["capability_id"],
+                "version": canonical["version"],
+            },
             input_snapshots=[],
             normalized_parameters=parameters,
             source_references=source_references,
