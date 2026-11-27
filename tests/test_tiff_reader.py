@@ -46,7 +46,10 @@ def classic_tiff(*, endian="<", tiled=False, predictor=1, crs_key=None):
     else:
         offset_tag, count_tag = 273, 279
     tags.extend([(offset_tag, 4, 1, (0,)), (count_tag, 4, 1, (512,))])
-    if crs_key is not None:\n        tags.append((34735, 3, 8, (1, 1, 0, 1, crs_key[0], 0, 1, crs_key[1])))\n    tags.sort()\n    ifd_offset = 8
+    if crs_key is not None:
+        tags.append((34735, 3, 8, (1, 1, 0, 1, crs_key[0], 0, 1, crs_key[1])))
+    tags.sort()
+    ifd_offset = 8
     extra_start = ifd_offset + 2 + len(tags) * 12 + 4
     extra = bytearray()
     entries = []
