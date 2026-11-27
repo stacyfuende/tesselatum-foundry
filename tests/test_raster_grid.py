@@ -60,7 +60,7 @@ def test_nearest_resampling_uses_source_pixel_centres():
     )
     assert all(result.valid)
     assert result.metadata.dtypes == ("float64",)
-    assert math.isnan(result.metadata.nodata[0]) is False
+    assert math.isnan(result.metadata.nodata[0])
 
 
 def test_bilinear_resampling_interpolates_and_propagates_nodata():
