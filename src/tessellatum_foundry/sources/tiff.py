@@ -207,7 +207,8 @@ class TiffRangeReader:
             if tiled:
                 across = (width + tile_width - 1) // tile_width
                 down = (height + tile_height - 1) // tile_height
-                expected_blocks = across * down * (samples_per_pixel if planar_configuration == 2 else 1)
+                planes = samples_per_pixel if planar_configuration == 2 else 1
+                expected_blocks = across * down * planes
                 if len(block_offsets) != expected_blocks:
                     raise TiffFormatError("TIFF tile table does not match its image grid.")
             subifds = integer_values(330)
