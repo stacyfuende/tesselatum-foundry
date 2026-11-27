@@ -99,8 +99,14 @@ def compare_raster_window_artifacts(
     No resampling, reprojection, or implicit grid matching is performed.
     """
     try:
-        a = decode_raster_window_artifact(artifact_a) if isinstance(artifact_a, bytes) else artifact_a
-        b = decode_raster_window_artifact(artifact_b) if isinstance(artifact_b, bytes) else artifact_b
+        a = (
+            decode_raster_window_artifact(artifact_a)
+            if isinstance(artifact_a, bytes) else artifact_a
+        )
+        b = (
+            decode_raster_window_artifact(artifact_b)
+            if isinstance(artifact_b, bytes) else artifact_b
+        )
     except RasterWindowArtifactError as error:
         raise RasterComparisonError(f"Invalid raster-window Artifact: {error}") from error
     ha, hb = a.header, b.header
