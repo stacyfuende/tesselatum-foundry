@@ -125,7 +125,6 @@ def assemble_tiff_window(
                             tile.samples[source_offset : source_offset + width]
                         )
                 else:
-                    band_index = expected.band - 1
                     output_band_index = bands.index(expected.band)
                     width = output_widths[output_band_index]
                     source_offset = src_pixel * width
