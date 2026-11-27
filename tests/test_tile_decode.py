@@ -270,3 +270,39 @@ def test_deflate_decoder_rejects_predictors_and_unknown_compression():
             payload, tile, unknown, metadata(), byte_order="little"
         )
 
+def test_deflate_decoder_reverses_horizontal_predictor_for_chunky_integer_samples():
+    encoded = bytearray()
+    expected = []
+    for row in range(16):
+        previous = (0, 0)
+        for column in range(16):
+            current = (column + row, 1000 + column * 3 + row)
+            delta = (
+                (current[0] - previous[0]) % 256,
+                (current[1] - previous[1]) % 65536,
+            )
+            encoded.extend(struct.pack("<BH", *delta))
+            expected.append(current)
+            previous = current
+    payload, tile, layout = compressed_fixture(bytes(encoded))
+    layout = replace(layout, predictor=2)
+
+    result = decode_deflate_tiff_tile(
+        payload, tile, layout, metadata(), byte_order="little"
+    )
+
+    pixels = list(result.iter_pixels())
+    assert pixels == expected
+
+
+def test_deflate_horizontal_predictor_rejects_floating_point_samples():
+    raw = struct.pack("<fB", 1.0, 2) * (16 * 16)
+    payload, tile, layout = compressed_fixture(raw)
+    layout = replace(layout, predictor=2)
+    float_metadata = metadata(dtypes=("float32", "uint8"))
+
+    with pytest.raises(RasterContractError, match="only for integer"):
+        decode_deflate_tiff_tile(
+            payload, tile, layout, float_metadata, byte_order="little"
+        )
+
