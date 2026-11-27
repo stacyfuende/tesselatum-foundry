@@ -3,7 +3,9 @@ from __future__ import annotations
 
 import math
 
-from collections.abc import Iterable\n\nfrom .raster import RasterContractError, RasterMetadata
+from collections.abc import Iterable
+
+from .raster import RasterContractError, RasterMetadata
 
 
 def select_overview_factor(
@@ -28,7 +30,9 @@ def select_overview_factor(
     eligible = [factor for factor in factors if factor <= target_downsample]
     return max(eligible, default=1)
 
-\n\ndef overview_factors_from_dimensions(
+
+
+def overview_factors_from_dimensions(
     base_width: int,
     base_height: int,
     overview_dimensions: Iterable[tuple[int, int]],
@@ -53,14 +57,15 @@ def select_overview_factor(
             raise RasterContractError("Overview dimensions must be positive integers.")
         if width >= base_width or height >= base_height:
             raise RasterContractError("Overview dimensions must be smaller than the base grid.")
-        fx = base_width / width
-        fy = base_height / height
-        factor = round(fx)
-        if factor < 2 or abs(fx - factor) > 1e-9 or abs(fy - factor) > 1e-9:
-            raise RasterContractError("Overview dimensions do not imply a consistent integer factor.")
-        if width != (base_width + factor - 1) // factor or height != (
-            base_height + factor - 1
-        ) // factor:
-            raise RasterContractError("Overview dimensions are inconsistent with reduction factor.")
-        factors.add(factor)
+        candidates = [
+            factor
+            for factor in range(2, max(base_width, base_height) + 1)
+            if width == (base_width + factor - 1) // factor
+            and height == (base_height + factor - 1) // factor
+        ]
+        if len(candidates) != 1:
+            raise RasterContractError(
+                "Overview dimensions do not imply a unique integer reduction factor."
+            )
+        factors.add(candidates[0])
     return tuple(sorted(factors))
