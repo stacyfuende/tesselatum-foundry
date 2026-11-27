@@ -133,7 +133,13 @@ class ExternalRasterWindowRunOrchestrator:
                 )
             if not base.metadata.crs:
                 raise ExecutionPreconditionError("Observed TIFF has no supported embedded CRS.")
-            declared_crs = CRS.from_user_input(binding["spatial"]["crs"])
+            crs_declaration = binding["spatial"]["crs"]
+            if isinstance(crs_declaration, dict):
+                declared_crs = CRS.from_authority(
+                    crs_declaration["authority"], str(crs_declaration["code"])
+                )
+            else:
+                declared_crs = CRS.from_user_input(crs_declaration)
             observed_crs = CRS.from_user_input(base.metadata.crs)
             if not declared_crs.equals(observed_crs, ignore_axis_order=True):
                 raise ExecutionPreconditionError(
@@ -230,10 +236,19 @@ class ExternalRasterWindowRunOrchestrator:
             if not inspection.passed:
                 raise ExecutionPreconditionError("Raster output failed independent validation.")
 
+            transform = list(selected_metadata.transform)
+            transform[0] += (
+                selected_window.column_offset * transform[1]
+                + selected_window.row_offset * transform[2]
+            )
+            transform[3] += (
+                selected_window.column_offset * transform[4]
+                + selected_window.row_offset * transform[5]
+            )
             grid = {
-                "width": selected_metadata.width,
-                "height": selected_metadata.height,
-                "transform": list(selected_metadata.transform),
+                "width": selected_window.width,
+                "height": selected_window.height,
+                "transform": transform,
                 "crs": selected_metadata.crs,
                 "band_count": len(result.buffer.bands),
             }
