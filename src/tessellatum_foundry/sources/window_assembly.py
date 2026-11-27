@@ -81,7 +81,9 @@ def assemble_tiff_window(
         try:
             tile = next(iterator)
         except StopIteration as error:
-            raise RasterContractError(\n                "Raster window is missing one or more decoded tiles."\n            ) from error
+            raise RasterContractError(
+                "Raster window is missing one or more decoded tiles."
+            ) from error
         if not isinstance(tile, DecodedRasterTile) or tile.selection != expected:
             raise RasterContractError("Decoded tiles are duplicated, missing, or out of order.")
         if tile.byte_order != byte_order:
@@ -102,7 +104,9 @@ def assemble_tiff_window(
             or tile.sample_bytes != expected_tile_bytes
             or tile.sample_count != expected_samples
         ):
-            raise RasterContractError(\n                "Decoded tile buffer length or sample count does not match its TIFF tile grid."\n            )
+            raise RasterContractError(
+                "Decoded tile buffer length or sample count does not match its TIFF tile grid."
+            )
 
         source_row = expected.window_row_offset - expected.tile_row_offset
         source_col = expected.window_column_offset - expected.tile_column_offset
