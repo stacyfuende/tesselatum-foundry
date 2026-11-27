@@ -6,14 +6,23 @@ import pytest
 
 from tessellatum_foundry.sources.raster import RasterWindow
 from tessellatum_foundry.sources.window_assembly import RasterWindowBuffer
-from tessellatum_foundry.storage.raster_window import encode_raster_window_artifact, decode_raster_window_artifact
 from tessellatum_foundry.storage.raster_comparison import (
     RasterComparisonError,
     compare_raster_window_artifacts,
 )
+from tessellatum_foundry.storage.raster_window import (
+    decode_raster_window_artifact,
+    encode_raster_window_artifact,
+)
 
 
-def artifact(samples, *, validity=(True, True, True), transform=(0, 1, 0, 3, 0, -1), crs="EPSG:4326"):
+def artifact(
+    samples,
+    *,
+    validity=(True, True, True),
+    transform=(0, 1, 0, 3, 0, -1),
+    crs="EPSG:4326",
+):
     buf = RasterWindowBuffer(
         window=RasterWindow(0, 0, 1, 3, (1,)),
         bands=(1,),
@@ -45,9 +54,14 @@ def test_numeric_metrics_and_validity_overlap():
 
 def test_comparison_rejects_different_grid_or_window():
     with pytest.raises(RasterComparisonError, match="CRS and transform"):
-        compare_raster_window_artifacts(artifact([1, 2, 3]), artifact([1, 2, 3], crs="EPSG:3857"))
+        compare_raster_window_artifacts(
+            artifact([1, 2, 3]), artifact([1, 2, 3], crs="EPSG:3857")
+        )
     with pytest.raises(RasterComparisonError, match="transform"):
-        compare_raster_window_artifacts(artifact([1, 2, 3]), artifact([1, 2, 3], transform=(0, 2, 0, 3, 0, -2)))
+        compare_raster_window_artifacts(
+            artifact([1, 2, 3]),
+            artifact([1, 2, 3], transform=(0, 2, 0, 3, 0, -2)),
+        )
 
 
 def test_comparison_rejects_no_shared_valid_pixels():
