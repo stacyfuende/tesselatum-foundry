@@ -40,6 +40,19 @@ def window_validity_mask(
     metadata: RasterMetadata,
 ) -> tuple[bool, ...]:
     """Return a pixel-validity mask for an assembled window in selected-band order."""
+    buffer.window.validate_against(metadata)
+    if buffer.byte_order not in ("little", "big"):
+        raise RasterContractError("Raster window byte order must be 'little' or 'big'.")
+    expected_bands = buffer.window.bands or tuple(range(1, metadata.band_count + 1))
+    if (
+        not buffer.bands
+        or buffer.bands != expected_bands
+        or len(buffer.bands) != len(buffer.dtypes)
+        or len(set(buffer.bands)) != len(buffer.bands)
+    ):
+        raise RasterContractError("Raster window buffer band selection is inconsistent.")
+    if buffer.dtypes != tuple(metadata.dtypes[band - 1] for band in buffer.bands):
+        raise RasterContractError("Raster window buffer dtypes do not match selected metadata bands.")
     selected_nodata = tuple(metadata.nodata[band - 1] for band in buffer.bands)
     if not metadata.nodata:
         selected_nodata = (None,) * len(buffer.bands)
@@ -52,6 +65,9 @@ def window_validity_mask(
     except KeyError as error:
         raise RasterContractError("Unsupported dtype for NoData mask.") from error
     pixel_width = sum(sample_widths)
+    expected_bytes = buffer.window.width * buffer.window.height * pixel_width
+    if len(samples) != expected_bytes:
+        raise RasterContractError("Raster window buffer has an unexpected byte length.")
     byte_order = "<" if buffer.byte_order == "little" else ">"
     fmt_by_dtype = {"uint8": "B", "int8": "b", "uint16": "H", "int16": "h",
                     "uint32": "I", "int32": "i", "uint64": "Q", "int64": "q",
