@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import math
-
 from collections.abc import Iterable
 
 from .raster import RasterContractError, RasterMetadata
@@ -13,12 +12,7 @@ def select_overview_factor(
     *,
     target_downsample: float,
 ) -> int:
-    """Select the coarsest available overview not exceeding requested reduction.
-
-    Factor 1 denotes the full-resolution image. Choosing an overview larger
-    than target_downsample would undersample the requested output, so it is
-    deliberately avoided. If no overview qualifies, return 1.
-    """
+    """Select the coarsest available overview not exceeding requested reduction."""
     if (
         isinstance(target_downsample, bool)
         or not isinstance(target_downsample, (int, float))
@@ -26,9 +20,18 @@ def select_overview_factor(
         or target_downsample < 1
     ):
         raise RasterContractError("Target downsample must be a number >= 1.")
-    factors = metadata.overview_factors
-    eligible = [factor for factor in factors if factor <= target_downsample]
+    eligible = (
+        factor for factor in metadata.overview_factors
+        if factor <= target_downsample
+    )
     return max(eligible, default=1)
+
+
+def _factor_interval(base: int, reduced: int, maximum: int) -> tuple[int, int]:
+    """Return integer factors satisfying ceil(base/factor) == reduced."""
+    lower = (base + reduced - 1) // reduced
+    upper = maximum if reduced == 1 else (base + reduced - 2) // (reduced - 1)
+    return lower, upper
 
 
 def overview_factors_from_dimensions(
@@ -36,39 +39,55 @@ def overview_factors_from_dimensions(
     base_height: int,
     overview_dimensions: Iterable[tuple[int, int]],
 ) -> tuple[int, ...]:
-    """Derive conservative integer overview factors from dimensions.
+    """Derive unique integer factors using bounded arithmetic, including odd grids.
 
-    Accepts only matching horizontal/vertical integer reductions and dimensions
-    consistent with ceil(base/factor), which accommodates odd-sized grids.
-    Invalid dimensions fail rather than silently entering the overview metadata.
+    The interval intersection avoids scanning every possible factor, which
+    would make a small metadata operation proportional to raster dimensions.
+    Only reduced-resolution dimensions consistent with ceil(base/factor) pass.
     """
     if any(
         isinstance(value, bool) or not isinstance(value, int) or value < 1
         for value in (base_width, base_height)
     ):
         raise RasterContractError("Base raster dimensions must be positive integers.")
-    factors = set()
-    for width, height in overview_dimensions:
+
+    maximum = max(base_width, base_height)
+    factors: set[int] = set()
+    for dimensions in overview_dimensions:
+        if (
+            not isinstance(dimensions, (tuple, list))
+            or len(dimensions) != 2
+        ):
+            raise RasterContractError("Overview dimensions must be width/height pairs.")
+        width, height = dimensions
         if any(
             isinstance(value, bool) or not isinstance(value, int) or value < 1
             for value in (width, height)
         ):
             raise RasterContractError("Overview dimensions must be positive integers.")
         if width >= base_width or height >= base_height:
-            raise RasterContractError("Overview dimensions must be smaller than the base grid.")
-        candidates = [
-            factor
-            for factor in range(2, max(base_width, base_height) + 1)
-            if width == (base_width + factor - 1) // factor
-            and height == (base_height + factor - 1) // factor
-        ]
-        if len(candidates) != 1:
+            raise RasterContractError(
+                "Overview dimensions must be smaller than the base grid."
+            )
+
+        width_min, width_max = _factor_interval(base_width, width, maximum)
+        height_min, height_max = _factor_interval(base_height, height, maximum)
+        lower = max(2, width_min, height_min)
+        upper = min(maximum, width_max, height_max)
+        if lower != upper:
             raise RasterContractError(
                 "Overview dimensions do not imply a unique integer reduction factor."
             )
-        factors.add(candidates[0])
+        factor = lower
+        if (
+            (base_width + factor - 1) // factor != width
+            or (base_height + factor - 1) // factor != height
+        ):
+            raise RasterContractError(
+                "Overview dimensions do not match a common integer reduction factor."
+            )
+        factors.add(factor)
     return tuple(sorted(factors))
-
 
 
 def overview_factors_from_tiff_directories(
