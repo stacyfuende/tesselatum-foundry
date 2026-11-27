@@ -210,23 +210,22 @@ def resample_raster_window(
                 col0 = math.floor(source_col_center)
                 row_fraction = source_row_center - row0
                 col_fraction = source_col_center - col0
-                neighbors = (
-                    sample(row0, col0),
-                    sample(row0, col0 + 1),
-                    sample(row0 + 1, col0),
-                    sample(row0 + 1, col0 + 1),
+                weighted_positions = (
+                    (row0, col0, (1 - row_fraction) * (1 - col_fraction)),
+                    (row0, col0 + 1, (1 - row_fraction) * col_fraction),
+                    (row0 + 1, col0, row_fraction * (1 - col_fraction)),
+                    (row0 + 1, col0 + 1, row_fraction * col_fraction),
                 )
-                valid = all(item[1] for item in neighbors)
+                weighted_samples = [
+                    (sample(row, col), weight)
+                    for row, col, weight in weighted_positions
+                    if weight > 0
+                ]
+                valid = bool(weighted_samples) and all(
+                    item[0][1] for item in weighted_samples
+                )
                 if valid:
-                    top = (
-                        neighbors[0][0] * (1 - col_fraction)
-                        + neighbors[1][0] * col_fraction
-                    )
-                    bottom = (
-                        neighbors[2][0] * (1 - col_fraction)
-                        + neighbors[3][0] * col_fraction
-                    )
-                    value = top * (1 - row_fraction) + bottom * row_fraction
+                    value = sum(item[0][0] * item[1] for item in weighted_samples)
                     valid = math.isfinite(value)
                 else:
                     value = float("nan")
