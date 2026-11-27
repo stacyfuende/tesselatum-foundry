@@ -44,7 +44,7 @@ def test_window_mask_respects_selected_band_order_and_nodata():
         bands=(2, 1),
         dtypes=("uint8", "uint8"),
         byte_order="little",
-        samples=bytes((0, 5, 255, 5, 2, 255, 3, 7)),
+        samples=bytes((0, 5, 255, 5, 255, 7, 3, 7)),
     )
     metadata = RasterMetadata(
         width=2, height=2, band_count=2, dtypes=("uint8", "uint8"),
