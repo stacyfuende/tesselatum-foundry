@@ -437,3 +437,6 @@ The current output media type, `application/vnd.tessellatum.raster-window`, iden
 The capability is cache-disabled: source range reads require a strong ETag, and this first execution contract does not yet define a complete cache identity over source validator, IFD selection, decoder implementation, and every read budget. A later publisher may serialize the validated raw window into a separately versioned interoperable raster format.
 
 This contract does not imply formal COG validation, general CRS transformation, rotated-grid resampling, arbitrary compression support, or multi-band arithmetic.
+
+
+External raster Geo-Cell bindings use `spatial.kind = raster` with an explicit CRS and declared width, height, band count, and optional sample dtypes/resolution. Vector bindings retain their required geometry-type declaration. The binding records metadata and a source reference, not a copy of the external raster.
