@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from tessellatum_foundry.sources import RasterContractError, RasterMetadata, select_overview_factor
+from tessellatum_foundry.sources import (\n    RasterContractError,\n    RasterMetadata,\n    select_overview_factor,\n)
 
 
 def metadata(factors):
