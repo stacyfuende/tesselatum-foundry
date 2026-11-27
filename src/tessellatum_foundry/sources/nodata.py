@@ -5,7 +5,7 @@ import math
 import struct
 from collections.abc import Iterable, Sequence
 
-from .raster import RasterContractError, RasterMetadata, RasterWindow
+from .raster import RasterContractError, RasterMetadata
 from .window_assembly import RasterWindowBuffer
 
 
@@ -44,9 +44,7 @@ def window_validity_mask(
     if not metadata.nodata:
         selected_nodata = (None,) * len(buffer.bands)
     samples = buffer.samples
-    sample_widths = tuple({"uint8": 1, "int8": 1, "uint16": 2, "int16": 2,
-                           "uint32": 4, "int32": 4, "uint64": 8, "int64": 8,
-                           "float32": 4, "float64": 8}[dtype] for dtype in buffer.dtypes)
+    widths = {"uint8": 1, "int8": 1, "uint16": 2, "int16": 2,\n              "uint32": 4, "int32": 4, "uint64": 8, "int64": 8,\n              "float32": 4, "float64": 8}\n    try:\n        sample_widths = tuple(widths[dtype] for dtype in buffer.dtypes)\n    except KeyError as error:\n        raise RasterContractError("Unsupported dtype for NoData mask.") from error
     pixel_width = sum(sample_widths)
     byte_order = "<" if buffer.byte_order == "little" else ">"
     fmt_by_dtype = {"uint8": "B", "int8": "b", "uint16": "H", "int16": "h",
