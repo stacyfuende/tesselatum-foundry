@@ -5,7 +5,9 @@ from copy import deepcopy
 import pytest
 
 from tessellatum_foundry.execution.experiments import (
+    ExperimentExecutionError,
     ExperimentPlanError,
+    execute_experiment,
     plan_experiment,
 )
 from tessellatum_foundry.validation.contracts import (
@@ -19,6 +21,8 @@ def experiment():
     return {
         "experiment_id": "threshold-comparison",
         "version": "1.0.0",
+        "title": "Threshold sensitivity",
+        "objective": "Compare parameter and method variants",
         "cell_template": {"cell_id": "measure", "version": "1.0.0"},
         "baseline_parameters": {"threshold": 0.5, "method_detail": "default"},
         "parameter_axes": {"threshold": [0.2, 0.5, 0.8], "scale": [10, 20]},
