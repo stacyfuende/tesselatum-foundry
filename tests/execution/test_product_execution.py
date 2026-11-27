@@ -253,6 +253,12 @@ def test_blueprint_dependency_becomes_recipe_edge_and_cell_output_binding():
     }
     inputs = execution_inputs()
     inputs["cell_templates"] = templates
+    inputs["resolved_input_bindings"] = {
+        "project.features": {
+            "source": "artifact",
+            "artifact": {"artifact_id": "roads-source", "version": "1.0.0"},
+        },
+    }
     compiled = compile_product_blueprint_recipe(
         plan,
         capabilities=registry,
