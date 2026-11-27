@@ -345,12 +345,25 @@ def execute_product_blueprint_plan(
         output_bindings=output_bindings,
         contracts=contracts,
     )
+    definitions = recipe_service.definitions
+    if definitions is None:
+        raise ProductExecutionPreconditionError(
+            "Recipe Execution Service must use an immutable VersionedDefinitionStore."
+        )
     try:
-        return recipe_service.execute(
-            recipe=compiled["recipe"],
-            cells=compiled["cells"],
-            capabilities=compiled["capabilities"],
+        for cell in compiled["cells"].values():
+            definitions.put_cell(cell, created_by="foundry-product-factory")
+        definitions.put_recipe(
+            compiled["recipe"], created_by="foundry-product-factory"
+        )
+        return recipe_service.execute_registered(
+            recipe_id=compiled["recipe"]["recipe_id"],
+            version=compiled["recipe"]["version"],
             actor_id=actor_id,
         )
     except RecipeExecutionPreconditionError as error:
         raise ProductExecutionPreconditionError(str(error)) from error
+    except (ValueError, OSError) as error:
+        raise ProductExecutionPreconditionError(
+            f"Immutable product definitions could not be registered: {error}"
+        ) from error
