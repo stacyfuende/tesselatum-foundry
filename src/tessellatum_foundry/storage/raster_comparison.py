@@ -54,7 +54,9 @@ def _decode_samples(artifact: RasterWindowArtifact) -> tuple[list[list[float]], 
     for pixel in range(count):
         cursor = pixel * pixel_stride
         for index, fmt in enumerate(formats):
-            band_values[index].append(float(struct.unpack_from(fmt, artifact.samples, cursor)[0]))
+            band_values[index].append(
+                float(struct.unpack_from(fmt, artifact.samples, cursor)[0])
+            )
             cursor += widths[index]
     return band_values, count
 
@@ -73,7 +75,9 @@ def _metrics(values_a: list[float], values_b: list[float]) -> dict[str, Any]:
     centered_a = [x - mean_a for x in values_a]
     centered_b = [x - mean_b for x in values_b]
     denom = math.sqrt(sum(x * x for x in centered_a) * sum(x * x for x in centered_b))
-    correlation = sum(x * y for x, y in zip(centered_a, centered_b)) / denom if denom else None
+    correlation = (
+        sum(x * y for x, y in zip(centered_a, centered_b)) / denom if denom else None
+    )
     return {
         "n": n,
         "bias_b_minus_a": bias,
@@ -101,10 +105,14 @@ def compare_raster_window_artifacts(
         raise RasterComparisonError(f"Invalid raster-window Artifact: {error}") from error
     ha, hb = a.header, b.header
     if ha.get("window") != hb.get("window"):
-        raise RasterComparisonError("Raster windows differ; comparison requires identical pixel windows.")
+        raise RasterComparisonError(
+            "Raster windows differ; comparison requires identical pixel windows."
+        )
     ga, gb = ha.get("grid", {}), hb.get("grid", {})
     if ga.get("crs") != gb.get("crs") or ga.get("transform") != gb.get("transform"):
-        raise RasterComparisonError("Raster grids differ; comparison requires identical CRS and transform.")
+        raise RasterComparisonError(
+            "Raster grids differ; comparison requires identical CRS and transform."
+        )
     if ha.get("bands") != hb.get("bands"):
         raise RasterComparisonError("Band selections differ; bands must match in order.")
     if ha.get("pixel_interleave") != "pixel" or hb.get("pixel_interleave") != "pixel":
@@ -115,7 +123,10 @@ def compare_raster_window_artifacts(
     vb, count_b = _decode_samples(b)
     if count != count_b:
         raise RasterComparisonError("Raster pixel counts differ.")
-    shared = [i for i, (valid_a, valid_b) in enumerate(zip(a.validity, b.validity)) if valid_a and valid_b]
+    shared = [
+        i for i, (valid_a, valid_b) in enumerate(zip(a.validity, b.validity))
+        if valid_a and valid_b
+    ]
     if not shared:
         raise RasterComparisonError("No pixels are valid in both artifacts.")
     results = []
@@ -123,7 +134,9 @@ def compare_raster_window_artifacts(
         aa = [va[band_index][i] for i in shared]
         bb = [vb[band_index][i] for i in shared]
         if not all(math.isfinite(x) for x in aa + bb):
-            raise RasterComparisonError("Non-finite samples are not supported in numeric comparison.")
+            raise RasterComparisonError(
+                "Non-finite samples are not supported in numeric comparison."
+            )
         results.append({"band": band_id, **_metrics(aa, bb)})
     return {
         "comparison": "raster-window-numeric",
