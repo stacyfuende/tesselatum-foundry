@@ -9,6 +9,9 @@ from tessellatum_foundry.execution.product_execution import (
 )
 
 
+VECTOR_MEDIA_TYPE = "application/vnd.tessellatum.spatial-feature-collection+json"
+
+
 def simple_blueprint():
     return {
         "blueprint_id": "buffer-product",
