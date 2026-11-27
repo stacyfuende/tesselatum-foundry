@@ -9,8 +9,8 @@ def main() -> None:
     contracts = ContractRegistry()
     implementations = ImplementationRegistry(contracts=contracts)
     capabilities = CapabilityRegistry(contracts=contracts)
-    if len(contracts.schemas) != 10:
-        raise SystemExit(f"Expected 10 installed schemas, found {len(contracts.schemas)}.")
+    if len(contracts.schemas) != 11:
+        raise SystemExit(f"Expected 11 installed schemas, found {len(contracts.schemas)}.")
     capabilities.get("vector.buffer", "1.0.0")
     capabilities.get("raster.window", "1.0.0")
     raster_manifest = implementations.get("raster-window-python", "1.0.0")
