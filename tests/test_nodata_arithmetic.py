@@ -56,7 +56,10 @@ def test_division_by_zero_is_invalid_not_infinite():
         buffer((8, 9, 10, 12)), buffer((2, 0, 5, 3)),
         metadata(), metadata(), operation="divide",
     )
-    assert unpack(result) == (4, float("nan"), 2, 4)
+    values = unpack(result)
+    assert values[0] == 4
+    assert math.isnan(values[1])
+    assert values[2:] == (2, 4)
     assert result.valid == (True, False, True, True)
 
 
