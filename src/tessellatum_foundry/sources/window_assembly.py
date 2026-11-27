@@ -96,8 +96,13 @@ def assemble_tiff_window(
             directory.tile_width * directory.tile_height
             * sum(_DTYPE_BYTES[dtype] for dtype in expected_dtypes)
         )
-        if len(tile.samples) != expected_tile_bytes or tile.sample_bytes != expected_tile_bytes:
-            raise RasterContractError("Decoded tile buffer length does not match its TIFF tile grid.")
+        expected_samples = directory.tile_width * directory.tile_height * len(expected_dtypes)
+        if (
+            len(tile.samples) != expected_tile_bytes
+            or tile.sample_bytes != expected_tile_bytes
+            or tile.sample_count != expected_samples
+        ):
+            raise RasterContractError("Decoded tile buffer length or sample count does not match its TIFF tile grid.")
 
         source_row = expected.window_row_offset - expected.tile_row_offset
         source_col = expected.window_column_offset - expected.tile_column_offset
