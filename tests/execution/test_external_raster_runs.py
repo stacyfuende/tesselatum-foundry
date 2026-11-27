@@ -107,6 +107,6 @@ def test_external_raster_factory_rejects_unsafe_or_inconsistent_declarations(
 def test_external_raster_factory_requires_exact_registered_capability(tmp_path):
     factory = make_factory(tmp_path)
     capability = factory.capabilities.get("raster.window", "1.0.0")
-    capability["cache_policy"] = "enabled"
+    capability["cache_policy"] = "allowed"
     with pytest.raises(ExecutionPreconditionError, match="differs"):
         factory.create_queued_run(cell=make_cell(), capability=capability)
