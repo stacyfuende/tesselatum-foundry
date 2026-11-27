@@ -331,6 +331,6 @@ and output whose length differs from the exact tile sample layout.
 
 Horizontal differencing (Predictor=2) is reversed for supported integer sample types using a bounded tile buffer; floating-point Predictor=2 is rejected. Predictor=1 remains supported.
 Raw decoded samples retain source byte order and use the same lazy pixel
-iterator as uncompressed tiles. Raw Deflate streams, LZW, JPEG, packed samples,
+iterator as uncompressed tiles. The unified `decode_tiff_tile` entry point dispatches only to the explicitly supported compression and predictor combinations. Raw Deflate streams, LZW, JPEG, packed samples,
 photometric conversion, and multi-tile window assembly are not supported.
 
