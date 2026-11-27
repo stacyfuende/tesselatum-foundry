@@ -25,7 +25,7 @@ class DecodedRasterTile:
     """
 
     selection: RasterTileSelection
-    samples: bytes
+    samples: bytes | bytearray
     byte_order: str
     sample_dtypes: tuple[str, ...]
     sample_count: int
@@ -60,7 +60,7 @@ _DTYPE_BYTES = {
 
 
 def decode_uncompressed_tiff_tile(
-    payload: bytes,
+    payload: bytes | bytearray,
     selection: RasterTileSelection,
     directory: TiffDirectory,
     metadata: RasterMetadata,
@@ -84,8 +84,8 @@ def decode_uncompressed_tiff_tile(
             raise ValueError(f"{name} must be a positive integer.")
     if byte_order not in ("little", "big"):
         raise RasterContractError("TIFF byte order must be 'little' or 'big'.")
-    if not isinstance(payload, bytes):
-        raise TypeError("TIFF tile payload must be bytes.")
+    if not isinstance(payload, (bytes, bytearray)):
+        raise TypeError("TIFF tile payload must be bytes or bytearray.")
     if not directory.tiled or directory.tile_width is None or directory.tile_height is None:
         raise RasterContractError("Tile decoding requires a tiled TIFF directory.")
     if directory.compression != 1:
@@ -285,8 +285,8 @@ def _undo_horizontal_predictor(
     tile_height: int,
     sample_dtypes: tuple[str, ...],
     byte_order: str,
-) -> bytes:
-    """Reverse TIFF Predictor=2 in-place on a bounded copy of one tile."""
+ ) -> bytearray:
+    """Reverse TIFF Predictor=2 in-place on one bounded mutable tile buffer."""
     if any(dtype.startswith("float") for dtype in sample_dtypes):
         raise RasterContractError("Horizontal predictor is supported only for integer samples.")
     widths = tuple(_DTYPE_BYTES[dtype] for dtype in sample_dtypes)
@@ -314,7 +314,7 @@ def _undo_horizontal_predictor(
                 output[current:current + sample_width] = value.to_bytes(
                     sample_width, byte_order
                 )
-    return bytes(output)
+    return output
 
 
 def _sample_offsets(widths: tuple[int, ...]) -> tuple[int, ...]:
