@@ -259,10 +259,10 @@ def test_deflate_decoder_enforces_compressed_input_budget():
 def test_deflate_decoder_rejects_predictors_and_unknown_compression():
     raw = bytes(16 * 16 * 3)
     payload, tile, layout = compressed_fixture(raw)
-    predicted = replace(layout, predictor=2)
-    with pytest.raises(RasterContractError, match="predictors"):
+    unsupported_predictor = replace(layout, predictor=3)
+    with pytest.raises(RasterContractError, match="Unsupported TIFF predictor"):
         decode_deflate_tiff_tile(
-            payload, tile, predicted, metadata(), byte_order="little"
+            payload, tile, unsupported_predictor, metadata(), byte_order="little"
         )
     unknown = replace(layout, compression=5)
     with pytest.raises(RasterContractError, match="Deflate compression"):
