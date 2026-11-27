@@ -244,7 +244,7 @@ def main() -> None:
             "source_crs": metadata.crs,
             "source_grid": [metadata.width, metadata.height],
             "output_window": [64, 64],
-            "artifact_checksum": artifact["checksum_sha256"],
+            "artifact_checksum": artifact["checksum"]["value"],
             "validation": report["overall_status"],
             "run_status": result["run"]["status"],
         }, indent=2))
