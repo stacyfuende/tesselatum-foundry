@@ -10,7 +10,13 @@ from .models import (
     SourceIntegrityError,
     SourceLimitExceeded,
 )
-from .nodata import build_validity_mask, sample_is_valid, window_validity_mask
+from .nodata import (
+    NoDataArithmeticResult,
+    apply_nodata_aware_binary,
+    build_validity_mask,
+    sample_is_valid,
+    window_validity_mask,
+)
 from .overview_selection import (
     SelectedTiffOverview,
     overview_factors_from_dimensions,
@@ -46,8 +52,8 @@ __all__ = [
     "RetrievedRasterTile", "read_selected_tiff_tiles", "DecodedRasterTile",
     "decode_uncompressed_tiff_tile", "decode_deflate_tiff_tile", "decode_tiff_tile",
     "RasterWindowBuffer", "assemble_tiff_window", "TiffWindowRead", "read_tiff_window",
-    "sample_is_valid",
-    "build_validity_mask", "window_validity_mask", "select_overview_factor",
+    "sample_is_valid", "build_validity_mask", "NoDataArithmeticResult",
+    "apply_nodata_aware_binary", "window_validity_mask", "select_overview_factor",
     "overview_factors_from_dimensions", "overview_factors_from_tiff_directories",
     "SelectedTiffOverview", "select_tiff_overview", "FeatureBatch",
     "FeatureBatchError", "FeatureExceedsBatchLimit", "FeatureReader",
