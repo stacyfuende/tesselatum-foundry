@@ -42,12 +42,15 @@ def compile_product_blueprint_recipe(
     contracts = contracts or ContractRegistry()
     if plan.get("status") != "planned" or plan.get("approval_required"):
         raise ProductExecutionPreconditionError(
-            "Only fully planned blueprints without pending approval can be compiled for execution."
+            "Only fully planned blueprints without pending approval can be "
+            "compiled for execution."
         )
     if not plan.get("plan_fingerprint") or not re.fullmatch(
         r"[a-f0-9]{64}", plan["plan_fingerprint"]
     ):
-        raise ProductExecutionPreconditionError("Plan fingerprint is missing or invalid.")
+        raise ProductExecutionPreconditionError(
+            "Plan fingerprint is missing or invalid."
+        )
 
     nodes = plan.get("nodes", [])
     if set(cell_templates) != {node["node_id"] for node in nodes}:
@@ -55,7 +58,9 @@ def compile_product_blueprint_recipe(
             "Cell templates must be supplied for every planned node and no others."
         )
     if not nodes or len({node["node_id"] for node in nodes}) != len(nodes):
-        raise ProductExecutionPreconditionError("Plan nodes are empty or contain duplicate IDs.")
+        raise ProductExecutionPreconditionError(
+            "Plan nodes are empty or contain duplicate IDs."
+        )
     node_ids = {node["node_id"] for node in nodes}
     fingerprint = plan["plan_fingerprint"]
     try:
@@ -93,7 +98,8 @@ def compile_product_blueprint_recipe(
             "version": version,
         }:
             raise ProductExecutionPreconditionError(
-                f"Cell template for {node_id!r} does not target {capability_id}@{version}."
+                f"Cell template for {node_id!r} does not target "
+                f"{capability_id}@{version}."
             )
 
         cell_id = "bp-" + hashlib.sha256(
@@ -107,7 +113,8 @@ def compile_product_blueprint_recipe(
                 upstream_id, output_port = source.split(".", 1)
                 if upstream_id not in node_ids:
                     raise ProductExecutionPreconditionError(
-                        f"Input {node_id}.{port_id} references unknown node {upstream_id!r}."
+                        f"Input {node_id}.{port_id} references unknown "
+                        f"node {upstream_id!r}."
                     )
                 inputs[port_id] = {
                     "source": "cell_output",
@@ -123,14 +130,16 @@ def compile_product_blueprint_recipe(
                 binding = resolved_input_bindings.get(key)
                 if binding is None:
                     raise ProductExecutionPreconditionError(
-                        f"Input {key!r} has not been resolved to an immutable Artifact or typed external source."
+                        f"Input {key!r} has not been resolved to an immutable "
+                        "Artifact or typed external source."
                     )
                 consumed_input_bindings.add(key)
                 if source.startswith("evidence:"):
                     evidence_id = source.split(":", 1)[1]
                     reference = next(
                         (
-                            item for item in plan.get("evidence", {}).get("provided_references", [])
+                            item
+                            for item in plan.get("evidence", {}).get("provided_references", [])
                             if item["id"] == evidence_id
                         ),
                         None,
@@ -141,7 +150,8 @@ def compile_product_blueprint_recipe(
                         or binding.get("reference", {}).get("uri") != reference["uri"]
                     ):
                         raise ProductExecutionPreconditionError(
-                            f"Evidence binding {key!r} does not preserve the supplied reference URI."
+                            f"Evidence binding {key!r} does not preserve "
+                            "the supplied reference URI."
                         )
                 inputs[port_id] = deepcopy(binding)
 
@@ -151,14 +161,16 @@ def compile_product_blueprint_recipe(
         template_outputs = template.get("output_contracts", {})
         if set(template_outputs) != set(output_ports):
             raise ProductExecutionPreconditionError(
-                f"Cell template for {node_id!r} must declare every exact capability output port."
+                f"Cell template for {node_id!r} must declare every "
+                "exact capability output port."
             )
         output_contracts = {}
         for port_id, port in output_ports.items():
             contract = deepcopy(template_outputs[port_id])
             if contract.get("data_kind") != port["data_kind"]:
                 raise ProductExecutionPreconditionError(
-                    f"Cell template output {node_id}.{port_id} has an incompatible data kind."
+                    f"Cell template output {node_id}.{port_id} has "
+                    "an incompatible data kind."
                 )
             spatial = port.get("spatial", {})
             if (
@@ -175,13 +187,19 @@ def compile_product_blueprint_recipe(
                 or not declared_geometry_types.issubset(allowed_geometry_types)
             ):
                 raise ProductExecutionPreconditionError(
-                    f"Cell template output {node_id}.{port_id} has missing or unsupported geometry types."
+                    f"Cell template output {node_id}.{port_id} has missing "
+                    "or unsupported geometry types."
                 )
             allowed_media_types = set(port.get("media_types", []))
             declared_media_types = set(contract.get("media_types", []))
-            if declared_media_types and allowed_media_types and not declared_media_types.issubset(allowed_media_types):
+            if (
+                declared_media_types
+                and allowed_media_types
+                and not declared_media_types.issubset(allowed_media_types)
+            ):
                 raise ProductExecutionPreconditionError(
-                    f"Cell template output {node_id}.{port_id} declares unsupported media types."
+                    f"Cell template output {node_id}.{port_id} declares "
+                    "unsupported media types."
                 )
             output_contracts[port_id] = contract
 
@@ -222,7 +240,8 @@ def compile_product_blueprint_recipe(
     expected_output_ids = {item["id"] for item in plan.get("outputs", [])}
     if set(output_bindings) != expected_output_ids:
         raise ProductExecutionPreconditionError(
-            "Every declared product output must map to exactly one reasoning node output."
+            "Every declared product output must map to exactly one "
+            "reasoning node output."
         )
     for output_id, binding in sorted(output_bindings.items()):
         node_id, output_port = binding.get("node_id"), binding.get("output_port")
@@ -238,7 +257,12 @@ def compile_product_blueprint_recipe(
 
     blueprint = plan.get("blueprint", {})
     recipe = {
-        "recipe_id": "product-" + re.sub(r"[^A-Za-z0-9._-]", "-", blueprint["blueprint_id"])[:100] + "-" + compilation_fingerprint[:12],
+        "recipe_id": (
+            "product-"
+            + re.sub(r"[^A-Za-z0-9._-]", "-", blueprint["blueprint_id"])[:100]
+            + "-"
+            + compilation_fingerprint[:12]
+        ),
         "version": blueprint["version"],
         "title": blueprint["title"],
         "nodes": [
@@ -287,25 +311,28 @@ def execute_product_blueprint_plan(
     requested_mode: str | None = None,
     contracts: ContractRegistry | None = None,
 ) -> RecipeExecutionResult:
-    """Re-plan, fail closed on review gates, then hand the compiled Recipe to Run service."""
+    """Re-plan, fail closed on review gates, then hand off to the Run service."""
     fresh_plan = plan_product_blueprint(
         blueprint, capabilities=capabilities, policy=policy,
         requested_mode=requested_mode, contracts=contracts
     )
     if fresh_plan["plan_fingerprint"] != plan.get("plan_fingerprint"):
         raise ProductExecutionPreconditionError(
-            "Blueprint plan is stale; re-plan against the current policy and capability registry."
+            "Blueprint plan is stale; re-plan against the current policy "
+            "and capability registry."
         )
     if fresh_plan["status"] != "planned" or fresh_plan["approval_required"]:
         raise ProductExecutionPreconditionError(
-            "Blueprint is blocked or requires explicit authorisation; no Runs were started."
+            "Blueprint is blocked or requires explicit authorisation; "
+            "no Runs were started."
         )
     if any(
         decision.get("mode") != "automatic"
         for decision in fresh_plan.get("autonomy_decisions", [])
     ):
         raise ProductExecutionPreconditionError(
-            "Guided or explicit decisions must be resolved before execution; no Runs were started."
+            "Guided or explicit decisions must be resolved before execution; "
+            "no Runs were started."
         )
 
     compiled = compile_product_blueprint_recipe(
