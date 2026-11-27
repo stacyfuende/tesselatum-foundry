@@ -8,10 +8,7 @@ from copy import deepcopy
 from typing import Any
 
 from tessellatum_foundry.execution.capabilities import CapabilityRegistry
-from tessellatum_foundry.execution.product_blueprints import (
-    ProductBlueprintPlanError,
-    plan_product_blueprint,
-)
+from tessellatum_foundry.execution.product_blueprints import plan_product_blueprint
 from tessellatum_foundry.execution.recipes import (
     RecipeExecutionPreconditionError,
     RecipeExecutionResult,
@@ -52,6 +49,10 @@ def compile_product_blueprint_recipe(
         raise ProductExecutionPreconditionError("Plan fingerprint is missing or invalid.")
 
     nodes = plan.get("nodes", [])
+    if set(cell_templates) != {node["node_id"] for node in nodes}:
+        raise ProductExecutionPreconditionError(
+            "Cell templates must be supplied for every planned node and no others."
+        )
     if not nodes or len({node["node_id"] for node in nodes}) != len(nodes):
         raise ProductExecutionPreconditionError("Plan nodes are empty or contain duplicate IDs.")
     node_ids = {node["node_id"] for node in nodes}
@@ -59,6 +60,7 @@ def compile_product_blueprint_recipe(
     cell_refs: dict[str, dict[str, str]] = {}
     cells: dict[tuple[str, str], dict[str, Any]] = {}
     capability_map: dict[tuple[str, str], dict[str, Any]] = {}
+    consumed_input_bindings: set[str] = set()
 
     for node in nodes:
         node_id = node["node_id"]
@@ -106,6 +108,7 @@ def compile_product_blueprint_recipe(
                     raise ProductExecutionPreconditionError(
                         f"Input {key!r} has not been resolved to an immutable Artifact or typed external source."
                     )
+                consumed_input_bindings.add(key)
                 if source.startswith("evidence:"):
                     evidence_id = source.split(":", 1)[1]
                     reference = next(
@@ -150,6 +153,12 @@ def compile_product_blueprint_recipe(
         key = (cell_id, "1.0.0")
         cells[key] = cell
         capability_map[(capability_id, version)] = capability
+
+    if set(resolved_input_bindings) != consumed_input_bindings:
+        unused = sorted(set(resolved_input_bindings) - consumed_input_bindings)
+        raise ProductExecutionPreconditionError(
+            "Resolved input bindings contain unused entries: " + ", ".join(unused)
+        )
 
     recipe_edges = []
     for node in nodes:
