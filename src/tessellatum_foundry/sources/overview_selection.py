@@ -69,3 +69,20 @@ def overview_factors_from_dimensions(
             )
         factors.add(candidates[0])
     return tuple(sorted(factors))
+
+\n\ndef overview_factors_from_tiff_directories(
+    base_width: int,
+    base_height: int,
+    directories: Iterable[object],
+) -> tuple[int, ...]:
+    """Derive overview factors from reduced-resolution TIFF directories.
+
+    Only directories marked with NewSubfileType bit 0 are considered. The
+    caller must supply directories from a bounded, validated TIFF index.
+    """
+    reduced = [
+        (directory.width, directory.height)
+        for directory in directories
+        if getattr(directory, "new_subfile_type", 0) & 1
+    ]
+    return overview_factors_from_dimensions(base_width, base_height, reduced)
