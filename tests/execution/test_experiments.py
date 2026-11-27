@@ -103,3 +103,31 @@ def test_experiment_manifest_schema_rejects_overlarge_variant_limit(experiment):
     experiment["max_variants"] = 101
     with pytest.raises(ContractValidationError):
         ContractRegistry().validate("experiment.schema.json", experiment)
+
+
+def test_execute_experiment_captures_partial_failures_and_comparisons(experiment, cell):
+    plans = plan_experiment(experiment, cell)[:3]
+
+    def execute_variant(variant_cell, plan):
+        if plan["parameters"]["threshold"] == 0.5:
+            raise RuntimeError("fixture failure")
+        return {"value": plan["parameters"]["threshold"]}
+
+    report = execute_experiment(
+        plans,
+        execute_variant=execute_variant,
+        compare_variants=lambda a, b, pa, pb: {"delta": b["value"] - a["value"]},
+    )
+    assert report["variant_count"] == 3
+    assert report["succeeded"] == 2
+    assert report["failed"] == 1
+    assert report["variants"][1]["status"] == "failed"
+    assert len(report["comparisons"]) == 1
+    assert report["comparisons"][0]["metrics"]["delta"] == pytest.approx(0.6)
+
+
+def test_execute_experiment_requires_bounded_plans():
+    with pytest.raises(ExperimentExecutionError, match="1 to 100"):
+        execute_experiment([], execute_variant=lambda cell, plan: None)
+    with pytest.raises(ExperimentExecutionError, match="callback"):
+        execute_experiment([{"variant_key": "v", "cell": {}}], execute_variant=None)
