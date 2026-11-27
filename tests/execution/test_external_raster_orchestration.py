@@ -46,7 +46,7 @@ def tiled_geotiff():
             entries[index] = struct.pack("<HHII", tag, 4, 1, pixel_offset)
     header = b"II" + struct.pack("<HI", 42, ifd_offset)
     directory = struct.pack("<H", len(entries)) + b"".join(entries) + struct.pack("<I", 0)
-    pixels = bytes((index % 251 for index in range(512)))
+    pixels = bytes(index % 251 for index in range(512))
     return header + directory + bytes(extra) + pixels
 
 
