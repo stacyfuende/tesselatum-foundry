@@ -26,4 +26,4 @@ Artifact publication is immutable and content-addressed. If Artifact metadata co
 
 ## Consequences
 
-Raster execution now has a real control-plane-to-Artifact path without ingesting source datasets or inventing worker infrastructure. The implementation manifest remains `not_run` until CI validates the end-to-end suite; conformance must not be pre-claimed.
+Raster execution now has a real control-plane-to-Artifact path without ingesting source datasets or inventing worker infrastructure. The implementation manifest was promoted to `passed` after CI run #1033 completed the end-to-end suite: 464 passed, 2 skipped. The report is linked in the manifest.
