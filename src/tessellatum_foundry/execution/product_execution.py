@@ -106,6 +106,23 @@ def compile_product_blueprint_recipe(
                     raise ProductExecutionPreconditionError(
                         f"Input {key!r} has not been resolved to an immutable Artifact or typed external source."
                     )
+                if source.startswith("evidence:"):
+                    evidence_id = source.split(":", 1)[1]
+                    reference = next(
+                        (
+                            item for item in plan.get("evidence", {}).get("provided_references", [])
+                            if item["id"] == evidence_id
+                        ),
+                        None,
+                    )
+                    if (
+                        reference is None
+                        or binding.get("source") != "external"
+                        or binding.get("reference", {}).get("uri") != reference["uri"]
+                    ):
+                        raise ProductExecutionPreconditionError(
+                            f"Evidence binding {key!r} does not preserve the supplied reference URI."
+                        )
                 inputs[port_id] = deepcopy(binding)
 
         output_contracts = {}
