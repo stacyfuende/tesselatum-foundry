@@ -128,15 +128,45 @@ def compile_product_blueprint_recipe(
                         )
                 inputs[port_id] = deepcopy(binding)
 
+        output_ports = {
+            port["port_id"]: port for port in capability.get("output_ports", [])
+        }
+        template_outputs = template.get("output_contracts", {})
+        if set(template_outputs) != set(output_ports):
+            raise ProductExecutionPreconditionError(
+                f"Cell template for {node_id!r} must declare every exact capability output port."
+            )
         output_contracts = {}
-        for port in capability.get("output_ports", []):
+        for port_id, port in output_ports.items():
+            contract = deepcopy(template_outputs[port_id])
+            if contract.get("data_kind") != port["data_kind"]:
+                raise ProductExecutionPreconditionError(
+                    f"Cell template output {node_id}.{port_id} has an incompatible data kind."
+                )
             spatial = port.get("spatial", {})
-            contract = {"data_kind": port["data_kind"]}
-            if port.get("media_types"):
-                contract["media_types"] = list(port["media_types"])
-            if spatial.get("geometry_types"):
-                contract["geometry_types"] = list(spatial["geometry_types"])
-            output_contracts[port["port_id"]] = contract
+            if (
+                port["data_kind"] in {"vector", "raster", "point_cloud", "mesh"}
+                or spatial.get("crs_required")
+            ) and contract.get("crs") is None:
+                raise ProductExecutionPreconditionError(
+                    f"Cell template output {node_id}.{port_id} must declare its CRS."
+                )
+            allowed_geometry_types = set(spatial.get("geometry_types", []))
+            declared_geometry_types = set(contract.get("geometry_types", []))
+            if allowed_geometry_types and (
+                not declared_geometry_types
+                or not declared_geometry_types.issubset(allowed_geometry_types)
+            ):
+                raise ProductExecutionPreconditionError(
+                    f"Cell template output {node_id}.{port_id} has missing or unsupported geometry types."
+                )
+            allowed_media_types = set(port.get("media_types", []))
+            declared_media_types = set(contract.get("media_types", []))
+            if declared_media_types and allowed_media_types and not declared_media_types.issubset(allowed_media_types):
+                raise ProductExecutionPreconditionError(
+                    f"Cell template output {node_id}.{port_id} declares unsupported media types."
+                )
+            output_contracts[port_id] = contract
 
         cell = {
             "cell_id": cell_id,
