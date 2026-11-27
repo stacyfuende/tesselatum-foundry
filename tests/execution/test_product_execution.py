@@ -184,3 +184,125 @@ def test_evidence_binding_must_preserve_declared_source_uri():
             capabilities=registry,
             **inputs,
         )
+
+
+
+def test_blueprint_dependency_becomes_recipe_edge_and_cell_output_binding():
+    registry = CapabilityRegistry()
+    blueprint = {
+        "blueprint_id": "reproject-and-buffer",
+        "version": "1.0.0",
+        "title": "Reproject and buffer",
+        "intent": {"outcome": "Buffer projected roads", "audience": "Planner"},
+        "evidence": {"requirements": []},
+        "reasoning": {
+            "nodes": [
+                {
+                    "id": "project",
+                    "capability": "vector.reproject",
+                    "capability_version": "1.0.0",
+                    "inputs": {"features": "input:roads"},
+                    "parameters": {"target_crs": {"authority": "EPSG", "code": 32737}},
+                },
+                {
+                    "id": "buffer",
+                    "capability": "vector.buffer",
+                    "capability_version": "1.0.0",
+                    "inputs": {"features": "project.result"},
+                    "parameters": {"distance": 500, "unit": "metre"},
+                },
+            ],
+        },
+        "outputs": [{
+            "id": "access-layer",
+            "product_type": "dataset",
+            "experience": "Projected road buffers",
+        }],
+        "acceptance": {"checks": [{
+            "id": "valid-output",
+            "kind": "computation",
+            "description": "Output geometries are valid",
+        }]},
+    }
+    plan = plan_product_blueprint(blueprint, capabilities=registry)
+    project_output = {
+        "data_kind": "vector",
+        "media_types": ["application/vnd.tessellatum.spatial-feature-collection+json"],
+        "crs": {"authority": "EPSG", "code": 32737},
+        "geometry_types": [
+            "Point", "MultiPoint", "LineString", "MultiLineString",
+            "Polygon", "MultiPolygon", "GeometryCollection",
+        ],
+    }
+    templates = execution_inputs()["cell_templates"]
+    templates["project"] = {
+        "capability": {"capability_id": "vector.reproject", "version": "1.0.0"},
+        "output_contracts": {"result": project_output},
+    }
+    templates["buffer"]["constraints"] = {
+        "measurement_crs": {"authority": "EPSG", "code": 32737},
+        "linear_unit": "metre",
+    }
+    templates["buffer"]["output_contracts"] = {
+        "result": {
+            "data_kind": "vector",
+            "media_types": ["application/vnd.tessellatum.spatial-feature-collection+json"],
+            "crs": {"authority": "EPSG", "code": 32737},
+            "geometry_types": ["Polygon", "MultiPolygon"],
+        },
+    }
+    inputs = execution_inputs()
+    inputs["cell_templates"] = templates
+    compiled = compile_product_blueprint_recipe(
+        plan,
+        capabilities=registry,
+        **inputs,
+    )
+
+    assert compiled["recipe"]["edges"] == [{
+        "from": {"node_id": "project", "output_port": "result"},
+        "to": {"node_id": "buffer", "input_port": "features"},
+    }]
+    buffer_cell = next(
+        cell for cell in compiled["cells"].values()
+        if cell["capability"]["capability_id"] == "vector.buffer"
+    )
+    project_cell = next(
+        cell for cell in compiled["cells"].values()
+        if cell["capability"]["capability_id"] == "vector.reproject"
+    )
+    assert buffer_cell["inputs"]["features"] == {
+        "source": "cell_output",
+        "cell_id": project_cell["cell_id"],
+        "cell_version": project_cell["version"],
+        "output_port": "result",
+    }
+
+
+def test_automatic_plan_is_handed_to_existing_recipe_run_service():
+    registry = CapabilityRegistry()
+    blueprint = simple_blueprint()
+    plan = plan_product_blueprint(blueprint, capabilities=registry)
+
+    class CaptureRecipeService:
+        called = False
+
+        def execute(self, **kwargs):
+            self.called = True
+            self.arguments = kwargs
+            return "run-result"
+
+    service = CaptureRecipeService()
+    result = execute_product_blueprint_plan(
+        blueprint,
+        plan,
+        capabilities=registry,
+        recipe_service=service,
+        actor_id="test-actor",
+        **execution_inputs(),
+    )
+
+    assert result == "run-result"
+    assert service.called
+    assert service.arguments["actor_id"] == "test-actor"
+    assert service.arguments["recipe"]["metadata"]["product_plan_fingerprint"] == plan["plan_fingerprint"]
