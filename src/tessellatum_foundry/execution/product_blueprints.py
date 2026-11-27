@@ -316,6 +316,7 @@ def plan_product_blueprint(
             }
             for node_id in order if node_id in resolved
         ],
+        "evidence": deepcopy(blueprint["evidence"]),
         "outputs": deepcopy(blueprint["outputs"]),
         "autonomy_decisions": decisions,
         "missing_capabilities": missing_capabilities,
