@@ -38,7 +38,8 @@ def test_capability_profile_contributes_risk_baseline(policy):
     capability = {"autonomy": {"impact": "moderate", "reversibility": "reversible"}}
     result = evaluate_autonomy("read-source", {}, policy, capability=capability)
     assert result["context"]["impact"] == "moderate"
-    assert result["mode"] == "automatic"
+    assert result["mode"] == "guided"
+    assert any("Incomplete capability autonomy declaration" in reason for reason in result["reasons"])
 
 
 def test_irreversible_action_requires_explicit_authorisation(policy):
