@@ -149,7 +149,8 @@ def decode_uncompressed_tiff_tile(
     try:
         sample_widths = tuple(_DTYPE_BYTES[dtype] for dtype in dtypes)
     except KeyError as error:
-        raise RasterContractError("TIFF sample dtype is unsupported or not byte-aligned.") from error
+        message = "TIFF sample dtype is unsupported or not byte-aligned."
+        raise RasterContractError(message) from error
 
     pixels = directory.tile_width * directory.tile_height
     if pixels > max_pixels:
