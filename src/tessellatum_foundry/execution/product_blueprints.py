@@ -147,6 +147,22 @@ def plan_product_blueprint(
                                 "node_id": node_id,
                                 "message": f"Node {source_node!r} has no output port {output_port!r}.",
                             })
+                        else:
+                            source_port = next(
+                                item for item in upstream["capability"].get("output_ports", [])
+                                if item["port_id"] == output_port
+                            )
+                            target_kind = port_map.get(port_id, {}).get("data_kind")
+                            source_kind = source_port.get("data_kind")
+                            if target_kind not in {None, "any"} and source_kind not in {target_kind, "any"}:
+                                findings.append({
+                                    "code": "incompatible_data_kind",
+                                    "node_id": node_id,
+                                    "message": (
+                                        f"Input {port_id!r} expects {target_kind!r}, but "
+                                        f"{source_node}.{output_port} produces {source_kind!r}."
+                                    ),
+                                })
 
         for dependency in dependencies[node_id]:
             if dependency not in node_by_id:
