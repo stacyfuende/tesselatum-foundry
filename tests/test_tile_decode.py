@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import replace
+import struct
 
 import pytest
 
@@ -69,6 +70,32 @@ def test_decodes_uncompressed_chunky_samples_without_copy_or_rescaling():
     assert result.sample_count == 16 * 16 * 2
     assert result.sample_bytes == len(payload)
     assert result.byte_order == "little"
+
+
+def test_iter_pixels_unpacks_chunky_samples_in_source_byte_order():
+    source = metadata()
+    layout = directory()
+    tile = selection()
+    payload = struct.pack("<BH", 7, 513) * (16 * 16)
+    result = decode_uncompressed_tiff_tile(
+        payload, tile, layout, source, byte_order="little"
+    )
+
+    pixels = result.iter_pixels()
+    assert next(pixels) == (7, 513)
+    assert next(pixels) == (7, 513)
+
+
+def test_iter_pixels_supports_big_endian_and_planar_samples():
+    source = metadata()
+    layout = directory(planar=2)
+    tile = selection(band=2, block=3, length=16 * 16 * 2)
+    payload = struct.pack(">H", 1025) * (16 * 16)
+    result = decode_uncompressed_tiff_tile(
+        payload, tile, layout, source, byte_order="big"
+    )
+
+    assert next(result.iter_pixels()) == (1025,)
 
 
 def test_edge_tile_payload_still_uses_full_encoded_tile_dimensions():
