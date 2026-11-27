@@ -157,6 +157,8 @@ def evaluate_autonomy(
         "context": resolved,
         "matched_rules": matched,
         "hard_stops": triggered,
-        "reasons": list(dict.fromkeys(reasons)) or ["Policy default applies; no escalation matched."],
+        "reasons": list(dict.fromkeys(reasons)) or [
+            "Policy default applies; no escalation matched."
+        ],
         "record_decision": policy.get("record_decisions", True),
     }
