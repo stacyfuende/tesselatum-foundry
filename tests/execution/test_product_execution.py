@@ -178,7 +178,10 @@ def test_evidence_binding_must_preserve_declared_source_uri():
         },
     }
 
-    with pytest.raises(ProductExecutionPreconditionError, match="preserve the supplied reference URI"):
+    with pytest.raises(
+        ProductExecutionPreconditionError,
+        match="preserve the supplied reference URI",
+    ):
         compile_product_blueprint_recipe(
             plan,
             capabilities=registry,
@@ -311,7 +314,10 @@ def test_automatic_plan_is_handed_to_existing_recipe_run_service():
     assert result == "run-result"
     assert service.called
     assert service.arguments["actor_id"] == "test-actor"
-    assert service.arguments["recipe"]["metadata"]["product_plan_fingerprint"] == plan["plan_fingerprint"]
+    assert (
+        service.arguments["recipe"]["metadata"]["product_plan_fingerprint"]
+        == plan["plan_fingerprint"]
+    )
 
 
 def test_compilation_identity_changes_when_resolved_artifact_changes():
@@ -323,7 +329,9 @@ def test_compilation_identity_changes_when_resolved_artifact_changes():
         plan, capabilities=registry, **inputs
     )
     changed = execution_inputs()
-    changed["resolved_input_bindings"]["buffer.features"]["artifact"]["version"] = "2.0.0"
+    changed["resolved_input_bindings"]["buffer.features"]["artifact"]["version"] = (
+        "2.0.0"
+    )
     second = compile_product_blueprint_recipe(
         plan, capabilities=registry, **changed
     )
