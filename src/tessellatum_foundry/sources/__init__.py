@@ -6,6 +6,7 @@ from .batches import (
     FeatureExceedsBatchLimit,
     iter_feature_batches,
 )
+from .cog_structure import TiffStructureAssessment, assess_cog_structure
 from .http import HttpSourceAdapter, SourceAccessError
 from .local import LocalFileSourceAdapter
 from .models import (
@@ -14,32 +15,39 @@ from .models import (
     SourceIntegrityError,
     SourceLimitExceeded,
 )
+from .nodata import build_validity_mask, sample_is_valid, window_validity_mask
+from .overview_selection import (
+    overview_factors_from_dimensions,
+    overview_factors_from_tiff_directories,
+    select_overview_factor,
+)
 from .protocols import FeatureReader, RangeSourceAdapter, SourceAdapter
-from .raster import BudgetedRasterRangeReader, RasterContractError, RasterMetadata, RasterWindow
+from .raster import (
+    BudgetedRasterRangeReader,
+    RasterContractError,
+    RasterMetadata,
+    RasterWindow,
+)
 from .readers import (
     FeatureReaderError,
     GeoJsonFeatureCollectionReader,
     NdjsonFeatureReader,
 )
-from .stream import ExternalFeatureStreamError, iter_external_feature_batches
 from .stac import StacResolutionError, parse_stac_item, resolve_stac_asset
 from .stac_client import StacItemSourceResolver
-from .stac_search import StacApiSearchClient, StacSearchError
 from .stac_http import StacSearchTransportError, UrllibStacSearchTransport
-from .cog_structure import TiffStructureAssessment, assess_cog_structure
-from .tiff import TiffDirectory, TiffFormatError, TiffLayout, TiffRaster, TiffRangeReader
-from .tile_selection import RasterTileSelection, select_tiff_tiles
-from .tile_reads import RetrievedRasterTile, read_selected_tiff_tiles
-from .window_assembly import RasterWindowBuffer, assemble_tiff_window
-from .nodata import build_validity_mask, sample_is_valid, window_validity_mask
-from .overview_selection import overview_factors_from_dimensions, overview_factors_from_tiff_directories, select_overview_factor
-from .overview_selection import select_overview_factor
+from .stac_search import StacApiSearchClient, StacSearchError
+from .stream import ExternalFeatureStreamError, iter_external_feature_batches
 from .tile_decode import (
     DecodedRasterTile,
     decode_deflate_tiff_tile,
     decode_tiff_tile,
     decode_uncompressed_tiff_tile,
 )
+from .tile_reads import RetrievedRasterTile, read_selected_tiff_tiles
+from .tile_selection import RasterTileSelection, select_tiff_tiles
+from .tiff import TiffDirectory, TiffFormatError, TiffLayout, TiffRaster, TiffRangeReader
+from .window_assembly import RasterWindowBuffer, assemble_tiff_window
 
 __all__ = [
     "ExternalDataReference",
@@ -68,8 +76,8 @@ __all__ = [
     "build_validity_mask",
     "window_validity_mask",
     "select_overview_factor",
-    "overview_factors_from_dimensions",\n    "overview_factors_from_tiff_directories",
-    "select_overview_factor",
+    "overview_factors_from_dimensions",
+    "overview_factors_from_tiff_directories",
     "FeatureBatch",
     "FeatureBatchError",
     "FeatureExceedsBatchLimit",
