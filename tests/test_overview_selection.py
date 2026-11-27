@@ -36,7 +36,9 @@ def test_rejects_invalid_downsample_target(target):
     with pytest.raises(RasterContractError):
         select_overview_factor(metadata((2, 4)), target_downsample=target)
 
-\n\ndef test_derives_overview_factors_from_odd_grid_dimensions():
+
+
+def test_derives_overview_factors_from_odd_grid_dimensions():
     assert overview_factors_from_dimensions(
         5, 5, ((3, 3), (2, 2))
     ) == (2, 3)
