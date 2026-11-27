@@ -314,6 +314,8 @@ over the configured decoded-byte or pixel limits. It does not yet decompress
 Deflate/LZW/JPEG, undo predictors, normalize byte order, convert photometric
 interpretations, rescale samples, or assemble a multi-tile raster window.
 The returned sample bytes retain the source TIFF byte order; consumers must
-interpret them using the returned dtype and byte-order metadata. This is a
-bounded raw-sample extraction primitive, not yet a general-purpose raster
-decoder.
+interpret them using the returned dtype and byte-order metadata. Its lazy
+`iter_pixels()` interface unpacks one pixel tuple at a time (interleaved bands
+for chunky tiles, one selected band for planar tiles), without materializing a
+full decoded array. This is a bounded raw-sample extraction primitive, not yet
+a general-purpose raster decoder.
