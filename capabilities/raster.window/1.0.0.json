@@ -1,0 +1,99 @@
+{
+  "capability_id": "raster.window",
+  "version": "1.0.0",
+  "name": "Raster window extraction",
+  "description": "Read a bounded pixel window and selected bands from an externally held tiled TIFF/BigTIFF source, selecting a concrete base or overview IFD.",
+  "category": "raster",
+  "input_ports": [
+    {
+      "port_id": "raster",
+      "data_kind": "raster",
+      "required": true,
+      "accepted_media_types": [
+        "image/tiff",
+        "image/geotiff",
+        "application/geotiff"
+      ],
+      "spatial": {
+        "crs_required": true
+      }
+    }
+  ],
+  "parameter_schema": {
+    "type": "object",
+    "properties": {
+      "row_offset": {
+        "type": "integer",
+        "minimum": 0
+      },
+      "column_offset": {
+        "type": "integer",
+        "minimum": 0
+      },
+      "height": {
+        "type": "integer",
+        "minimum": 1
+      },
+      "width": {
+        "type": "integer",
+        "minimum": 1
+      },
+      "bands": {
+        "type": "array",
+        "items": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "uniqueItems": true
+      },
+      "target_downsample": {
+        "type": "number",
+        "exclusiveMinimum": 0,
+        "default": 1
+      }
+    },
+    "required": [
+      "row_offset",
+      "column_offset",
+      "height",
+      "width"
+    ],
+    "additionalProperties": false
+  },
+  "output_ports": [
+    {
+      "port_id": "window",
+      "data_kind": "raster",
+      "media_types": [
+        "application/vnd.tessellatum.raster-window"
+      ],
+      "spatial": {
+        "crs_required": true,
+        "same_crs_as": "raster"
+      }
+    }
+  ],
+  "determinism": "deterministic",
+  "preconditions": [
+    "The source is a tiled TIFF or BigTIFF with a strong ETag for range-read consistency.",
+    "The source CRS is explicitly resolved by the supported GeoTIFF GeoKey resolver.",
+    "The requested window is expressed in pixel coordinates on the selected base or overview grid.",
+    "The selected source IFD and every requested tile are within configured directory, request, byte, tile, decode, and output budgets.",
+    "The selected bands exist in the source raster."
+  ],
+  "validation_requirements": [
+    "The output byte length matches the declared window dimensions and selected sample dtypes.",
+    "The output window and selected bands match the normalized request.",
+    "The selected overview factor and IFD are recorded in immutable Run provenance.",
+    "The output grid transform and CRS are derived from the selected TIFF directory.",
+    "NoData validity is represented explicitly and is not inferred from pixel values alone."
+  ],
+  "cache_policy": "disabled",
+  "tags": [
+    "tiff",
+    "bigtiff",
+    "window",
+    "overview",
+    "external-data"
+  ]
+}
