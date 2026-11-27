@@ -31,7 +31,6 @@ def select_overview_factor(
     return max(eligible, default=1)
 
 
-
 def overview_factors_from_dimensions(
     base_width: int,
     base_height: int,
@@ -70,7 +69,9 @@ def overview_factors_from_dimensions(
         factors.add(candidates[0])
     return tuple(sorted(factors))
 
-\n\ndef overview_factors_from_tiff_directories(
+
+
+def overview_factors_from_tiff_directories(
     base_width: int,
     base_height: int,
     directories: Iterable[object],
