@@ -382,3 +382,12 @@ every selected band is valid; when a window has no NoData metadata, all pixels
 are treated as valid. The mask follows the assembled window's selected band
 order. These helpers do not yet perform masked arithmetic, interpolation,
 resampling or NoData propagation between derived outputs.
+
+## Raster overview selection
+
+`select_overview_factor` chooses the coarsest overview whose reduction factor
+does not exceed the requested downsample target. This conservative policy
+avoids selecting an overview coarser than the requested output scale. Factor
+1 (the full-resolution source) is returned when no overview qualifies.
+The selector is independent of I/O and does not yet inspect overview IFD
+pixel data or automatically derive target scale from a destination grid.
