@@ -289,6 +289,7 @@ def plan_product_blueprint(
     plan_material = {
         "blueprint": blueprint,
         "policy": policy,
+        "requested_mode": requested_mode,
         "capabilities": capability_fingerprints,
     }
     plan_fingerprint = hashlib.sha256(json.dumps(
