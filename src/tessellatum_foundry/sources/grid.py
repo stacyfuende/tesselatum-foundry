@@ -137,17 +137,8 @@ def resample_raster_window(
         raise RasterContractError("Raster resampling requires an identical, explicit CRS.")
     _north_up(source_metadata)
     _north_up(destination)
-    if (
-        source.window.height < 1
-        or source.window.width < 1
-        or source.window.row_offset + source.window.height > source_metadata.height
-        or source.window.column_offset + source.window.width > source_metadata.width
-    ):
-        raise RasterContractError("Source buffer window is outside the source grid.")
-    if (
-        source.bands != (source.window.bands or (1,))
-        or source.dtypes != (source_metadata.dtypes[source.bands[0] - 1],)
-    ):
+    source.window.validate_against(source_metadata)
+    if source.bands != (1,) or source.dtypes != (source_metadata.dtypes[0],):
         raise RasterContractError("Source raster buffer does not match its metadata.")
     if isinstance(max_output_bytes, bool) or not isinstance(max_output_bytes, int) or max_output_bytes < 1:
         raise RasterContractError("max_output_bytes must be a positive integer.")
@@ -193,7 +184,7 @@ def resample_raster_window(
         value = struct.unpack_from(
             source_format, source.samples, index * source_width
         )[0]
-        return float(value), validity[index]
+        return float(value), validity[index] and math.isfinite(value)
 
     for out_row in range(destination.height):
         world_y = dest_y0 + (out_row + 0.5) * dest_py
