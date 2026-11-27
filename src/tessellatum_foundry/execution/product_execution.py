@@ -284,11 +284,13 @@ def execute_product_blueprint_plan(
     output_bindings: dict[str, dict[str, str]],
     actor_id: str,
     policy: dict[str, Any] | None = None,
+    requested_mode: str | None = None,
     contracts: ContractRegistry | None = None,
 ) -> RecipeExecutionResult:
     """Re-plan, fail closed on review gates, then hand the compiled Recipe to Run service."""
     fresh_plan = plan_product_blueprint(
-        blueprint, capabilities=capabilities, policy=policy, contracts=contracts
+        blueprint, capabilities=capabilities, policy=policy,
+        requested_mode=requested_mode, contracts=contracts
     )
     if fresh_plan["plan_fingerprint"] != plan.get("plan_fingerprint"):
         raise ProductExecutionPreconditionError(
