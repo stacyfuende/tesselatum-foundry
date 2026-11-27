@@ -51,7 +51,10 @@ def fetch_stac_item() -> tuple[dict, str]:
     )
     request = urllib.request.Request(
         f"{CATALOG}/search?{query}",
-        headers={"Accept": "application/geo+json", "User-Agent": "Tessellatum-Foundry-live-test/1.0"},
+        headers={
+            "Accept": "application/geo+json",
+            "User-Agent": "Tessellatum-Foundry-live-test/1.0",
+        },
     )
     with urllib.request.urlopen(request, timeout=30) as response:
         payload = response.read(MAX_ITEM_BYTES + 1)
@@ -73,19 +76,26 @@ def fetch_stac_item() -> tuple[dict, str]:
             host = (urlsplit(href).hostname or "").lower()
             if host in ALLOWED_ASSET_HOSTS:
                 return item, asset_key
-    raise RuntimeError("No allowlisted Sentinel-2 red-band COG was returned for Nairobi.")
+    raise RuntimeError(
+        "No allowlisted Sentinel-2 red-band COG was returned for Nairobi."
+    )
 
 
 def discover_strong_etag(uri: str) -> str:
     request = urllib.request.Request(
         uri,
         method="HEAD",
-        headers={"Accept-Encoding": "identity", "User-Agent": "Tessellatum-Foundry-live-test/1.0"},
+        headers={
+            "Accept-Encoding": "identity",
+            "User-Agent": "Tessellatum-Foundry-live-test/1.0",
+        },
     )
     with urllib.request.urlopen(request, timeout=30) as response:
         final_host = (urlsplit(response.geturl()).hostname or "").lower()
         if final_host not in ALLOWED_ASSET_HOSTS:
-            raise RuntimeError("COG HEAD request redirected outside the exact asset allowlist.")
+            raise RuntimeError(
+                "COG HEAD request redirected outside the exact asset allowlist."
+            )
         etag = response.headers.get("ETag")
     if not etag or etag.startswith("W/"):
         raise SourceIntegrityError("Live COG did not provide a strong ETag.")
@@ -118,12 +128,16 @@ def main() -> None:
         max_total_bytes=8 * 1024 * 1024,
         max_range_bytes=2 * 1024 * 1024,
     )
-    source_raster = TiffRangeReader(metadata_budget).read(file_size=descriptor.byte_size)
+    source_raster = TiffRangeReader(metadata_budget).read(
+        file_size=descriptor.byte_size
+    )
     metadata = source_raster.metadata
     if not metadata.crs:
         raise RuntimeError("Live Sentinel-2 COG has no supported embedded CRS.")
     if metadata.width < 64 or metadata.height < 64 or metadata.band_count != 1:
-        raise RuntimeError("Live red-band COG does not meet the one-band 64x64 smoke-test contract.")
+        raise RuntimeError(
+            "Live red-band COG does not meet the one-band 64x64 smoke-test contract."
+        )
 
     cell = {
         "cell_id": "live-nairobi-sentinel2-red-window",
@@ -142,8 +156,14 @@ def main() -> None:
                         "band_count": metadata.band_count,
                         "dtypes": list(metadata.dtypes),
                         "resolution": [
-                            (metadata.transform[1] ** 2 + metadata.transform[4] ** 2) ** 0.5,
-                            (metadata.transform[2] ** 2 + metadata.transform[5] ** 2) ** 0.5,
+                            (
+                                metadata.transform[1] ** 2
+                                + metadata.transform[4] ** 2
+                            ) ** 0.5,
+                            (
+                                metadata.transform[2] ** 2
+                                + metadata.transform[5] ** 2
+                            ) ** 0.5,
                         ],
                     },
                 },
@@ -196,7 +216,9 @@ def main() -> None:
         artifact = store.get_artifact("live.nairobi.sentinel2.red.window", "1.0.0")
         store.verify_artifact(artifact)
         decoded = decode_raster_window_artifact(store.read_bytes(artifact))
-        report = runs.get_validation_report(artifact["metadata"]["validation_report_id"])
+        report = runs.get_validation_report(
+            artifact["metadata"]["validation_report_id"]
+        )
 
         assert result["run"]["status"] == "succeeded"
         assert report["overall_status"] == "passed"
@@ -216,7 +238,9 @@ def main() -> None:
             "source_bytes_total": descriptor.byte_size,
             "source_bytes_read_by_foundry": result["source_bytes_requested"],
             "source_range_requests": result["source_range_requests"],
-            "source_read_fraction": round(result["source_bytes_requested"] / descriptor.byte_size, 6),
+            "source_read_fraction": round(
+                result["source_bytes_requested"] / descriptor.byte_size, 6
+            ),
             "source_crs": metadata.crs,
             "source_grid": [metadata.width, metadata.height],
             "output_window": [64, 64],
