@@ -91,8 +91,6 @@ def plan_destination_grid(
     bottom_index = _snap_index((min_y - anchor_y) / resolution_y, upper=False)
     top_index = _snap_index((max_y - anchor_y) / resolution_y, upper=True)
     left = anchor_x + left_index * resolution_x
-    right = anchor_x + right_index * resolution_x
-    bottom = anchor_y + bottom_index * resolution_y
     top = anchor_y + top_index * resolution_y
     width = right_index - left_index
     height = top_index - bottom_index
@@ -140,7 +138,11 @@ def resample_raster_window(
     source.window.validate_against(source_metadata)
     if source.bands != (1,) or source.dtypes != (source_metadata.dtypes[0],):
         raise RasterContractError("Source raster buffer does not match its metadata.")
-    if isinstance(max_output_bytes, bool) or not isinstance(max_output_bytes, int) or max_output_bytes < 1:
+    if (
+        isinstance(max_output_bytes, bool)
+        or not isinstance(max_output_bytes, int)
+        or max_output_bytes < 1
+    ):
         raise RasterContractError("max_output_bytes must be a positive integer.")
     output_size = destination.width * destination.height * 8
     if output_size > max_output_bytes:
