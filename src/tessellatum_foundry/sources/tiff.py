@@ -388,6 +388,7 @@ class TiffRangeReader:
                 raise TiffFormatError("TIFF tile or strip byte range is outside the file.")
 
         transform = self._transform(values, width, height)
+        crs = self._geokey_crs(values)
         nodata_text = values(42113, ())
         nodata = self._nodata(nodata_text[0], samples) if nodata_text else (None,) * samples
         metadata = RasterMetadata(
@@ -396,6 +397,7 @@ class TiffRangeReader:
             band_count=samples,
             dtypes=dtypes,
             transform=transform,
+            crs=crs,
             nodata=nodata,
             block_shapes=block_shapes,
             driver="GTiff",
@@ -430,6 +432,36 @@ class TiffRangeReader:
             raise TiffFormatError(
                 f"Unsupported TIFF sample representation: {bits} bits, format {sample_format}."
             ) from error
+
+    @staticmethod
+    def _geokey_crs(values):
+        """Resolve a simple inline GeoTIFF CRS code to an EPSG identifier."""
+        directory = values(34735, ())
+        if not directory:
+            return None
+        if len(directory) < 4 or directory[0] != 1 or directory[1] != 1:
+            raise TiffFormatError("GeoKeyDirectoryTag header is invalid or unsupported.")
+        key_count = int(directory[3])
+        if len(directory) != 4 + key_count * 4:
+            raise TiffFormatError("GeoKeyDirectoryTag entries are incomplete.")
+        keys = {}
+        for index in range(key_count):
+            key_id, location, count, value = directory[4 + index * 4:8 + index * 4]
+            if key_id in keys:
+                raise TiffFormatError("GeoKeyDirectoryTag contains duplicate keys.")
+            if count != 1:
+                continue
+            if location != 0:
+                # GeoKey references to other TIFF tags are intentionally not
+                # interpreted until bounded key-value resolution is implemented.
+                continue
+            keys[int(key_id)] = int(value)
+        projected = keys.get(3072)
+        geographic = keys.get(2048)
+        code = projected if projected not in (None, 0, 32767) else geographic
+        if code in (None, 0, 32767):
+            return None
+        return f"EPSG:{code}"
 
     @staticmethod
     def _transform(values, width: int, height: int):
