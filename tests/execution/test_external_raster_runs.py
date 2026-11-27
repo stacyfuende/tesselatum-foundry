@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from copy import deepcopy
-
 import pytest
 
 from tessellatum_foundry.execution.capabilities import CapabilityRegistry
