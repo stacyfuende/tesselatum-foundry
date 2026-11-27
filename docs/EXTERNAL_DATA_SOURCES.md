@@ -459,7 +459,7 @@ The current raster implementation supports tiled classic TIFF/BigTIFF structures
 ### Remaining raster gates
 
 - Run the full raster conformance suite against representative real-world tiled TIFF/BigTIFF and COG sources, including edge tiles, multi-band planar/chunky layouts, NoData variants and overview chains.
-- Promote the implementation manifest to `passed` only after the end-to-end conformance suite passes in CI.
+- Expand conformance coverage against representative real-world tiled TIFF/BigTIFF and COG sources before broadening the implementation's advertised support.
 - Add a durable publication journal/recovery policy equivalent to the streaming transaction journal for the raster Artifact path; current recovery reconciles a committed immutable Artifact but does not resume source reads.
 - Integrate source-rights evidence and method suitability checks into raster preflight and validation.
 - Implement explicit destination-grid/resampling capabilities as separate versioned operations; `raster.window` is extraction only.
