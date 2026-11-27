@@ -42,6 +42,7 @@ class TiffDirectory:
     planar_configuration: int
     compression: int
     new_subfile_type: int
+    predictor: int = 1
 
 
 @dataclass(frozen=True, slots=True)
@@ -199,6 +200,8 @@ class TiffRangeReader:
                 raise TiffFormatError("TIFF sample or planar configuration is invalid.")
             compression_values = integer_values(259)
             compression = compression_values[0] if compression_values else 1
+            predictor_values = integer_values(317)
+            predictor = predictor_values[0] if predictor_values else 1
             subfile_values = integer_values(254)
             new_subfile_type = subfile_values[0] if subfile_values else 0
             if tiled:
@@ -220,7 +223,7 @@ class TiffRangeReader:
                 TiffDirectory(
                     offset, width, height, tiled, block_offsets, block_counts,
                     subifds, next_offset, tile_width, tile_height, samples_per_pixel,
-                    planar_configuration, compression, new_subfile_type
+                    planar_configuration, compression, new_subfile_type, predictor
                 )
             )
         return tuple(directories)
