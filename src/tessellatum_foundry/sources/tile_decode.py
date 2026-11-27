@@ -202,7 +202,7 @@ def decode_deflate_tiff_tile(
     if directory.predictor not in (1, 2):
         raise RasterContractError("Unsupported TIFF predictor for Deflate tile decoding.")
     if len(payload) > max_compressed_bytes:
-        raise RasterContractError("Compressed TIFF tile exceeds the configured byte limit.")
+        raise RasterContractError("compressed TIFF tile exceeds the configured byte limit.")
     if (
         isinstance(selection.block_index, bool)
         or not isinstance(selection.block_index, int)
