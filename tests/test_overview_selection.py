@@ -13,9 +13,9 @@ from tessellatum_foundry.sources import (
 )
 
 
-def metadata(factors):
+def metadata(factors, width=2048, height=2048):
     return RasterMetadata(
-        width=2048, height=2048, band_count=1, dtypes=("uint8",),
+        width=width, height=height, band_count=1, dtypes=("uint8",),
         transform=(0, 1, 0, 0, 0, -1), overview_factors=tuple(factors),
     )
 
@@ -93,7 +93,7 @@ def test_binds_selected_overview_directory_to_scaled_grid_metadata():
     base = tiff_directory(64, 64, reduced=False, offset=1)
     overview = tiff_directory(32, 32, reduced=True, offset=2)
     selected = select_tiff_overview(
-        (base, overview), metadata((2, 4)), target_downsample=2
+        (base, overview), metadata((2, 4), width=64, height=64), target_downsample=2
     )
     assert selected.factor == 2
     assert selected.directory is overview
@@ -106,7 +106,7 @@ def test_rejects_missing_or_ambiguous_base_directory():
     base = tiff_directory(64, 64, reduced=False)
     with pytest.raises(RasterContractError):
         select_tiff_overview(
-            (base, base), metadata(()), target_downsample=1
+            (base, base), metadata((), width=64, height=64), target_downsample=1
         )
 
 
@@ -116,5 +116,5 @@ def test_rejects_non_tiled_selected_overview():
     overview = SimpleNamespace(**{**overview.__dict__, "tiled": False})
     with pytest.raises(RasterContractError):
         select_tiff_overview(
-            (base, overview), metadata((2,)), target_downsample=2
+            (base, overview), metadata((2,), width=64, height=64), target_downsample=2
         )
