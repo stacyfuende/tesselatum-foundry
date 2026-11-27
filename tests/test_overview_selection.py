@@ -1,6 +1,8 @@
 from __future__ import annotations
 
-from types import SimpleNamespace\n\nimport pytest
+from types import SimpleNamespace
+
+import pytest
 
 from tessellatum_foundry.sources import (
     RasterContractError,
@@ -49,7 +51,9 @@ def test_rejects_invalid_overview_dimensions(dims):
     with pytest.raises(RasterContractError):
         overview_factors_from_dimensions(5, 5, dims)
 
-\n\ndef test_overview_factor_derivation_ignores_non_reduced_directories():
+
+
+def test_overview_factor_derivation_ignores_non_reduced_directories():
     dirs = (
         SimpleNamespace(width=5, height=5, new_subfile_type=0),
         SimpleNamespace(width=3, height=3, new_subfile_type=1),
