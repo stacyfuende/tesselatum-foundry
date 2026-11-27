@@ -1,8 +1,8 @@
-"""Strict, bounded extraction of uncompressed TIFF tile sample buffers.
+"""Strict, bounded decoding of supported TIFF tile sample buffers.
 
-This first decoder intentionally supports only byte-aligned, uncompressed,
-predictor-free samples. It does not decompress, rescale, color-convert, or
-assemble windows.
+Supports byte-aligned integer/float samples, uncompressed tiles, zlib-wrapped
+Deflate tiles, and integer horizontal differencing. It does not color-convert,
+rescale, or assemble multi-tile windows.
 """
 from __future__ import annotations
 
