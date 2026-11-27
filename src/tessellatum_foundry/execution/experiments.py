@@ -153,7 +153,9 @@ def execute_experiment(
                 comparisons.append({
                     "variant_a": plan_a["variant_key"],
                     "variant_b": plan_b["variant_key"],
-                    "metrics": compare_variants(\n                        result_a, result_b, deepcopy(plan_a), deepcopy(plan_b)\n                    ),
+                    "metrics": compare_variants(
+                        result_a, result_b, deepcopy(plan_a), deepcopy(plan_b)
+                    ),
                 })
     return {
         "experiment_report_version": "1.0.0",
