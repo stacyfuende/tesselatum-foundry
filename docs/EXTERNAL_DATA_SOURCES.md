@@ -319,3 +319,18 @@ interpret them using the returned dtype and byte-order metadata. Its lazy
 for chunky tiles, one selected band for planar tiles), without materializing a
 full decoded array. This is a bounded raw-sample extraction primitive, not yet
 a general-purpose raster decoder.
+
+### Bounded TIFF Deflate decoding
+
+`decode_deflate_tiff_tile` adds support for TIFF Compression=8 and the
+legacy Deflate code 32946 using the zlib-wrapped Deflate stream. The compressed
+input has its own byte limit; the expected output size is derived from the
+declared tile dimensions and supported sample dtypes. Decompression is capped
+at expected-size-plus-one bytes and rejects truncated streams, trailing data,
+and output whose length differs from the exact tile sample layout.
+
+Predictor reversal remains unsupported, so only Predictor=1 is accepted.
+Raw decoded samples retain source byte order and use the same lazy pixel
+iterator as uncompressed tiles. Raw Deflate streams, LZW, JPEG, packed samples,
+photometric conversion, and multi-tile window assembly are not supported.
+
