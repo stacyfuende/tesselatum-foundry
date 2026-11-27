@@ -30,6 +30,7 @@ from .cog_structure import TiffStructureAssessment, assess_cog_structure
 from .tiff import TiffDirectory, TiffFormatError, TiffLayout, TiffRaster, TiffRangeReader
 from .tile_selection import RasterTileSelection, select_tiff_tiles
 from .tile_reads import RetrievedRasterTile, read_selected_tiff_tiles
+from .tile_decode import DecodedRasterTile, decode_uncompressed_tiff_tile
 
 __all__ = [
     "ExternalDataReference",
@@ -48,6 +49,8 @@ __all__ = [
     "select_tiff_tiles",
     "RetrievedRasterTile",
     "read_selected_tiff_tiles",
+    "DecodedRasterTile",
+    "decode_uncompressed_tiff_tile",
     "FeatureBatch",
     "FeatureBatchError",
     "FeatureExceedsBatchLimit",
