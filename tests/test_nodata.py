@@ -62,3 +62,28 @@ def test_window_mask_without_nodata_marks_all_pixels_valid():
         transform=(0, 1, 0, 0, 0, -1),
     )
     assert window_validity_mask(buffer, metadata) == (True, True)
+
+
+def test_window_mask_rejects_inconsistent_buffer_contracts():
+    metadata = RasterMetadata(
+        width=1, height=1, band_count=1, dtypes=("uint8",),
+        transform=(0, 1, 0, 0, 0, -1),
+    )
+    window = RasterWindow(0, 0, 1, 1)
+    malformed = (
+        RasterWindowBuffer(
+            window=window, bands=(1,), dtypes=("uint8",), byte_order="sideways",
+            samples=b"\\x01",
+        ),
+        RasterWindowBuffer(
+            window=window, bands=(2,), dtypes=("uint8",), byte_order="little",
+            samples=b"\\x01",
+        ),
+        RasterWindowBuffer(
+            window=window, bands=(1,), dtypes=("uint8",), byte_order="little",
+            samples=b"",
+        ),
+    )
+    for buffer in malformed:
+        with pytest.raises(RasterContractError):
+            window_validity_mask(buffer, metadata)
