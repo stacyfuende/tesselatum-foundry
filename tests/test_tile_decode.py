@@ -209,6 +209,7 @@ def test_decodes_bounded_zlib_deflate_tile():
     )
 
     assert result.sample_bytes == len(raw)
+    assert result.selection == tile
     assert next(result.iter_pixels()) == (9, 2049)
 
 
