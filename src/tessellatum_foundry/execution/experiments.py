@@ -95,3 +95,71 @@ def plan_experiment(
                 "cell": cell,
             })
     return plans
+
+
+class ExperimentExecutionError(RuntimeError):
+    """Experiment execution could not produce a valid report."""
+
+
+def execute_experiment(
+    plans: list[dict[str, Any]],
+    *,
+    execute_variant: Any,
+    compare_variants: Any | None = None,
+) -> dict[str, Any]:
+    """Execute bounded plans through a caller-supplied registered Run service.
+
+    Callbacks are dependency injection for trusted capability services, not a
+    facility for evaluating arbitrary user or LLM-generated code. Variant failures
+    are captured so the experiment can report partial results. Optional comparison
+    callbacks run only for successful variants and return JSON-compatible metrics.
+    """
+    if not isinstance(plans, list) or not plans or len(plans) > 100:
+        raise ExperimentExecutionError("Execution requires 1 to 100 planned variants.")
+    if not callable(execute_variant):
+        raise ExperimentExecutionError("A registered variant execution callback is required.")
+    outcomes = []
+    successes = []
+    for plan in plans:
+        key = plan.get("variant_key")
+        if not isinstance(key, str) or not key:
+            raise ExperimentExecutionError("Each plan must have a stable variant_key.")
+        try:
+            result = execute_variant(deepcopy(plan["cell"]), deepcopy(plan))
+            successes.append((plan, result))
+            outcomes.append({
+                "variant_key": key,
+                "method_id": plan.get("method_id"),
+                "method_label": plan.get("method_label"),
+                "parameters": deepcopy(plan.get("parameters", {})),
+                "status": "succeeded",
+                "result": result,
+            })
+        except Exception as error:  # Capture per-variant failures for partial experiment reporting.
+            outcomes.append({
+                "variant_key": key,
+                "method_id": plan.get("method_id"),
+                "method_label": plan.get("method_label"),
+                "parameters": deepcopy(plan.get("parameters", {})),
+                "status": "failed",
+                "error": {"type": type(error).__name__, "message": str(error)},
+            })
+    comparisons = []
+    if compare_variants is not None:
+        if not callable(compare_variants):
+            raise ExperimentExecutionError("Comparison callback must be callable.")
+        for index, (plan_a, result_a) in enumerate(successes):
+            for plan_b, result_b in successes[index + 1:]:
+                comparisons.append({
+                    "variant_a": plan_a["variant_key"],
+                    "variant_b": plan_b["variant_key"],
+                    "metrics": compare_variants(result_a, result_b, deepcopy(plan_a), deepcopy(plan_b)),
+                })
+    return {
+        "experiment_report_version": "1.0.0",
+        "variant_count": len(plans),
+        "succeeded": len(successes),
+        "failed": len(plans) - len(successes),
+        "variants": outcomes,
+        "comparisons": comparisons,
+    }
