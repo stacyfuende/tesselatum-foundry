@@ -72,12 +72,9 @@ __all__ = [
     "WorkerResult",
     "WorkerTimeoutError",
     "WorkerUnavailableError",
+    "ExternalRasterWindowRunOrchestrator",
 ]
 
 from tessellatum_foundry.execution.external_raster_orchestration import (
     ExternalRasterWindowRunOrchestrator,
 )
-
-__all__ = [
-    "ExternalRasterWindowRunOrchestrator",
-]
