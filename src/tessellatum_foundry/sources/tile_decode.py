@@ -6,9 +6,10 @@ assemble windows.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from struct import unpack_from
 from collections.abc import Iterator
+import zlib
 
 from .raster import RasterContractError, RasterMetadata
 from .tile_selection import RasterTileSelection
@@ -170,3 +171,100 @@ def decode_uncompressed_tiff_tile(
         sample_count=pixels * len(dtypes),
         sample_bytes=expected_bytes,
     )
+
+def decode_deflate_tiff_tile(
+    payload: bytes,
+    selection: RasterTileSelection,
+    directory: TiffDirectory,
+    metadata: RasterMetadata,
+    *,
+    byte_order: str,
+    max_compressed_bytes: int = 16 * 1024 * 1024,
+    max_decoded_bytes: int = 64 * 1024 * 1024,
+    max_pixels: int = 16 * 1024 * 1024,
+) -> DecodedRasterTile:
+    """Decode one TIFF Deflate tile with a hard output cap.
+
+    Supports TIFF Compression=8 and the legacy Deflate code 32946, using the
+    zlib-wrapped Deflate stream. Predictor reversal is deliberately unsupported.
+    """
+    for name, value in (
+        ("max_compressed_bytes", max_compressed_bytes),
+        ("max_decoded_bytes", max_decoded_bytes),
+        ("max_pixels", max_pixels),
+    ):
+        if isinstance(value, bool) or not isinstance(value, int) or value < 1:
+            raise ValueError(f"{name} must be a positive integer.")
+    if not isinstance(payload, bytes):
+        raise TypeError("TIFF tile payload must be bytes.")
+    if directory.compression not in (8, 32946):
+        raise RasterContractError("TIFF tile does not use a supported Deflate compression code.")
+    if directory.predictor != 1:
+        raise RasterContractError("TIFF predictors are not supported by this decoder.")
+    if len(payload) > max_compressed_bytes:
+        raise RasterContractError("Compressed TIFF tile exceeds the configured byte limit.")
+    if (
+        isinstance(selection.block_index, bool)
+        or not isinstance(selection.block_index, int)
+        or not 0 <= selection.block_index < len(directory.block_byte_counts)
+        or directory.block_byte_counts[selection.block_index] != len(payload)
+        or selection.byte_length != len(payload)
+    ):
+        raise RasterContractError("Compressed tile payload does not match its directory byte count.")
+    if directory.tile_width is None or directory.tile_height is None:
+        raise RasterContractError("Deflate decoding requires a tiled TIFF directory.")
+    if selection.band == 0 and directory.planar_configuration == 1:
+        dtypes = metadata.dtypes
+    elif (
+        directory.planar_configuration == 2
+        and 1 <= selection.band <= metadata.band_count
+    ):
+        dtypes = (metadata.dtypes[selection.band - 1],)
+    else:
+        raise RasterContractError("Selected TIFF tile band does not match planar configuration.")
+    try:
+        bytes_per_pixel = sum(_DTYPE_BYTES[dtype] for dtype in dtypes)
+    except KeyError as error:
+        message = "TIFF sample dtype is unsupported or not byte-aligned."
+        raise RasterContractError(message) from error
+    pixels = directory.tile_width * directory.tile_height
+    if pixels > max_pixels:
+        raise RasterContractError("TIFF tile exceeds the configured decoded pixel limit.")
+    expected_bytes = pixels * bytes_per_pixel
+    if expected_bytes > max_decoded_bytes:
+        raise RasterContractError("TIFF tile exceeds the configured decoded byte limit.")
+
+    decompressor = zlib.decompressobj(wbits=zlib.MAX_WBITS)
+    try:
+        decoded = decompressor.decompress(payload, expected_bytes + 1)
+    except zlib.error as error:
+        raise RasterContractError("TIFF Deflate tile is malformed.") from error
+    if (
+        len(decoded) != expected_bytes
+        or not decompressor.eof
+        or decompressor.unused_data
+        or decompressor.unconsumed_tail
+    ):
+        raise RasterContractError(
+            "TIFF Deflate stream is incomplete, has trailing data, or violates its decoded size."
+        )
+
+    decoded_directory = replace(
+        directory,
+        compression=1,
+        block_byte_counts=tuple(
+            expected_bytes if index == selection.block_index else count
+            for index, count in enumerate(directory.block_byte_counts)
+        ),
+    )
+    decoded_selection = replace(selection, byte_length=expected_bytes)
+    return decode_uncompressed_tiff_tile(
+        decoded,
+        decoded_selection,
+        decoded_directory,
+        metadata,
+        byte_order=byte_order,
+        max_decoded_bytes=max_decoded_bytes,
+        max_pixels=max_pixels,
+    )
+
