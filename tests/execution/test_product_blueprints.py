@@ -101,3 +101,55 @@ def test_dependency_resolution_is_independent_of_blueprint_declaration_order():
     assert result["status"] == "planned"
     assert result["node_order"] == ["project", "buffer"]
 
+
+
+def test_plan_fingerprint_is_stable_and_tracks_policy_changes():
+    item = blueprint()
+    first = plan_product_blueprint(item, capabilities=CapabilityRegistry())
+    second = plan_product_blueprint(item, capabilities=CapabilityRegistry())
+    assert first["plan_fingerprint"] == second["plan_fingerprint"]
+    policy = {
+        "policy_id": "stricter",
+        "version": "1.0.0",
+        "default_mode": "guided",
+        "rules": [],
+    }
+    third = plan_product_blueprint(item, capabilities=CapabilityRegistry(), policy=policy)
+    assert third["plan_fingerprint"] != first["plan_fingerprint"]
+
+
+def test_external_delivery_requires_explicit_release_authorisation():
+    item = blueprint()
+    item["outputs"][0]["delivery_targets"] = ["https://customer.example/product"]
+    result = plan_product_blueprint(item, capabilities=CapabilityRegistry())
+    assert result["status"] == "approval_required"
+    assert result["approval_required"] is True
+    assert any(
+        decision["node_id"] == "access-layer"
+        and decision["mode"] == "explicit"
+        for decision in result["autonomy_decisions"]
+    )
+
+
+def test_evidence_binding_requires_a_declared_reference_role():
+    item = blueprint()
+    item["evidence"]["provided_references"] = [{
+        "id": "roads", "uri": "https://example.com/roads.geojson",
+    }]
+    item["reasoning"]["nodes"][0]["inputs"]["features"] = "evidence:roads"
+    result = plan_product_blueprint(item, capabilities=CapabilityRegistry())
+    assert result["status"] == "blocked"
+    assert any(f["code"] == "evidence_role_missing" for f in result["findings"])
+
+
+def test_duplicate_evidence_reference_ids_are_rejected():
+    import pytest
+    from tessellatum_foundry.execution.product_blueprints import ProductBlueprintPlanError
+
+    item = blueprint()
+    item["evidence"]["provided_references"] = [
+        {"id": "roads-a", "uri": "https://example.com/a", "role": "road-network"},
+        {"id": "roads-a", "uri": "https://example.com/b", "role": "road-network"},
+    ]
+    with pytest.raises(ProductBlueprintPlanError, match="duplicate evidence reference"):
+        plan_product_blueprint(item, capabilities=CapabilityRegistry())
