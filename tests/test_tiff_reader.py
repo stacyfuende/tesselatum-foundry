@@ -25,7 +25,7 @@ class MemoryRanges:
         return self.payload[offset:offset + length]
 
 
-def classic_tiff(*, endian="<", tiled=False, predictor=1):
+def classic_tiff(*, endian="<", tiled=False, predictor=1, crs_key=None):
     """Build a small georeferenced classic TIFF with one image directory."""
     tags = [
         (256, 4, 1, (32,)),
@@ -46,8 +46,7 @@ def classic_tiff(*, endian="<", tiled=False, predictor=1):
     else:
         offset_tag, count_tag = 273, 279
     tags.extend([(offset_tag, 4, 1, (0,)), (count_tag, 4, 1, (512,))])
-    tags.sort()
-    ifd_offset = 8
+    if crs_key is not None:\n        tags.append((34735, 3, 8, (1, 1, 0, 1, crs_key[0], 0, 1, crs_key[1])))\n    tags.sort()\n    ifd_offset = 8
     extra_start = ifd_offset + 2 + len(tags) * 12 + 4
     extra = bytearray()
     entries = []
@@ -371,3 +370,21 @@ def test_cog_structure_assessment_rejects_non_overview_directory():
     assert any("not smaller" in issue for issue in result.issues)
     assert any("not marked" in issue for issue in result.issues)
     assert any("strip-based" in issue for issue in result.issues)
+
+
+def test_resolves_inline_projected_geokey_to_epsg_identifier():
+    payload = classic_tiff(crs_key=(3072, 32633))
+    tiff_reader, _ = reader(payload)
+
+    result = tiff_reader.read(file_size=len(payload))
+
+    assert result.metadata.crs == "EPSG:32633"
+
+
+def test_resolves_geographic_geokey_when_projected_key_absent():
+    payload = classic_tiff(crs_key=(2048, 4326))
+    tiff_reader, _ = reader(payload)
+
+    result = tiff_reader.read(file_size=len(payload))
+
+    assert result.metadata.crs == "EPSG:4326"
