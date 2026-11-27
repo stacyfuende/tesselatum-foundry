@@ -1,6 +1,7 @@
 """Foundry execution orchestration and Run lifecycle components."""
 
 from .autonomy import AutonomyPolicyError, evaluate_autonomy
+from .product_blueprints import ProductBlueprintPlanError, plan_product_blueprint
 from .experiments import (
     ExperimentExecutionError,
     ExperimentPlanError,
@@ -46,6 +47,8 @@ from .recipes import (
 
 __all__ = [
     "AutonomyPolicyError",
+    "ProductBlueprintPlanError",
+    "plan_product_blueprint",
     "evaluate_autonomy",
     "BatchExecutionError",
     "CapabilityRegistry",
