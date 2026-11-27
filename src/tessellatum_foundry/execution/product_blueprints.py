@@ -66,9 +66,6 @@ def plan_product_blueprint(
             f"Blueprint has {len(nodes)} nodes; configured maximum is {maximum}."
         )
 
-    evidence_ids = {
-        item["id"] for item in blueprint["evidence"].get("provided_references", [])
-    }
     requirements = {
         item["id"]: item for item in blueprint["evidence"]["requirements"]
     }
@@ -88,7 +85,9 @@ def plan_product_blueprint(
     resolved: dict[str, dict[str, Any]] = {}
     missing_capabilities: list[dict[str, str]] = []
     findings: list[dict[str, str]] = []
-    dependencies: dict[str, set[str]] = {node["id"]: set(node.get("depends_on", [])) for node in nodes}
+    dependencies: dict[str, set[str]] = {
+        node["id"]: set(node.get("depends_on", [])) for node in nodes
+    }
 
     for node in nodes:
         node_id = node["id"]
@@ -219,7 +218,10 @@ def plan_product_blueprint(
         findings.extend({
             "code": "missing_capability",
             "node_id": item["node_id"],
-            "message": f"Capability {item['capability_id']}@{item['version'] or 'unpinned'} is not registered.",
+            "message": (
+                f"Capability {item['capability_id']}@"
+                f"{item['version'] or 'unpinned'} is not registered."
+            ),
         } for item in missing_capabilities)
 
     order: list[str] = []
@@ -302,10 +304,17 @@ def plan_product_blueprint(
             "version": blueprint["version"],
             "title": blueprint["title"],
         },
-        "status": "blocked" if blocking else ("approval_required" if approval_required else "planned"),
+        "status": (
+            "blocked"
+            if blocking
+            else ("approval_required" if approval_required else "planned")
+        ),
         "approval_required": approval_required,
         "executable": False,
-        "execution_note": "Planning only: no Runs, artifacts, deployments, or publications were created.",
+        "execution_note": (
+            "Planning only: no Runs, artifacts, deployments, "
+            "or publications were created."
+        ),
         "node_order": order,
         "nodes": [
             {
