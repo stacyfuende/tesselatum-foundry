@@ -357,3 +357,19 @@ capability. The caller remains responsible for choosing a suitable overview,
 establishing CRS/georeferencing semantics, applying source and decoded-tile
 budgets, and routing the assembled buffer into an independently validated
 spatial computation.
+
+
+## GeoTIFF inline CRS GeoKeys
+
+The TIFF metadata reader now resolves a narrowly supported inline CRS key from
+GeoKeyDirectoryTag: ProjectedCSTypeGeoKey (3072) or
+GeographicTypeGeoKey (2048) with one inline value. Known numeric identifiers
+are represented as `EPSG:<code>`. Missing, user-defined, or indirect key
+values remain unresolved. The parser validates the GeoKeyDirectoryTag header,
+entry count and duplicate keys.
+
+This is not complete GeoTIFF CRS interpretation: indirect GeoKey values,
+datum/ellipsoid/units definitions, vertical CRS, coordinate epoch and
+user-defined CRS parameters are not normalized. A resolved EPSG identifier
+from these inline keys should be treated as metadata evidence, not as a
+substitute for full CRS validation.
