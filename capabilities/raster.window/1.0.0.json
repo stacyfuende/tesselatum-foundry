@@ -95,5 +95,15 @@
     "window",
     "overview",
     "external-data"
-  ]
+  ],
+  "autonomy": {
+    "impact": "moderate",
+    "reversibility": "reversible",
+    "uncertainty": "moderate",
+    "sensitivity": "none",
+    "cost_band": "bounded",
+    "side_effect": "none",
+    "external_access": true,
+    "approval_required": false
+  }
 }
