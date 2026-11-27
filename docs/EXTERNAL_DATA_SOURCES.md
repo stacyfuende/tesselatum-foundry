@@ -402,3 +402,15 @@ window is expressed on the selected overview's pixel grid; the caller supplies
 the target downsample. The operation uses the same ETag-pinned cumulative
 range budget for metadata and pixel reads and does not infer a destination
 grid, reproject, resample, or enter the general Run/Artifact lifecycle.
+
+
+### NoData-aware raster arithmetic
+
+The raster source layer now exposes strict single-band binary arithmetic for
+aligned windows on the same pixel grid and CRS. Supported operations are
+addition, subtraction, multiplication and division. Per-pixel validity is the
+intersection of both inputs' NoData masks; division by zero and non-finite
+results are invalid. Invalid outputs are represented as float64 NaN and an
+explicit validity tuple is returned alongside the output buffer. Inputs must
+already share an identical window/grid: this operation does not align,
+reproject, resample or silently substitute missing values.
