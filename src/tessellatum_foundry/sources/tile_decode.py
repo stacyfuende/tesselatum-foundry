@@ -268,7 +268,7 @@ def decode_deflate_tiff_tile(
         ),
     )
     decoded_selection = replace(selection, byte_length=expected_bytes)
-    return decode_uncompressed_tiff_tile(
+    decoded_tile = decode_uncompressed_tiff_tile(
         decoded,
         decoded_selection,
         decoded_directory,
@@ -277,6 +277,8 @@ def decode_deflate_tiff_tile(
         max_decoded_bytes=max_decoded_bytes,
         max_pixels=max_pixels,
     )
+    # Keep the original compressed source selection for deterministic assembly.
+    return replace(decoded_tile, selection=selection)
 
 
 def _undo_horizontal_predictor(
