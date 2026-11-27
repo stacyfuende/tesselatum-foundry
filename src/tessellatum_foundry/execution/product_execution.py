@@ -139,7 +139,9 @@ def compile_product_blueprint_recipe(
                     reference = next(
                         (
                             item
-                            for item in plan.get("evidence", {}).get("provided_references", [])
+                            for item in plan.get("evidence", {}).get(
+                                "provided_references", []
+                            )
                             if item["id"] == evidence_id
                         ),
                         None,
