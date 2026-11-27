@@ -1,6 +1,6 @@
 """Foundry execution orchestration and Run lifecycle components."""
 
-from .capabilities import CapabilityRegistry, CapabilityRegistryError
+from .experiments import ExperimentPlanError, plan_experiment\nfrom .capabilities import CapabilityRegistry, CapabilityRegistryError
 from .implementations import ImplementationRegistry, ImplementationRegistryError
 from .docker_worker import (
     DockerWorker,
@@ -44,7 +44,7 @@ __all__ = [
     "DockerWorker",
     "DockerVectorReprojectWorker",
     "ExecutionPreconditionError",
-    "ExecutionResult",
+    "ExecutionResult",\n    "ExperimentPlanError",\n    "plan_experiment",
     "ExternalRunAuthorizationError",
     "ExternalVectorBufferRunFactory",
     "ExternalVectorBufferRunOrchestrator",
