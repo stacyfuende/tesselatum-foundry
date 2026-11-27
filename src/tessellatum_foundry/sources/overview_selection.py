@@ -30,7 +30,7 @@ def select_overview_factor(
 def _factor_interval(base: int, reduced: int, maximum: int) -> tuple[int, int]:
     """Return integer factors satisfying ceil(base/factor) == reduced."""
     lower = (base + reduced - 1) // reduced
-    upper = maximum if reduced == 1 else (base + reduced - 2) // (reduced - 1)
+    upper = maximum if reduced == 1 else (base + reduced - 3) // (reduced - 1)
     return lower, upper
 
 
