@@ -373,3 +373,12 @@ datum/ellipsoid/units definitions, vertical CRS, coordinate epoch and
 user-defined CRS parameters are not normalized. A resolved EPSG identifier
 from these inline keys should be treated as metadata evidence, not as a
 substitute for full CRS validation.
+
+## NoData-aware validity masks
+
+The raster validity helpers compare raw samples with explicit per-band NoData
+values. NaN NoData sentinels are supported. A pixel mask is valid only when
+every selected band is valid; when a window has no NoData metadata, all pixels
+are treated as valid. The mask follows the assembled window's selected band
+order. These helpers do not yet perform masked arithmetic, interpolation,
+resampling or NoData propagation between derived outputs.
