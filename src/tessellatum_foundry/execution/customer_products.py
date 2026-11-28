@@ -62,7 +62,7 @@ def run_customer_spatial_product(
         max_bytes=max_source_bytes,
         max_features=max_source_features,
     )
-    blueprint = prepared["execution_plan"]["blueprint"]
+    blueprint = prepared["blueprint"]
     plan = prepared["execution_plan"]
     resolved_inputs = ingestion["resolved_input_bindings"]
 
