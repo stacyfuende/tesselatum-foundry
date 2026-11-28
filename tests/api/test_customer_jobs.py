@@ -68,7 +68,10 @@ def api():
         ("127.0.0.1", 0),
         authenticate=lambda header: (
             {"actor_id": "actor-a", "tenant_id": "tenant-a"}
-            if header == "Bearer test-token" else None
+            if header == "Bearer test-token"
+            else {"actor_id": "actor-b", "tenant_id": "tenant-b"}
+            if header == "Bearer other-tenant"
+            else None
         ),
         repository=repository, object_store=store,
     )
@@ -150,6 +153,7 @@ def test_unauthenticated_and_cross_tenant_reads_are_not_disclosed(api):
     assert status == 401
     status, body, _ = request(
         server, "GET", f"/v1/jobs/{repository.job_id}",
-        headers={"Authorization": "Bearer test-token"},
+        headers={"Authorization": "Bearer other-tenant"},
     )
-    assert status == 200
+    assert status == 404
+    assert json.loads(body) == {"error": "not_found"}
