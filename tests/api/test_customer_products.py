@@ -39,7 +39,9 @@ def test_customer_api_authenticates_resolves_tenant_and_returns_product_bundle()
         }
 
     def authenticate(header):
-        return {"actor_id": "actor-7", "tenant_id": "tenant-3"} if header == "Bearer customer-token" else None
+        if header == "Bearer customer-token":
+            return {"actor_id": "actor-7", "tenant_id": "tenant-3"}
+        return None
 
     server = create_customer_product_server(
         ("127.0.0.1", 0),

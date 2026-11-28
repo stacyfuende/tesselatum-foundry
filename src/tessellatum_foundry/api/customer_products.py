@@ -10,7 +10,8 @@ import base64
 import binascii
 import json
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 
 DEFAULT_MAX_SOURCE_BYTES = 25 * 1024 * 1024
