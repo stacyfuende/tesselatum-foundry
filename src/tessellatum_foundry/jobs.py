@@ -192,7 +192,7 @@ class PostgresJobRepository:
                         where status = 'queued' and available_at <= now()
                           and attempt_count < max_attempts
                         order by available_at, created_at
-                        for update skip locked limit 1
+                        limit 1 for update skip locked
                     )
                     update foundry.jobs j
                     set status = 'running', attempt_count = j.attempt_count + 1,
