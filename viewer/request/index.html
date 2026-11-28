@@ -38,10 +38,10 @@
 </section>
 <section class="panel">
 <h2>What happens next</h2>
-<p>Foundry checks the request against an approved product template. The next step is secure source ingestion, where file contents and spatial metadata are validated before a computation can begin. This page does not upload data, create a Run, or publish anything.</p>
+<p>Foundry authenticates the request, resolves the tenant runtime, validates the source and executes the approved product workflow. Only products that pass acceptance and release checks are delivered. This pilot form standardizes Nairobi site coordinates; it does not certify survey accuracy, legal boundaries or ownership.</p>
 </section>
 </main>
-<footer>TESSELLATUM / FOUNDRY · Customer request composer · Local-only inspection · Nairobi pilot scope<br>Basic file checks do not certify survey accuracy, legal boundaries, positional quality, ownership or permission to use the data.</footer>
+<footer>TESSELLATUM / FOUNDRY · Customer request composer · Local file inspection · Explicit authenticated submission · Nairobi pilot scope<br>Basic file checks do not certify survey accuracy, legal boundaries, positional quality, ownership or permission to use the data.</footer>
 <script>
 "use strict";
 const $=id=>document.getElementById(id);
@@ -83,7 +83,7 @@ $("source-file").addEventListener("change",async event=>{
  }catch(error){setStatus(error.message||"Could not read this GeoJSON file.","error")}
  updateReady();
 });
-["confirm-crs","audience","context"].forEach(id=>$(id).addEventListener("input",()=>{requestPayload=null;$("download-area").classList.add("hidden");$("result").classList.add("hidden");updateReady()}));$("product-name").addEventListener("input",()=>{requestPayload=null;$("download-area").classList.add("hidden");$("result").classList.add("hidden")});
+["confirm-crs","audience","context"].forEach(id=>$(id).addEventListener("input",()=>{requestPayload=null;$("download-area").classList.add("hidden");$("result").classList.add("hidden");updateReady()}));$("product-name").addEventListener("input",()=>{requestPayload=null;$("download-area").classList.add("hidden");$("result").classList.add("hidden");updateReady()});
 $("prepare").addEventListener("click",()=>{
  if(!selectedFile||!parsedCollection)return;
  const isGeojson=selectedFile.name.toLowerCase().endsWith(".geojson");
@@ -122,7 +122,7 @@ async function encodeFileBase64(file){
  for(let offset=0;offset<bytes.length;offset+=chunkSize)binary+=String.fromCharCode(...bytes.subarray(offset,offset+chunkSize));
  return btoa(binary);
 }
-["api-endpoint","api-token","confirm-submit"].forEach(id=>$(id).addEventListener("input",updateReady));
+["api-endpoint","api-token"].forEach(id=>$(id).addEventListener("input",updateReady));\n$("confirm-submit").addEventListener("change",updateReady);
 $("submit-product").addEventListener("click",async()=>{
  if(!requestPayload||submitting)return;
  const status=$("submit-status");
@@ -154,6 +154,6 @@ $("reset").addEventListener("click",()=>{
  selectedFile=null;parsedCollection=null;requestPayload=null;
  $("source-file").value="";$("confirm-crs").checked=false;$("audience").value="";$("context").value="";
  $("product-name").value="Nairobi site coordinate standardization";
- $("file-status").className="status hidden";$("submit-status").className="status hidden";$("metrics").classList.add("hidden");$("result").classList.add("hidden");$("download-area").classList.add("hidden");$("api-token").value="";$("confirm-submit").checked=false;$("submit-status").className="status hidden";updateReady();
+ $("file-status").className="status hidden";$("submit-status").className="status hidden";$("metrics").classList.add("hidden");$("result").classList.add("hidden");$("download-area").classList.add("hidden");$("api-token").value="";$("api-endpoint").value="";$("confirm-submit").checked=false;$("submit-status").className="status hidden";updateReady();
 });
 </script></body></html>
