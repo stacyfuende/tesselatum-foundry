@@ -15,12 +15,15 @@ from tessellatum_foundry.api.customer_products import create_customer_product_se
 from tessellatum_foundry.api.tenant_runtime import LocalTenantRuntimeResolver
 
 
-def _post(url, *, token="Bearer customer-token", payload=None, content_type="application/json"):
+def _post(url, *, token="Bearer customer-token", payload=None, content_type="application/json", origin=None):
     body = json.dumps(payload or {}).encode()
+    headers = {"Authorization": token, "Content-Type": content_type}
+    if origin:
+        headers["Origin"] = origin
     request = Request(
         url,
         data=body,
-        headers={"Authorization": token, "Content-Type": content_type},
+        headers=headers,
         method="POST",
     )
     try:
@@ -282,3 +285,65 @@ def test_authenticated_http_submission_runs_tenant_product_and_returns_verified_
         server.shutdown()
         server.server_close()
         thread.join(timeout=3)
+
+
+
+def test_customer_api_cors_allows_only_exact_configured_origin_and_preflight():
+    allowed = "https://customer.example"
+    server = create_customer_product_server(
+        ("127.0.0.1", 0),
+        authenticate=lambda _: None,
+        resolve_tenant_runtime=lambda _: {},
+        allowed_origins={allowed},
+    )
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    try:
+        url = f"http://127.0.0.1:{server.server_port}/v1/products"
+        preflight = Request(
+            url,
+            headers={
+                "Origin": allowed,
+                "Access-Control-Request-Method": "POST",
+                "Access-Control-Request-Headers": "authorization,content-type",
+            },
+            method="OPTIONS",
+        )
+        with urlopen(preflight, timeout=3) as response:
+            assert response.status == 204
+            assert response.headers["Access-Control-Allow-Origin"] == allowed
+            assert response.headers["Access-Control-Allow-Methods"] == "POST, OPTIONS"
+            assert response.headers["Access-Control-Allow-Headers"] == "Authorization, Content-Type"
+
+        denied = Request(
+            url,
+            headers={
+                "Origin": "https://attacker.example",
+                "Access-Control-Request-Method": "POST",
+                "Access-Control-Request-Headers": "authorization,content-type",
+            },
+            method="OPTIONS",
+        )
+        with pytest.raises(HTTPError) as error:
+            urlopen(denied, timeout=3)
+        assert error.value.code == 403
+        assert json.loads(error.value.read()) == {"error": "origin_not_allowed"}
+
+        status, headers, body = _post(url, origin="https://attacker.example")
+        assert status == 403
+        assert json.loads(body) == {"error": "origin_not_allowed"}
+        assert "Access-Control-Allow-Origin" not in headers
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=3)
+
+
+def test_customer_api_rejects_insecure_non_local_cors_origins():
+    with pytest.raises(ValueError, match="exact HTTPS origins"):
+        create_customer_product_server(
+            ("127.0.0.1", 0),
+            authenticate=lambda _: None,
+            resolve_tenant_runtime=lambda _: {},
+            allowed_origins={"http://customer.example"},
+        )

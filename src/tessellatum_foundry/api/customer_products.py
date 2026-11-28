@@ -12,6 +12,7 @@ import json
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from collections.abc import Callable
 from typing import Any
+from urllib.parse import urlsplit
 
 
 DEFAULT_MAX_SOURCE_BYTES = 25 * 1024 * 1024
@@ -29,6 +30,7 @@ def create_customer_product_server(
     resolve_tenant_runtime: Callable[[str], dict[str, Any]],
     max_source_bytes: int = DEFAULT_MAX_SOURCE_BYTES,
     max_request_bytes: int = DEFAULT_MAX_REQUEST_BYTES,
+    allowed_origins: set[str] | frozenset[str] = frozenset(),
 ) -> ThreadingHTTPServer:
     """Create an HTTP server for POST /v1/products.
 
@@ -44,8 +46,58 @@ def create_customer_product_server(
         if isinstance(value, bool) or not isinstance(value, int) or value < 1:
             raise ValueError(f"{name} must be a positive integer.")
 
+    normalized_origins = frozenset(allowed_origins)
+    for origin in normalized_origins:
+        parsed = urlsplit(origin)
+        local_http = parsed.scheme == "http" and parsed.hostname in {"localhost", "127.0.0.1", "::1"}
+        if (
+            not isinstance(origin, str)
+            or parsed.scheme not in {"https", "http"}
+            or (parsed.scheme != "https" and not local_http)
+            or not parsed.netloc
+            or parsed.username is not None
+            or parsed.password is not None
+            or parsed.path
+            or parsed.query
+            or parsed.fragment
+            or origin.endswith("/")
+        ):
+            raise ValueError("allowed_origins must contain exact HTTPS origins (or localhost HTTP origins for development).")
+
     class Handler(BaseHTTPRequestHandler):
         server_version = "FoundryCustomerAPI/1.0"
+
+        def _send_cors(self) -> None:
+            origin = self.headers.get("Origin")
+            if origin and origin in normalized_origins:
+                self.send_header("Access-Control-Allow-Origin", origin)
+                self.send_header("Vary", "Origin")
+                self.send_header("Access-Control-Expose-Headers", "X-Foundry-Request-ID, Content-Disposition")
+
+        def do_OPTIONS(self) -> None:
+            origin = self.headers.get("Origin", "")
+            if self.path != "/v1/products":
+                self._send_json(404, {"error": "not_found"})
+                return
+            if origin not in normalized_origins:
+                self._send_json(403, {"error": "origin_not_allowed"})
+                return
+            requested_method = self.headers.get("Access-Control-Request-Method", "")
+            requested_headers = {
+                value.strip().lower()
+                for value in self.headers.get("Access-Control-Request-Headers", "").split(",")
+                if value.strip()
+            }
+            if requested_method != "POST" or not requested_headers.issubset({"authorization", "content-type"}):
+                self._send_json(403, {"error": "preflight_not_allowed"})
+                return
+            self.send_response(204)
+            self._send_cors()
+            self.send_header("Access-Control-Allow-Methods", "POST, OPTIONS")
+            self.send_header("Access-Control-Allow-Headers", "Authorization, Content-Type")
+            self.send_header("Access-Control-Max-Age", "600")
+            self.send_header("Cache-Control", "no-store")
+            self.end_headers()
 
         def _send_json(self, status: int, payload: dict[str, Any]) -> None:
             body = json.dumps(
@@ -56,12 +108,18 @@ def create_customer_product_server(
             self.send_header("Content-Length", str(len(body)))
             self.send_header("Cache-Control", "no-store")
             self.send_header("X-Content-Type-Options", "nosniff")
+            self._send_cors()
             self.end_headers()
             self.wfile.write(body)
 
         def do_POST(self) -> None:
             if self.path != "/v1/products":
                 self._send_json(404, {"error": "not_found"})
+                return
+
+            origin = self.headers.get("Origin")
+            if origin and origin not in normalized_origins:
+                self._send_json(403, {"error": "origin_not_allowed"})
                 return
 
             identity = authenticate(self.headers.get("Authorization", ""))
@@ -163,6 +221,7 @@ def create_customer_product_server(
                 self.send_header("Cache-Control", "no-store")
                 self.send_header("X-Content-Type-Options", "nosniff")
                 self.send_header("X-Foundry-Request-ID", result["request_id"])
+                self._send_cors()
                 self.end_headers()
                 self.wfile.write(bundle)
             except (UnicodeDecodeError, json.JSONDecodeError, CustomerAPIError):
