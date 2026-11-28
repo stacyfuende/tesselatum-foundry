@@ -27,7 +27,7 @@ def test_request_page_has_all_controls_referenced_by_its_script():
     html = PAGE.read_text(encoding="utf-8")
     parser = ElementIds()
     parser.feed(html)
-    referenced = set(re.findall(r"\$\(['"]([^'"]+)['"]\)", html))
+    referenced = set(re.findall(r"\$\(['\"]([^'\"]+)['\"]\)", html))
     assert referenced <= parser.ids
     assert {
         "api-endpoint",
