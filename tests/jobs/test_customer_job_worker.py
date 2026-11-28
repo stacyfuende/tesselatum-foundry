@@ -16,18 +16,19 @@ class FakeRepository:
         self.submission = None
         self.artifact = None
         self.completed = None
+        self.atomic_completion = None
 
     def submit(self, **kwargs):
         self.submission = kwargs
         return {"job_id": str(uuid4()), "status": "queued"}
 
-    def record_artifact(self, **kwargs):
-        self.artifact = kwargs
-        return {"artifact_id": uuid4(), **kwargs}
-
-    def complete(self, **kwargs):
+    def complete_with_artifact(self, **kwargs):
+        self.atomic_completion = kwargs
+        self.artifact = kwargs["artifact"]
         self.completed = kwargs
-        return {"job_id": kwargs["job_id"], "status": "succeeded"}
+        artifact_row = {"artifact_id": uuid4(), **kwargs["artifact"]}
+        manifest = {**kwargs["result_manifest"], "artifact_id": str(artifact_row["artifact_id"])}
+        return ({"job_id": kwargs["job_id"], "status": "succeeded", "result_manifest": manifest}, artifact_row)
 
 
 def test_submit_stages_bytes_and_persists_only_checksum_and_object_reference():
@@ -114,7 +115,8 @@ def test_worker_reuses_product_pipeline_and_publishes_verified_bundle():
     assert seen == {"request": request, "source": source, "actor_id": "actor-a"}
     assert result["job"]["status"] == "succeeded"
     assert repository.artifact["format"] == "zip"
-    assert repository.completed["lease_token"] == job["lease_token"]
+    assert repository.atomic_completion["lease_token"] == job["lease_token"]
+    assert repository.atomic_completion["artifact"]["checksum_sha256"] == result["manifest"]["checksum_sha256"]
     assert store.get(object_key=result["manifest"]["object_key"]) == b"verified-zip-bytes"
     assert result["manifest"]["checksum_sha256"]
 
