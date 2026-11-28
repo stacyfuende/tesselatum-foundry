@@ -572,7 +572,7 @@ def test_real_product_blueprint_runs_to_verified_geojson_bundle(tmp_path):
     ]
     registry = CapabilityRegistry()
     plan = plan_product_blueprint(blueprint, capabilities=registry)
-    assert plan["status"] == "planned", plan, plan
+    assert plan["status"] == "planned", plan
 
     inputs = execution_inputs()
     compiled = compile_product_blueprint_recipe(
