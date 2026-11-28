@@ -95,12 +95,22 @@ def _evaluate_validator(
                 for result in execution.node_results.values()
             )
         )
-        return passed, "Every Recipe node Run succeeded." if passed else "Recipe or one or more Runs did not succeed."
+        reason = (
+            "Every Recipe node Run succeeded."
+            if passed
+            else "Recipe or one or more Runs did not succeed."
+        )
+        return passed, reason
     if validator == "outputs.present":
         expected = {item["name"] for item in execution.recipe.get("declared_outputs", [])}
         # Recipe result's output map uses the declared output names.
         passed = bool(expected) and expected.issubset(outputs)
-        return passed, "All declared outputs are present." if passed else "One or more declared outputs are missing."
+        reason = (
+            "All declared outputs are present."
+            if passed
+            else "One or more declared outputs are missing."
+        )
+        return passed, reason
     if validator == "artifacts.metadata_valid":
         passed = bool(outputs) and all(
             isinstance(item, dict)
@@ -111,16 +121,25 @@ def _evaluate_validator(
             and item.get("storage", {}).get("uri")
             for item in outputs.values()
         )
-        return passed, "Output Artifact metadata contains required identity, checksum, and storage fields." if passed else "Artifact metadata is incomplete or invalid."
+        reason = (
+            "Output Artifact metadata contains required identity, checksum, and storage fields."
+            if passed
+            else "Artifact metadata is incomplete or invalid."
+        )
+        return passed, reason
     if validator == "artifacts.checksum_verified":
         if artifact_store is None or not outputs:
-            return False, "Artifact store is unavailable or no outputs exist for integrity verification."
+            return False, (
+                "Artifact store is unavailable or no outputs exist for integrity verification."
+            )
         try:
             for artifact in outputs.values():
                 artifact_store.verify_artifact(artifact)
         except (OSError, ValueError, RuntimeError, KeyError) as error:
             return False, f"Artifact integrity verification failed: {error}"
-        return True, "All output Artifact bytes match their recorded SHA-256 and size."
+        return True, (
+            "All output Artifact bytes match their recorded SHA-256 and size."
+        )
     return False, "Validator not registered."
 
 
