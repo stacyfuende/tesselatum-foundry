@@ -166,3 +166,26 @@ def test_requested_autonomy_mode_is_part_of_plan_identity():
         decision["mode"] == "guided"
         for decision in guided["autonomy_decisions"]
     )
+
+def test_nairobi_site_coordinate_product_blueprint_is_plannable():
+    import json
+    from pathlib import Path
+
+    example_path = (
+        Path(__file__).resolve().parents[2]
+        / "examples"
+        / "product_blueprints"
+        / "nairobi-site-coordinate-standardization.json"
+    )
+    item = json.loads(example_path.read_text(encoding="utf-8"))
+    result = plan_product_blueprint(item, capabilities=CapabilityRegistry())
+
+    assert result["status"] == "planned", result
+    assert result["node_order"] == ["standardize"]
+    assert result["nodes"][0]["capability_id"] == "vector.reproject"
+    assert result["nodes"][0]["bindings"]["features"] == "input:sites"
+    assert result["nodes"][0]["parameters"]["target_crs"] == {
+        "authority": "EPSG",
+        "code": 32737,
+    }
+

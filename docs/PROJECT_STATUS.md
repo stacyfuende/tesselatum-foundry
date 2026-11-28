@@ -101,3 +101,13 @@ A dependency-free browser viewer now opens GeoJSON Features and FeatureCollectio
 A GeoJSON export adapter now turns an accepted Product Manifest into a deterministic ZIP bundle. It resolves each exact Artifact ID/version through the configured Artifact Store, compares immutable Artifact metadata with the assembled manifest, reads bytes through the store's SHA-256-verifying API, validates GeoJSON payload type, enforces a configurable aggregate byte limit, and packages the source manifest, export index and GeoJSON outputs. Only `accepted` products with `release_allowed=true` can be exported. The bundle includes the accepted source manifest, the exact canonical manifest bytes used for its fingerprint, an export index and GeoJSON outputs. The browser viewer can open the extracted bundle files selected together, verify the canonical manifest fingerprint with Web Crypto, cross-check each output against its immutable Artifact reference, verify file sizes and SHA-256 checksums, and inspect each GeoJSON output. It does not upload data or fetch arbitrary URLs. ADR-061 documents the contract.
 
 **Proof boundary:** unit tests cover bundle contents, determinism, rejected/unaccepted products, manifest tampering, Artifact metadata mismatch, invalid GeoJSON and export size limits; storage tests cover bounded reads. The browser script has passed a JavaScript syntax check, but browser interaction and the latest CI run remain unverified. This is a portable local export adapter, not hosted publication, a signed distribution mechanism, customer access control, or a live Artifact API. It currently supports GeoJSON only; raster and other product formats need their own delivery adapters/viewers.
+
+## Outcome-first product examples
+
+Two distinct customer jobs now have explicit, schema-validated Spatial Product Blueprints:
+
+- `examples/product_blueprints/road-access-buffer.json`: create a 500 m road-proximity polygon dataset for planning and site-selection analysis.
+- `examples/product_blueprints/nairobi-site-coordinate-standardization.json`: convert WGS 84 site locations to EPSG:32737 for metric analysis, preserving feature identity and attributes.
+
+The second example is deliberately a different product outcome, not another buffer variant. Its planner test verifies that the exact registered `vector.reproject@1.0.0` capability is selected with the intended source binding and target CRS. This proves planning only; it does not claim that this example has been executed and exported end-to-end. The existing Docker-backed product integration test covers the road-buffer product path.
+
