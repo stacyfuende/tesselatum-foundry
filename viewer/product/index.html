@@ -40,21 +40,24 @@ async function sha256(bytes){if(!crypto?.subtle)throw Error("This browser does n
 async function openBundle(){
  try{
   const files=[...$("bundle-files").files];if(!files.length)throw Error("Select the extracted bundle files first.");
-  const byName=new Map(files.map(f=>[f.name,f]));const mf=byName.get("product-manifest.json"),ixf=byName.get("export-index.json");if(!mf||!ixf)throw Error("Bundle needs product-manifest.json and export-index.json.");
-  if(mf.size>5*1024*1024||ixf.size>5*1024*1024)throw Error("Bundle metadata exceeds the 5 MB limit.");
+  const byName=new Map(files.map(f=>[f.name,f]));const mf=byName.get("product-manifest.json"),cf=byName.get("manifest-fingerprint-input.json"),ixf=byName.get("export-index.json");if(!mf||!cf||!ixf)throw Error("Bundle needs product-manifest.json, manifest-fingerprint-input.json and export-index.json.");
+  if(mf.size>5*1024*1024||cf.size>5*1024*1024||ixf.size>5*1024*1024)throw Error("Bundle metadata exceeds the 5 MB limit.");
   const manifest=JSON.parse(await mf.text()),index=JSON.parse(await ixf.text());
   if(manifest.status!=="accepted"||manifest.release_allowed!==true)throw Error("Only accepted products eligible for release can be opened as a verified bundle.");
-  const fingerprint=manifest.manifest_fingerprint;const unsigned={...manifest};delete unsigned.manifest_fingerprint;
-  if(await sha256(new TextEncoder().encode(canonical(unsigned)))!==fingerprint)throw Error("Product manifest fingerprint verification failed.");
+  const fingerprint=manifest.manifest_fingerprint;const canonicalBytes=await cf.arrayBuffer();
+  if(await sha256(canonicalBytes)!==fingerprint)throw Error("Product manifest fingerprint verification failed.");
+  const unsigned=JSON.parse(new TextDecoder("utf-8",{fatal:true}).decode(canonicalBytes));const unsignedManifest={...manifest};delete unsignedManifest.manifest_fingerprint;
+  if(canonical(unsigned)!==canonical(unsignedManifest))throw Error("Canonical manifest content does not match the product manifest.");
   if(index.bundle_version!=="1.0.0"||index.product_manifest_fingerprint!==fingerprint||index.product_id!==manifest.product_id||index.product_version!==manifest.product_version)throw Error("Export index does not match this product manifest.");
   if(!Array.isArray(index.outputs)||!index.outputs.length)throw Error("Export index contains no outputs.");
   const records=new Map((manifest.outputs||[]).map(o=>[o.output_id,o]));const verified=[];
-  for(const item of index.outputs){
+  let totalBytes=0;for(const item of index.outputs){
    if(!item||typeof item.output_id!=="string"||item.path!=="outputs/"+item.output_id+".geojson")throw Error("Export index contains an unsafe output path.");
    const record=records.get(item.output_id);if(!record||record.status!=="assembled")throw Error("Export output is not an assembled manifest output.");
    const artifact=record.artifact;if(!artifact||artifact.artifact_id!==item.artifact_id||artifact.version!==item.version||artifact.media_type!==item.media_type||artifact.size_bytes!==item.size_bytes||canonical(artifact.checksum)!==canonical(item.checksum))throw Error("Export index Artifact metadata differs from the product manifest.");
    const file=byName.get(item.output_id+".geojson");if(!file)throw Error("Missing output file: "+item.path);
    if(file.size!==item.size_bytes)throw Error("Output size mismatch: "+item.output_id);
+   totalBytes+=file.size;if(totalBytes>100*1024*1024)throw Error("Bundle exceeds the 100 MB browser preview limit.");
    const bytes=await file.arrayBuffer();if(await sha256(bytes)!==item.checksum?.value)throw Error("SHA-256 verification failed for "+item.output_id);
    const data=JSON.parse(new TextDecoder("utf-8",{fatal:true}).decode(bytes));if(!data||!["Feature","FeatureCollection"].includes(data.type))throw Error("Output is not a supported GeoJSON document: "+item.output_id);
    verified.push({item,data});
