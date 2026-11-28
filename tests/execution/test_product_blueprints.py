@@ -45,7 +45,7 @@ def blueprint():
 def test_blueprint_compiles_to_deterministic_topological_plan():
     first = plan_product_blueprint(blueprint(), capabilities=CapabilityRegistry())
     second = plan_product_blueprint(blueprint(), capabilities=CapabilityRegistry())
-    assert first["status"] == "planned"
+    assert first["status"] == "planned", first
     assert first["executable"] is False
     assert first["node_order"] == ["project", "buffer"]
     assert first["node_order"] == second["node_order"]
@@ -98,7 +98,7 @@ def test_dependency_resolution_is_independent_of_blueprint_declaration_order():
     item = blueprint()
     item["reasoning"]["nodes"].reverse()
     result = plan_product_blueprint(item, capabilities=CapabilityRegistry())
-    assert result["status"] == "planned"
+    assert result["status"] == "planned", result
     assert result["node_order"] == ["project", "buffer"]
 
 
@@ -122,7 +122,7 @@ def test_external_delivery_requires_explicit_release_authorisation():
     item = blueprint()
     item["outputs"][0]["delivery_targets"] = ["https://customer.example/product"]
     result = plan_product_blueprint(item, capabilities=CapabilityRegistry())
-    assert result["status"] == "approval_required"
+    assert result["status"] == "approval_required", result
     assert result["approval_required"] is True
     assert any(
         decision["node_id"] == "access-layer"

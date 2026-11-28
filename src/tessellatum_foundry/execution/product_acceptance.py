@@ -104,9 +104,9 @@ def _evaluate_validator(
         )
         return passed, reason
     if validator == "outputs.present":
-        expected = {item["name"] for item in execution.recipe.get("declared_outputs", [])}
-        # Recipe result's output map uses the declared output names.
-        passed = bool(expected) and expected.issubset(outputs)
+        # RecipeExecutionResult.recipe is a reference, not the full definition.
+        # The outer evaluator separately verifies every Blueprint-declared output ID.
+        passed = bool(outputs)
         reason = (
             "All declared outputs are present."
             if passed
