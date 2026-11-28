@@ -199,10 +199,20 @@ def assemble_product_manifest(
             for node_id, result in execution.node_results.items()
         },
     }
+    intent = blueprint.get("intent", {})
     manifest = {
         "manifest_version": "1.0.0",
         "product_id": blueprint["blueprint_id"],
         "product_version": blueprint["version"],
+        "product": {
+            "title": blueprint.get("title", blueprint["blueprint_id"]),
+            "description": blueprint.get("description", ""),
+            "outcome": intent.get("outcome", ""),
+            "audience": intent.get("audience", ""),
+            "decision_context": intent.get("decision_context", ""),
+            "geographic_scope": intent.get("geographic_scope", {}),
+            "success_criteria": list(intent.get("success_criteria", [])),
+        },
         "status": acceptance["status"],
         "release_allowed": acceptance["release_allowed"],
         "acceptance": acceptance,

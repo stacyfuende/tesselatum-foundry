@@ -125,6 +125,8 @@ def test_manifest_provenance_and_fingerprint_stable():
     assert first["manifest_fingerprint"] == second["manifest_fingerprint"]
     assert first["outputs"][0]["status"] == "assembled"
     assert first["provenance"]["execution_id"] == "exec-1"
+    assert first["product"]["title"] == "demo-product"
+    assert first["product"]["success_criteria"] == []
 
 
 def test_missing_product_output_is_not_marked_assembled():
