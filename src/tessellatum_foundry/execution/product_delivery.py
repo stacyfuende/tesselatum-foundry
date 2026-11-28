@@ -38,9 +38,10 @@ def build_geojson_product_bundle(
         raise ProductExportError("Product manifest fingerprint is missing or invalid.")
     canonical = dict(manifest)
     canonical.pop("manifest_fingerprint", None)
-    expected = hashlib.sha256(json.dumps(
+    canonical_bytes = json.dumps(
         canonical, sort_keys=True, separators=(",", ":"), allow_nan=False
-    ).encode("utf-8")).hexdigest()
+    ).encode("utf-8")
+    expected = hashlib.sha256(canonical_bytes).hexdigest()
     if expected != fingerprint:
         raise ProductExportError("Product manifest fingerprint verification failed.")
     if (
@@ -74,6 +75,7 @@ def build_geojson_product_bundle(
         if media_type not in {
             "application/geo+json",
             "application/json",
+            "application/vnd.tessellatum.spatial-feature-collection+json",
         }:
             raise ProductExportError(f"Output {output_id!r} is not a supported GeoJSON media type.")
         artifact_id, version = artifact_ref.get("artifact_id"), artifact_ref.get("version")
@@ -145,7 +147,7 @@ def build_geojson_product_bundle(
             "product-manifest.json",
             json.dumps(manifest, sort_keys=True, indent=2, allow_nan=False).encode("utf-8"),
         ),
-        ("manifest-fingerprint-input.json", canonical.encode("utf-8")),
+        ("manifest-fingerprint-input.json", canonical_bytes),
         (
             "export-index.json",
             json.dumps(export_index, sort_keys=True, indent=2, allow_nan=False).encode("utf-8"),
