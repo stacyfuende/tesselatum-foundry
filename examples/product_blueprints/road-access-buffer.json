@@ -1,0 +1,105 @@
+{
+  "blueprint_id": "road-access-buffer",
+  "version": "1.0.0",
+  "title": "Road access buffer",
+  "description": "Create a bounded access-zone dataset from a verified road network.",
+  "intent": {
+    "outcome": "Produce a polygon dataset showing areas within 500 metres of the supplied roads.",
+    "audience": "Planning and site-selection analysts",
+    "decision_context": "Explore proximity to road infrastructure.",
+    "constraints": [
+      {
+        "id": "metric-buffer",
+        "description": "Buffer distance is measured in metres in a suitable projected CRS.",
+        "kind": "hard"
+      }
+    ],
+    "success_criteria": [
+      "Recipe execution succeeds.",
+      "The declared output Artifact exists.",
+      "The output Artifact has valid identity, checksum metadata, and storage reference."
+    ]
+  },
+  "evidence": {
+    "requirements": [
+      {
+        "id": "roads",
+        "role": "road-network",
+        "required": true,
+        "quality_requirements": {
+          "geometry": "LineString or MultiLineString",
+          "coverage": "The requested study area"
+        },
+        "rights_requirements": [
+          "Permitted for the intended analysis and delivery."
+        ]
+      }
+    ]
+  },
+  "reasoning": {
+    "nodes": [
+      {
+        "id": "buffer",
+        "capability": "vector.buffer",
+        "capability_version": "1.0.0",
+        "inputs": {
+          "features": "input:roads"
+        },
+        "parameters": {
+          "distance": 500,
+          "unit": "metre"
+        },
+        "purpose": "Compute a 500 metre road-proximity zone."
+      }
+    ]
+  },
+  "outputs": [
+    {
+      "id": "access-zone",
+      "product_type": "dataset",
+      "experience": "A validated polygon dataset for downstream mapping or analysis."
+    }
+  ],
+  "acceptance": {
+    "checks": [
+      {
+        "id": "execution-succeeded",
+        "kind": "computation",
+        "description": "All registered Recipe Runs succeeded.",
+        "validator": "runs.succeeded",
+        "required": true
+      },
+      {
+        "id": "output-present",
+        "kind": "product",
+        "description": "The declared access-zone output exists.",
+        "validator": "outputs.present",
+        "required": true
+      },
+      {
+        "id": "artifact-metadata",
+        "kind": "product",
+        "description": "The output Artifact has required metadata.",
+        "validator": "artifacts.metadata_valid",
+        "required": true
+      },
+      {
+        "id": "checksum-verified",
+        "kind": "product",
+        "description": "Verify output bytes against the recorded SHA-256.",
+        "validator": "artifacts.checksum_verified",
+        "required": true
+      }
+    ]
+  },
+  "resource_limits": {
+    "max_runtime_seconds": 300,
+    "max_bytes_read": 500000000,
+    "max_artifact_bytes": 250000000,
+    "max_parallel_tasks": 1
+  },
+  "metadata": {
+    "category": "proximity-analysis",
+    "example": true
+  }
+}
