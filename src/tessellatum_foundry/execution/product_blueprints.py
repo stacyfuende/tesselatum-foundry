@@ -230,8 +230,7 @@ def plan_product_blueprint(
         downstream: dict[str, set[str]] = defaultdict(set)
         for node_id, parents in dependencies.items():
             for parent in parents:
-                if parent in downstream:
-                    downstream[parent].add(node_id)
+                downstream[parent].add(node_id)
         ready = deque(sorted(node_id for node_id, degree in indegree.items() if degree == 0))
         while ready:
             current = ready.popleft()
