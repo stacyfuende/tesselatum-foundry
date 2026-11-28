@@ -99,6 +99,7 @@ $("prepare").addEventListener("click",()=>{
  $("result").textContent="Request prepared. The source file passed basic local checks; Foundry still needs to ingest and validate it before execution.";
  $("result").className="status success";
  $("download-area").classList.remove("hidden");
+ updateReady();
 });
 $("download").addEventListener("click",()=>{
  if(!requestPayload)return;
