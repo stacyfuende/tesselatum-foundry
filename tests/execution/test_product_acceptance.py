@@ -106,3 +106,17 @@ def test_missing_product_output_is_not_marked_assembled():
     manifest = assemble_product_manifest(b, {"plan_fingerprint": "x"}, {}, execution, acceptance)
     assert manifest["outputs"][0]["status"] == "missing"
     assert manifest["release_allowed"] is False
+
+
+
+def test_missing_declared_output_rejects_even_without_output_validator():
+    b = blueprint([{
+        "id": "some-check",
+        "kind": "computation",
+        "description": "An unrelated check",
+        "validator": "runs.succeeded",
+    }])
+    result = evaluate_product_acceptance(b, FakeResult(outputs={}))
+    assert result["status"] == "rejected"
+    assert result["missing_outputs"] == ["out"]
+    assert result["release_allowed"] is False
