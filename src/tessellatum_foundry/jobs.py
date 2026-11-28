@@ -93,7 +93,9 @@ class PostgresJobRepository:
             import psycopg
             from psycopg.rows import dict_row
         except ImportError as exc:  # pragma: no cover
-            raise RuntimeError("Install tessellatum-foundry[postgis] to use Postgres jobs.") from exc
+            raise RuntimeError(
+                "Install tessellatum-foundry[postgis] to use Postgres jobs."
+            ) from exc
         return psycopg.connect(self._dsn, row_factory=dict_row)
 
     @staticmethod
@@ -111,7 +113,11 @@ class PostgresJobRepository:
         actor_id = _identifier(actor_id, "actor_id")
         idempotency_key = _identifier(idempotency_key, "idempotency_key")
         request_version = _identifier(request_version, "request_version", 32)
-        if not isinstance(max_attempts, int) or isinstance(max_attempts, bool) or not 1 <= max_attempts <= 20:
+        if (
+            not isinstance(max_attempts, int)
+            or isinstance(max_attempts, bool)
+            or not 1 <= max_attempts <= 20
+        ):
             raise ValueError("max_attempts must be an integer between 1 and 20.")
         digest = canonical_request_sha256(request_version, request_payload)
         with self._connection() as conn:
@@ -137,10 +143,13 @@ class PostgresJobRepository:
                     )
                     job = cur.fetchone()
                     if job is None:
-                        raise JobRepositoryError("Idempotent submission conflicted but no job was found.")
+                        raise JobRepositoryError(
+                            "Idempotent submission conflicted but no job was found."
+                        )
                     if job["request_sha256"] != digest:
                         raise IdempotencyConflict(
-                            "This tenant has already used the idempotency key for a different request."
+                            "This tenant has already used the idempotency key "
+                            "for a different request."
                         )
                     return job
                 cur.execute(
@@ -180,7 +189,11 @@ class PostgresJobRepository:
 
     def claim_next(self, *, worker_id: str, lease_seconds: int = 120) -> dict[str, Any] | None:
         worker_id = _identifier(worker_id, "worker_id")
-        if not isinstance(lease_seconds, int) or isinstance(lease_seconds, bool) or not 5 <= lease_seconds <= 3600:
+        if (
+            not isinstance(lease_seconds, int)
+            or isinstance(lease_seconds, bool)
+            or not 5 <= lease_seconds <= 3600
+        ):
             raise ValueError("lease_seconds must be an integer between 5 and 3600.")
         token = uuid.uuid4()
         with self._connection() as conn:
@@ -275,7 +288,11 @@ class PostgresJobRepository:
     ) -> dict[str, Any]:
         tenant_id = _identifier(tenant_id, "tenant_id")
         error_json = self._json(error)
-        if not isinstance(retry_delay_seconds, int) or isinstance(retry_delay_seconds, bool) or not 0 <= retry_delay_seconds <= 86400:
+        if (
+            not isinstance(retry_delay_seconds, int)
+            or isinstance(retry_delay_seconds, bool)
+            or not 0 <= retry_delay_seconds <= 86400
+        ):
             raise ValueError("retry_delay_seconds must be an integer between 0 and 86400.")
         with self._connection() as conn:
             with conn.cursor() as cur:
