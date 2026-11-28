@@ -2,9 +2,19 @@
 
 A dependency-free, browser-local preview for GeoJSON spatial products.
 
-## Open
+## Open a GeoJSON file
 
 Serve this directory as a static site, or open `index.html` in a modern browser. Choose a `.geojson` file, paste a GeoJSON FeatureCollection, or load the clearly labelled illustrative sample.
+
+## Open a Foundry export bundle
+
+1. Build a bundle from an accepted product using `build_geojson_product_bundle`.
+2. Extract the ZIP locally.
+3. In the viewer, select `product-manifest.json`, `manifest-fingerprint-input.json`, `export-index.json`, and every GeoJSON file under `outputs/` together.
+4. Choose **Verify & open bundle**. The viewer checks the exact canonical manifest fingerprint, matches each output to its immutable Artifact identity and metadata, checks file sizes and SHA-256 checksums, then lets you open each output.
+5. The browser does not upload files or fetch arbitrary URLs. Use HTTPS or localhost so Web Crypto is available for checksum verification.
+
+The bundle is a portable local handoff. This is not hosted publishing, a signed distribution channel, or customer access control.
 
 ## Current contract
 
