@@ -65,6 +65,8 @@ def test_customer_api_authenticates_resolves_tenant_and_returns_product_bundle()
 
         def run(request, source_bytes, **kwargs):
             assert request["request_id"] == "req-123"
+            assert request["tenant_id"] == "attacker-selected-tenant"
+            assert request["actor_id"] == "attacker-selected-actor"
             assert source_bytes == b'{"type":"FeatureCollection","features":[]}'
             assert kwargs["actor_id"] == "actor-7"
             assert kwargs["artifact_store"] is not None
@@ -81,7 +83,11 @@ def test_customer_api_authenticates_resolves_tenant_and_returns_product_bundle()
                 f"http://127.0.0.1:{server.server_port}/v1/products",
                 payload={
                     "request_version": "1.0.0",
-                    "request": {"request_id": "req-123"},
+                    "request": {
+                        "request_id": "req-123",
+                        "tenant_id": "attacker-selected-tenant",
+                        "actor_id": "attacker-selected-actor",
+                    },
                     "source_file_base64": base64.b64encode(
                         b'{"type":"FeatureCollection","features":[]}'
                     ).decode(),
