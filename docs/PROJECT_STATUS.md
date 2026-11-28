@@ -94,3 +94,10 @@ For each subsequent commit, record the exact head SHA and final checks. Do not c
 ## Spatial product viewer (first customer-facing output surface)
 
 A dependency-free browser viewer now opens GeoJSON Features and FeatureCollections locally. It provides a geometry preview, feature/coordinate counts, extent, geometry composition, per-feature properties and GeoJSON download. This is a first usable output surface, not yet a Foundry-connected product delivery path. It assumes WGS 84 longitude/latitude, has 50,000-feature / 100 MB preview limits, has no basemap or raster support, and does not certify geometry or analytical quality. The included sample is illustrative only. See `viewer/product/index.html` and `viewer/product/README.md`.
+
+
+## Verified product export (first Artifact-to-customer handoff)
+
+A GeoJSON export adapter now turns an accepted Product Manifest into a deterministic ZIP bundle. It resolves each exact Artifact ID/version through the configured Artifact Store, compares immutable Artifact metadata with the assembled manifest, reads bytes through the store's SHA-256-verifying API, validates GeoJSON payload type, enforces a configurable aggregate byte limit, and packages the source manifest, export index and GeoJSON outputs. Only `accepted` products with `release_allowed=true` can be exported. Export index entries carry per-output checksums and the source manifest fingerprint. ADR-061 documents the contract.
+
+**Proof boundary:** unit tests have been added for bundle contents, determinism, rejected/unaccepted products, manifest tampering, Artifact metadata mismatch, invalid GeoJSON and export size limits. They have not yet been executed in CI or locally. This is a portable local export adapter, not hosted publication, a signed distribution mechanism, customer access control, or a live browser integration. It currently supports GeoJSON only; raster and other product formats need their own delivery adapters/viewers.
