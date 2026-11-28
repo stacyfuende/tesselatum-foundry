@@ -121,5 +121,8 @@ def prepare_customer_product_request(
             "ingestion_required": True,
         },
         "next_action": next_action,
+        # Keep the complete, validated Blueprint beside its compact plan summary.
+        # Execution, acceptance and manifests need the full contract, not only identity.
+        "blueprint": resolved_blueprint,
         "execution_plan": plan,
     }
