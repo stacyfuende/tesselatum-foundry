@@ -32,6 +32,7 @@ Implemented operations:
 - `heartbeat`, `complete`, and `fail`: lease-token and expiry fencing; lifecycle state and event changes commit together.
 - `reap_expired_leases`: expired leases are atomically requeued or timed out according to the attempt limit.
 - `record_artifact`: records metadata and an opaque object key only; it does not upload or store bytes.
+- `complete_with_artifact`: inserts/checks artifact metadata, completes the active lease, and writes the completion event in one transaction. A stale lease rolls the metadata insert back.
 
 Request metadata rejects common credential/source-byte fields and non-finite JSON numbers. The request digest includes request version and the complete semantic metadata envelope. The caller remains responsible for including source checksums and product/implementation versions in that envelope.
 
@@ -54,14 +55,14 @@ Every heartbeat/completion/failure compares tenant, job ID, active status, lease
 
 ## Artifact publication
 
-- Upload bytes to an approved object store before inserting metadata.
+- Upload bytes to an approved object store before registering metadata. The worker uses `complete_with_artifact` so artifact registration and lease-fenced job completion commit atomically.
 - Store opaque object key, tenant/job association, media type, format, byte count, SHA-256, timestamps and non-sensitive metadata only.
 - Resolve object keys through a server-side tenant-authorized adapter; never return raw bucket URLs or service credentials.
 - Verify checksum and byte count before marking a product delivered.
 - Artifact rows are immutable to the application role (select/insert only).
 - Expiration/deletion requires a separately controlled retention process. `expires_at` alone does not delete anything.
 
-The repository's metadata insert is not proof that an object exists or has been verified; the future storage adapter must perform that verification before calling it.
+The repository's metadata insert is not proof that an object exists or has been verified; the worker verifies checksum and byte count before atomic completion. An uploaded object can remain orphaned if the lease is lost before commit; it has no artifact metadata and is eligible for a later garbage-collection process.
 
 ## Database privilege boundary
 
