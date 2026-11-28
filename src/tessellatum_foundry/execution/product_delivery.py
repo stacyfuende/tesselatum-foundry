@@ -115,6 +115,7 @@ def build_geojson_product_bundle(
     }
     entries = [
         ("product-manifest.json", json.dumps(manifest, sort_keys=True, indent=2, allow_nan=False).encode("utf-8")),
+        ("manifest-fingerprint-input.json", canonical.encode("utf-8")),
         ("export-index.json", json.dumps(export_index, sort_keys=True, indent=2, allow_nan=False).encode("utf-8")),
         *[(path, content) for path, content, _ in payloads],
     ]
