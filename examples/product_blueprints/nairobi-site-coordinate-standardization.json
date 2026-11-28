@@ -29,20 +29,7 @@
     ]
   },
   "evidence": {
-    "requirements": [
-      {
-        "id": "sites",
-        "role": "site-locations",
-        "required": true,
-        "quality_requirements": {
-          "geometry": "Point or MultiPoint",
-          "coverage": "Nairobi-area sites"
-        },
-        "rights_requirements": [
-          "Permitted for the intended analysis and delivery."
-        ]
-      }
-    ]
+    "requirements": []
   },
   "reasoning": {
     "nodes": [

@@ -627,3 +627,158 @@ def test_real_product_blueprint_runs_to_verified_geojson_bundle(tmp_path):
         assert output["features"][0]["geometry"]["type"] == "Polygon"
         exported_manifest = json.loads(archive.read("product-manifest.json"))
         assert exported_manifest["status"] == "accepted"
+
+@pytest.mark.skipif(
+    not __import__("os").getenv("FOUNDRY_VECTOR_BUFFER_IMAGE"),
+    reason="The real product-factory worker image is built and configured only in container CI.",
+)
+def test_real_nairobi_site_coordinate_product_runs_to_verified_geojson_bundle(tmp_path):
+    import io
+    import json
+    import zipfile
+    from pathlib import Path
+
+    from tessellatum_foundry.execution.docker_worker import DockerVectorReprojectWorker
+    from tessellatum_foundry.execution.product_acceptance import (
+        assemble_product_manifest,
+        evaluate_product_acceptance,
+    )
+    from tessellatum_foundry.execution.product_delivery import build_geojson_product_bundle
+    from tessellatum_foundry.execution.recipes import RecipeExecutionService
+    from tessellatum_foundry.execution.reproject_service import VectorReprojectRunService
+    from tessellatum_foundry.execution.runs import RunRepository
+    from tessellatum_foundry.storage.artifacts import FileSystemArtifactStore
+    from tessellatum_foundry.storage.definitions import VersionedDefinitionStore
+
+    media_type = "application/vnd.tessellatum.spatial-feature-collection+json"
+    source_crs = {"authority": "EPSG", "code": 4326}
+    target_crs = {"authority": "EPSG", "code": 32737}
+    artifact_store = FileSystemArtifactStore(tmp_path / "artifacts")
+    source = {
+        "type": "FeatureCollection",
+        "features": [{
+            "type": "Feature",
+            "id": "site-001",
+            "geometry": {"type": "Point", "coordinates": [36.8219, -1.2921]},
+            "properties": {"site_name": "Nairobi test site", "use": "mixed"},
+        }],
+    }
+    input_artifact = artifact_store.put_bytes(
+        artifact_id="source.sites",
+        version="1.0.0",
+        content=json.dumps(source, allow_nan=False).encode("utf-8"),
+        created_by="product-factory-integration",
+        media_type=media_type,
+        format_name="Foundry Spatial Feature Collection JSON",
+        spatial={
+            "kind": "vector",
+            "crs": source_crs,
+            "geometry_types": ["Point"],
+        },
+    )
+    assert input_artifact["artifact_id"] == "source.sites"
+
+    blueprint_path = (
+        Path(__file__).resolve().parents[2]
+        / "examples"
+        / "product_blueprints"
+        / "nairobi-site-coordinate-standardization.json"
+    )
+    blueprint = json.loads(blueprint_path.read_text(encoding="utf-8"))
+    registry = CapabilityRegistry()
+    plan = plan_product_blueprint(blueprint, capabilities=registry)
+    assert plan["status"] == "planned", plan
+
+    inputs = {
+        "cell_templates": {
+            "standardize": {
+                "capability": {
+                    "capability_id": "vector.reproject",
+                    "version": "1.0.0",
+                },
+                "output_contracts": {
+                    "result": {
+                        "data_kind": "vector",
+                        "media_types": [media_type],
+                        "crs": target_crs,
+                        "geometry_types": ["Point"],
+                    },
+                },
+            },
+        },
+        "resolved_input_bindings": {
+            "standardize.features": {
+                "source": "artifact",
+                "artifact": {
+                    "artifact_id": input_artifact["artifact_id"],
+                    "version": input_artifact["version"],
+                },
+            },
+        },
+        "output_bindings": {
+            "standardized-sites": {
+                "node_id": "standardize",
+                "output_port": "result",
+            },
+        },
+    }
+    compiled = compile_product_blueprint_recipe(
+        plan, capabilities=registry, **inputs
+    )
+    runner = VectorReprojectRunService(
+        artifact_store=artifact_store,
+        run_repository=RunRepository(tmp_path / "runs"),
+        worker=DockerVectorReprojectWorker(timeout_seconds=90),
+    )
+    recipe_service = RecipeExecutionService(
+        cell_runners={("vector.reproject", "1.0.0"): runner},
+        artifact_store=artifact_store,
+        definitions=VersionedDefinitionStore(tmp_path / "definitions"),
+    )
+    execution = execute_product_blueprint_plan(
+        blueprint,
+        plan,
+        capabilities=registry,
+        recipe_service=recipe_service,
+        actor_id="product-factory-integration",
+        **inputs,
+    )
+    assert execution.status == "succeeded", execution.error
+    assert len(execution.node_results) == 1
+    run = next(iter(execution.node_results.values())).run
+    assert run["status"] == "succeeded"
+    assert run["worker"]["worker_type"] == "local_docker"
+
+    acceptance = evaluate_product_acceptance(
+        blueprint, execution, artifact_store=artifact_store
+    )
+    assert acceptance["status"] == "accepted", acceptance
+    assert acceptance["release_allowed"] is True
+    manifest = assemble_product_manifest(
+        blueprint, plan, compiled, execution, acceptance
+    )
+    bundle = build_geojson_product_bundle(
+        manifest, artifact_store=artifact_store
+    )
+
+    with zipfile.ZipFile(io.BytesIO(bundle)) as archive:
+        assert set(archive.namelist()) == {
+            "product-manifest.json",
+            "manifest-fingerprint-input.json",
+            "export-index.json",
+            "outputs/standardized-sites.geojson",
+        }
+        output = json.loads(archive.read("outputs/standardized-sites.geojson"))
+        feature = output["features"][0]
+        assert feature["id"] == "site-001"
+        assert feature["properties"] == {
+            "site_name": "Nairobi test site",
+            "use": "mixed",
+        }
+        assert feature["geometry"]["type"] == "Point"
+        east, north = feature["geometry"]["coordinates"][:2]
+        assert 600_000 < east < 800_000
+        assert 9_800_000 < north < 9_900_000
+        exported_manifest = json.loads(archive.read("product-manifest.json"))
+        assert exported_manifest["status"] == "accepted"
+

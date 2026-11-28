@@ -111,3 +111,7 @@ Two distinct customer jobs now have explicit, schema-validated Spatial Product B
 
 The second example is deliberately a different product outcome, not another buffer variant. Its planner test verifies that the exact registered `vector.reproject@1.0.0` capability is selected with the intended source binding and target CRS. This proves planning only; it does not claim that this example has been executed and exported end-to-end. The existing Docker-backed product integration test covers the road-buffer product path.
 
+### Real product execution coverage
+
+The second outcome-first product now has a Docker-backed integration test that exercises the registered `vector.reproject@1.0.0` worker through the same Blueprint → Recipe → Run → Artifact → acceptance → Product Manifest → verified GeoJSON bundle path. It uses an immutable WGS 84 site Artifact, checks preservation of feature ID and properties, and checks that the exported Nairobi point falls in the expected UTM zone 37S coordinate range. This test runs in container CI using the already-built isolated Shapely worker image. The Blueprint's site dataset is a required execution input resolved to an Artifact; the separate evidence-requirement list is empty because no independent evidence reference is being asserted.
+
