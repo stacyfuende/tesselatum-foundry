@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import base64
 import json
 import threading
 from http.server import BaseHTTPRequestHandler, SimpleHTTPRequestHandler, ThreadingHTTPServer
@@ -54,7 +55,9 @@ def _start_servers(response_status: int):
             self.send_header("Cache-Control", "no-store")
             if response_status == 200:
                 self.send_header("Content-Type", "application/zip")
-                self.send_header("Content-Disposition", 'attachment; filename="spatial-product.zip"')
+                self.send_header(
+                    "Content-Disposition", 'attachment; filename="spatial-product.zip"'
+                )
                 self.send_header("X-Foundry-Request-ID", "browser-request-001")
                 body = b"PK\\x03\\x04browser-test"
             else:
@@ -139,7 +142,7 @@ def test_customer_request_page_completes_browser_submission(response_status, exp
                 "Prepare sites for metric distance analysis."
             )
             assert json.loads(
-                __import__("base64").b64decode(envelope["source_file_base64"])
+                base64.b64decode(envelope["source_file_base64"])
             ) == SOURCE
             assert page.locator("#api-token").input_value() == "Bearer browser-test-token"
             page.evaluate("window.dispatchEvent(new Event('pagehide'))")
