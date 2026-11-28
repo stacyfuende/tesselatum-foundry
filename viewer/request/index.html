@@ -37,6 +37,16 @@
 <div id="download-area" class="hidden"><div class="actions"><button id="download" class="button secondary">Download request JSON</button></div><p class="hint">The JSON export is an optional record of the request; it does not contain your source data.</p></div>
 </section>
 <section class="panel">
+<h2>03 / Submit securely to Foundry</h2>
+<p>Use the API endpoint and bearer token supplied by your Foundry operator. Your token remains in this page's memory; it is not saved in browser storage. Your source file is transmitted only when you explicitly submit.</p>
+<div class="field"><label for="api-endpoint">Foundry API endpoint</label><input id="api-endpoint" type="url" autocomplete="url" placeholder="https://your-approved-host/v1/products"></div>
+<div class="field"><label for="api-token">Access token</label><input id="api-token" type="password" autocomplete="off" spellcheck="false" placeholder="Bearer token supplied by your operator"></div>
+<label class="check"><input id="confirm-submit" type="checkbox"><span>I am authorized to submit this dataset to the endpoint above and have permission to share its contents.</span></label>
+<div class="actions"><button id="submit-product" class="button" disabled>Submit to Foundry →</button></div>
+<div id="submit-status" class="status hidden" role="status" aria-live="polite"></div>
+<p class="hint">Remote endpoints must use HTTPS. HTTP is permitted only for localhost development. The API host must allow this page's exact origin. Only an accepted, releasable product is returned as a ZIP bundle.</p>
+</section>
+<section class="panel">
 <h2>What happens next</h2>
 <p>Foundry authenticates the request, resolves the tenant runtime, validates the source and executes the approved product workflow. Only products that pass acceptance and release checks are delivered. This pilot form standardizes Nairobi site coordinates; it does not certify survey accuracy, legal boundaries or ownership.</p>
 </section>
