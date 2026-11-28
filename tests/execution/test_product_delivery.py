@@ -34,8 +34,10 @@ class Store:
             "checksum": {"algorithm": "sha256", "value": hashlib.sha256(self.payload).hexdigest()},
         }
 
-    def read_bytes(self, artifact):
+    def read_bytes(self, artifact, *, max_bytes=None):
         assert artifact["checksum"]["value"] == hashlib.sha256(self.payload).hexdigest()
+        if max_bytes is not None and len(self.payload) > max_bytes:
+            raise RuntimeError("byte limit exceeded")
         return self.payload
 
 
