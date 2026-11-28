@@ -62,6 +62,25 @@ def test_put_file_publishes_content_addressed_object_in_bounded_chunks(tmp_path)
     assert store.read_bytes(artifact) == source.read_bytes()
 
 
+
+def test_read_bytes_enforces_optional_hard_byte_limit(tmp_path):
+    source = tmp_path / "bounded.geojson"
+    source.write_bytes(b'{"type":"FeatureCollection","features":[]}')
+    store = FileSystemArtifactStore(tmp_path / "store")
+    artifact = store.put_file(
+        artifact_id="artifact:bounded",
+        version="1.0.0",
+        source_path=source,
+        created_by="system:test",
+        media_type="application/geo+json",
+        format_name="geojson",
+    )
+
+    with pytest.raises(ArtifactIntegrityError, match="byte limit"):
+        store.read_bytes(artifact, max_bytes=1)
+    assert store.read_bytes(artifact, max_bytes=source.stat().st_size) == source.read_bytes()
+
+
 def test_put_file_rejects_checksum_mismatch_without_registering_metadata(tmp_path):
     source = tmp_path / "output.geojson"
     source.write_bytes(b'{"type":"FeatureCollection","features":[]}')
