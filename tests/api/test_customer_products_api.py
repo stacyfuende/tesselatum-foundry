@@ -15,7 +15,10 @@ from tessellatum_foundry.api.customer_products import create_customer_product_se
 from tessellatum_foundry.api.tenant_runtime import LocalTenantRuntimeResolver
 
 
-def _post(url, *, token="Bearer customer-token", payload=None, content_type="application/json", origin=None):
+def _post(
+    url, *, token="Bearer customer-token", payload=None,
+    content_type="application/json", origin=None,
+):
     body = json.dumps(payload or {}).encode()
     headers = {"Authorization": token, "Content-Type": content_type}
     if origin:

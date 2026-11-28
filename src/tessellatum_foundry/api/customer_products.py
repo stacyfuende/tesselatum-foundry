@@ -51,7 +51,8 @@ def create_customer_product_server(
         if not isinstance(origin, str):
             raise ValueError("allowed_origins must contain strings.")
         parsed = urlsplit(origin)
-        local_http = parsed.scheme == "http" and parsed.hostname in {"localhost", "127.0.0.1", "::1"}
+        local_hosts = {"localhost", "127.0.0.1", "::1"}
+        local_http = parsed.scheme == "http" and parsed.hostname in local_hosts
         if (
             parsed.scheme not in {"https", "http"}
             or (parsed.scheme != "https" and not local_http)
@@ -63,7 +64,10 @@ def create_customer_product_server(
             or parsed.fragment
             or origin.endswith("/")
         ):
-            raise ValueError("allowed_origins must contain exact HTTPS origins (or localhost HTTP origins for development).")
+            raise ValueError(
+                "allowed_origins must contain exact HTTPS origins "
+                "(or localhost HTTP origins for development)."
+            )
 
     class Handler(BaseHTTPRequestHandler):
         server_version = "FoundryCustomerAPI/1.0"
@@ -73,7 +77,10 @@ def create_customer_product_server(
             if origin and origin in normalized_origins:
                 self.send_header("Access-Control-Allow-Origin", origin)
                 self.send_header("Vary", "Origin")
-                self.send_header("Access-Control-Expose-Headers", "X-Foundry-Request-ID, Content-Disposition")
+                self.send_header(
+                    "Access-Control-Expose-Headers",
+                    "X-Foundry-Request-ID, Content-Disposition",
+                )
 
         def do_OPTIONS(self) -> None:
             origin = self.headers.get("Origin", "")
@@ -89,7 +96,8 @@ def create_customer_product_server(
                 for value in self.headers.get("Access-Control-Request-Headers", "").split(",")
                 if value.strip()
             }
-            if requested_method != "POST" or not requested_headers.issubset({"authorization", "content-type"}):
+            allowed_headers = {"authorization", "content-type"}
+            if requested_method != "POST" or not requested_headers.issubset(allowed_headers):
                 self._send_json(403, {"error": "preflight_not_allowed"})
                 return
             self.send_response(204)
