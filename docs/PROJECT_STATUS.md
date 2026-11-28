@@ -115,3 +115,8 @@ The second example is deliberately a different product outcome, not another buff
 
 The second outcome-first product now has a Docker-backed integration test that exercises the registered `vector.reproject@1.0.0` worker through the same Blueprint → Recipe → Run → Artifact → acceptance → Product Manifest → verified GeoJSON bundle path. It uses an immutable WGS 84 site Artifact, checks preservation of feature ID and properties, and checks that the exported Nairobi point falls in the expected UTM zone 37S coordinate range. This test runs in container CI using the already-built isolated Shapely worker image. The Blueprint's site dataset is a required execution input resolved to an Artifact; the separate evidence-requirement list is empty because no independent evidence reference is being asserted.
 
+
+
+### Spatial Product Viewer CRS and geometry support
+
+The browser viewer now takes CRS metadata from the verified export manifest's output Artifact, rather than labelling every bundled output as EPSG:4326. Direct RFC 7946 GeoJSON retains its WGS 84 default; bundles with missing CRS metadata are explicitly labelled undeclared. Projected coordinates are displayed in their native plane without reprojection or a basemap. GeometryCollections, including nested collections, are now drawn alongside the existing simple and multi-geometry types. This is display support, not a CRS transformation or GIS certification.
