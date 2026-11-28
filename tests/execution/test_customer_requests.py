@@ -36,7 +36,7 @@ def request():
     }
 
 
-def test_customer_request_resolves_to_approved_plan_without_exposing_execution_design():
+def test_customer_request_resolves_to_approved_plan_and_customer_summary():
     blueprint = load_blueprint()
     original = deepcopy(blueprint)
     result = prepare_customer_product_request(
@@ -83,6 +83,32 @@ def test_customer_request_rejects_wrong_source_crs():
 def test_customer_request_requires_customer_context():
     item = request()
     del item["decision_context"]
+    with pytest.raises(Exception):
+        prepare_customer_product_request(
+            item, blueprint=load_blueprint(), capabilities=CapabilityRegistry()
+        )
+
+def test_customer_request_rejects_geography_outside_supported_utm_area():
+    item = request()
+    item["geographic_scope"] = "Mombasa"
+    with pytest.raises(Exception):
+        prepare_customer_product_request(
+            item, blueprint=load_blueprint(), capabilities=CapabilityRegistry()
+        )
+
+
+def test_customer_request_rejects_file_media_type_mismatch():
+    item = request()
+    item["source_file"]["media_type"] = "application/json"
+    with pytest.raises(CustomerProductRequestError, match="extension and declared media type"):
+        prepare_customer_product_request(
+            item, blueprint=load_blueprint(), capabilities=CapabilityRegistry()
+        )
+
+
+def test_customer_request_rejects_path_like_file_names():
+    item = request()
+    item["source_file"]["file_name"] = "../sites.geojson"
     with pytest.raises(Exception):
         prepare_customer_product_request(
             item, blueprint=load_blueprint(), capabilities=CapabilityRegistry()

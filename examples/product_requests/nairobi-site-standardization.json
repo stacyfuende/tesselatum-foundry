@@ -1,0 +1,16 @@
+{
+  "request_id": "nairobi-sites-demo-001",
+  "job_type": "standardize_site_coordinates",
+  "product_name": "Nairobi site coordinate standardization",
+  "source_file": {
+    "file_name": "sites.geojson",
+    "media_type": "application/geo+json",
+    "coordinate_reference_system": {
+      "authority": "EPSG",
+      "code": 4326
+    }
+  },
+  "audience": "Property, infrastructure and site-selection analysts",
+  "decision_context": "Prepare site locations for metric distance, buffering and overlay analysis.",
+  "geographic_scope": "Nairobi metropolitan region"
+}

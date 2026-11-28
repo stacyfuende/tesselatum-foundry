@@ -37,6 +37,16 @@ Foundry is Tessellatum's spatial computation infrastructure. It makes spatial da
 
 **Honest proof boundary:** the Blueprint-to-acceptance-manifest test exercises the orchestration using test doubles. It is not a live worker run. The external Sentinel-2 raster-window proof remains separate evidence for the real-source raster path.
 
+## Customer-language product request intake — first supported job
+
+| Component | Implemented / evidenced | Remaining / qualification |
+|---|---|---|
+| Customer request contract | Separate schema that asks for the job, source filename/type/CRS, audience, decision context and supported geography; no capability or Recipe vocabulary | Browser form and authenticated request submission |
+| Deterministic resolver | Resolves only the approved Nairobi site-coordinate template; preserves customer context; plans against the current capability registry; rejects unsupported job, CRS, geography, file path and media-type mismatch | No free-form method generation; more approved job templates require their own tests and scope constraints |
+| Source boundary | Returns explicit GeoJSON/CRS/coordinate-order requirements and `awaiting_source_ingestion` state | File bytes are not yet ingested; Artifact registration and geometry/area validation are still required before execution |
+
+The customer request is deliberately not executable. It is the first boundary between a customer's job description and Foundry's internal Blueprint machinery. See [ADR-062](decisions/062-customer-language-product-request-intake.md).
+
 ## External data boundary — initial source-backed execution implemented
 
 | Concern | Implemented | Remaining / qualification |

@@ -50,6 +50,14 @@ def prepare_customer_product_request(
         )
 
     resolved_blueprint = deepcopy(blueprint)
+    file_name = request["source_file"]["file_name"]
+    if "/" in file_name or chr(92) in file_name:
+        raise CustomerProductRequestError("Source file name must not contain a path.")
+    media_type = request["source_file"]["media_type"]
+    if file_name.lower().endswith(".geojson") != (media_type == "application/geo+json"):
+        raise CustomerProductRequestError(
+            "Source file extension and declared media type do not match."
+        )
     source_crs = request["source_file"]["coordinate_reference_system"]
     expected_crs = {"authority": "EPSG", "code": 4326}
     if source_crs != expected_crs:

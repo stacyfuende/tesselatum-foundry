@@ -53,3 +53,5 @@ This register records decisions that constrain Foundry's architecture. Each deci
 | [047](047-external-data-computation-boundary.md) | External data remains external; Foundry owns computation | Accepted |\n| [048](048-transactional-streamed-artifact-publication.md) | Publish streamed Artifacts only after complete-run verification | Accepted |
 
 A decision may be superseded only by a new decision record that explains the change. Do not silently edit an accepted decision to reverse its meaning.
+
+- [ADR-062](062-customer-language-product-request-intake.md) records the first customer-language request boundary.
