@@ -38,10 +38,22 @@ def test_local_tenant_runtime_is_stable_and_isolated(tmp_path):
     }
 
 
-@pytest.mark.parametrize("tenant_id", ["", "  ", "../outside", "/tmp/escape", None])
+@pytest.mark.parametrize("tenant_id", ["", "  ", None])
 def test_local_tenant_runtime_requires_trusted_nonempty_tenant_id(
     tmp_path, tenant_id
 ):
     resolve = LocalTenantRuntimeResolver(tmp_path)
     with pytest.raises(ValueError, match="trusted non-empty tenant ID"):
         resolve(tenant_id)
+
+
+@pytest.mark.parametrize("tenant_id", ["../outside", "/tmp/escape"])
+def test_tenant_identifier_cannot_escape_runtime_root(tmp_path, tenant_id):
+    resolve = LocalTenantRuntimeResolver(tmp_path)
+    resolve(tenant_id)
+
+    expected = tmp_path / hashlib.sha256(tenant_id.encode("utf-8")).hexdigest()
+    assert expected.is_dir()
+    assert expected.parent == tmp_path
+    assert not (tmp_path.parent / "outside").exists()
+    assert not (tmp_path / "escape").exists()
