@@ -1,7 +1,5 @@
 """Tests for deterministic product acceptance and manifest assembly."""
 
-from copy import deepcopy
-
 from tessellatum_foundry.execution.product_acceptance import (
     assemble_product_manifest,
     evaluate_product_acceptance,
@@ -59,28 +57,45 @@ def blueprint(checks=None):
 
 
 def test_required_registered_checks_pass_accept_product():
-    result = evaluate_product_acceptance(blueprint(), FakeResult(outputs={"out": artifact()}))
+    result = evaluate_product_acceptance(
+        blueprint(), FakeResult(outputs={"out": artifact()})
+    )
     assert result["status"] == "accepted"
     assert result["release_allowed"] is True
     assert all(check["status"] == "passed" for check in result["checks"])
 
 
 def test_unknown_required_validator_blocks_release_as_review():
-    b = blueprint([{"id": "valid-geometries", "kind": "product", "description": "Geometry validity", "validator": "geometry.valid"}])
-    result = evaluate_product_acceptance(b, FakeResult(outputs={"out": artifact()}))
+    b = blueprint([{
+        "id": "valid-geometries",
+        "kind": "product",
+        "description": "Geometry validity",
+        "validator": "geometry.valid",
+    }])
+    result = evaluate_product_acceptance(
+        b, FakeResult(outputs={"out": artifact()})
+    )
     assert result["status"] == "review_required"
     assert result["release_allowed"] is False
     assert result["checks"][0]["status"] == "unassessed"
 
 
 def test_required_failed_check_rejects():
-    result = evaluate_product_acceptance(blueprint(), FakeResult(status="failed", outputs={"out": artifact()}))
+    result = evaluate_product_acceptance(
+        blueprint(), FakeResult(status="failed", outputs={"out": artifact()})
+    )
     assert result["status"] == "rejected"
     assert not result["release_allowed"]
 
 
 def test_optional_failed_check_does_not_block_acceptance_but_warns():
-    b = blueprint([{"id": "integrity", "kind": "product", "description": "Verify checksum", "required": False, "validator": "artifacts.checksum_verified"}])
+    b = blueprint([{
+        "id": "integrity",
+        "kind": "product",
+        "description": "Verify checksum",
+        "required": False,
+        "validator": "artifacts.checksum_verified",
+    }])
     result = evaluate_product_acceptance(b, FakeResult(outputs={"out": artifact()}))
     assert result["status"] == "accepted"
     assert result["warnings"]
@@ -103,7 +118,9 @@ def test_missing_product_output_is_not_marked_assembled():
     b = blueprint()
     execution = FakeResult(outputs={})
     acceptance = evaluate_product_acceptance(b, execution)
-    manifest = assemble_product_manifest(b, {"plan_fingerprint": "x"}, {}, execution, acceptance)
+    manifest = assemble_product_manifest(
+        b, {"plan_fingerprint": "x"}, {}, execution, acceptance
+    )
     assert manifest["outputs"][0]["status"] == "missing"
     assert manifest["release_allowed"] is False
 
