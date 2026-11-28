@@ -1,6 +1,6 @@
 # Foundry asynchronous job and artifact metadata contract
 
-**Status:** Private database foundation and Python/Postgres lifecycle repository implemented; hosted API, worker deployment and object storage remain pending.
+**Status:** Private database foundation, Python/Postgres lifecycle repository, provider-neutral object-store boundary, and Python customer-job orchestration adapter implemented. Hosted API, production worker deployment and a durable object-store provider remain pending.
 
 ## Scope
 
@@ -78,9 +78,9 @@ No default table or sequence privileges are granted to the application role. Eac
 The repository has unit coverage for canonical hashing and rejection of sensitive/non-finite metadata. Opt-in Postgres integration tests cover idempotency, cross-tenant read isolation, atomic lifecycle events, claim/complete and stale-lease fencing. CI supplies its own ephemeral PostGIS database to those tests; the fixture refuses to overwrite an existing `foundry` schema and removes only the schema it created.
 
 Still required before a customer pilot:
-- request-scoped API submission/status/download endpoints, preserving the existing synchronous endpoint until a compatibility migration is designed;
-- durable external object-store adapter and retention controls;
-- worker process integration with the existing spatial product pipeline;
+- request-scoped asynchronous API submission/status/events/download endpoints, preserving the existing synchronous endpoint until a compatibility migration is designed;
+- approved durable external object-store provider and retention controls;
+- hosted worker process and durable tenant runtime integration with the existing spatial product pipeline;
 - authentication integration proving actor/tenant identity comes only from trusted auth;
 - production deployment, observability, backup/restore and security controls;
 - verification of Supabase Data API exposed-schema configuration. Do not add `foundry` to the exposed schema list.

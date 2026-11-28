@@ -377,11 +377,32 @@ class PostgresJobRepository:
                        (tenant_id, job_id, artifact_kind, logical_name, object_key,
                         media_type, format, checksum_sha256, size_bytes, metadata)
                        values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s::jsonb)
+                       on conflict (tenant_id, object_key) do nothing
                        returning *""",
                     (tenant_id, job_id, artifact_kind, logical_name, object_key,
                      media_type, format, checksum_sha256, size_bytes, metadata_json),
                 )
                 row = cur.fetchone()
+                if row is None:
+                    cur.execute(
+                        """select * from foundry.artifacts
+                           where tenant_id = %s and object_key = %s for update""",
+                        (tenant_id, object_key),
+                    )
+                    row = cur.fetchone()
+                    expected = (
+                        job_id, artifact_kind, logical_name, media_type, format,
+                        checksum_sha256, size_bytes, metadata or {},
+                    )
+                    actual = (
+                        row["job_id"], row["artifact_kind"], row["logical_name"],
+                        row["media_type"], row["format"], row["checksum_sha256"],
+                        row["size_bytes"], row["metadata"],
+                    ) if row is not None else None
+                    if actual != expected:
+                        raise JobRepositoryError(
+                            "An object key is already registered with different artifact metadata."
+                        )
                 if row is None:  # pragma: no cover
                     raise JobRepositoryError("Artifact insert returned no row.")
                 return row
