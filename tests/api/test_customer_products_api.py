@@ -215,6 +215,29 @@ def test_authenticated_http_submission_runs_tenant_product_and_returns_verified_
         "decision_context": "Prepare acquisition candidates for metric distance analysis.",
         "geographic_scope": "Nairobi metropolitan region",
     }
+    # Exercise the composed service directly first so failures expose the
+    # exact failing lifecycle boundary instead of only the HTTP 422 envelope.
+    from tessellatum_foundry.execution.customer_products import (
+        run_customer_spatial_product,
+    )
+
+    probe = LocalTenantRuntimeResolver(tmp_path / "probe")("trusted-tenant")
+    probe_result = run_customer_spatial_product(
+        customer_request,
+        source_bytes,
+        artifact_store=probe["artifact_store"],
+        capabilities=probe["capabilities"],
+        recipe_service=probe["recipe_service"],
+        cell_templates=probe["cell_templates"],
+        output_bindings=probe["output_bindings"],
+        actor_id="integration-actor",
+        contracts=probe["contracts"],
+    )
+    assert probe_result["status"] == "delivered", {
+        "execution": probe_result.get("execution"),
+        "acceptance": probe_result.get("acceptance"),
+    }
+
     resolver = LocalTenantRuntimeResolver(tmp_path / "tenants")
     server = create_customer_product_server(
         ("127.0.0.1", 0),
