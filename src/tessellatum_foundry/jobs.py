@@ -235,7 +235,11 @@ class PostgresJobRepository:
         lease_token: uuid.UUID | str, lease_seconds: int = 120,
     ) -> datetime:
         tenant_id = _identifier(tenant_id, "tenant_id")
-        if not isinstance(lease_seconds, int) or isinstance(lease_seconds, bool) or not 5 <= lease_seconds <= 3600:
+        if (
+            not isinstance(lease_seconds, int)
+            or isinstance(lease_seconds, bool)
+            or not 5 <= lease_seconds <= 3600
+        ):
             raise ValueError("lease_seconds must be an integer between 5 and 3600.")
         with self._connection() as conn:
             with conn.cursor() as cur:
