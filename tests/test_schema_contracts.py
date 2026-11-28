@@ -48,7 +48,8 @@ def schema_context() -> tuple[dict[str, dict], Registry]:
 
 def test_all_schemas_are_valid_draft_2020_12(schema_context):
     schemas, _ = schema_context
-    assert len(schemas) == 14
+    assert len(schemas) == 15
+    assert "customer_product_request.schema.json" in schemas
     for name, schema in schemas.items():
         Draft202012Validator.check_schema(schema)
         assert schema["$schema"] == "https://json-schema.org/draft/2020-12/schema", name

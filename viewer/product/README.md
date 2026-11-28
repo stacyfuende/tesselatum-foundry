@@ -34,3 +34,16 @@ This is an initial product viewer, not a full GIS renderer. Direct RFC 7946 GeoJ
 ## Next integration
 
 The viewer currently opens a user-selected GeoJSON payload. A later product delivery adapter can supply a published Artifact URL and its signed manifest, preserving the same local inspection and validation boundaries.
+
+
+## Customer request composer
+
+Open `viewer/request/index.html` in a browser to prepare the first supported customer request: Nairobi site-coordinate standardization.
+
+- Select a GeoJSON FeatureCollection of Point features (maximum 25 MB / 100,000 points).
+- Confirm the source is EPSG:4326, longitude/latitude.
+- The browser checks basic structure and verifies that all points fall within the documented Nairobi intake envelope (36.0–37.5° E, 2.5° S–0.5° N).
+- Add the intended audience and decision context, then download the request JSON.
+- Submit the request JSON together with the original GeoJSON through an approved intake channel.
+
+The page processes the file locally. It does not upload, retain, ingest, or execute it. The envelope is an operational CRS/scope guard, not an official Nairobi boundary or positional-accuracy certification. See [ADR-062](../../docs/decisions/062-customer-language-product-request-intake.md).

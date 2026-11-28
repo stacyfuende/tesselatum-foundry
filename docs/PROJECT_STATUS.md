@@ -140,3 +140,8 @@ Product manifests now carry the customer-facing intent from the Blueprint: title
 ### Point-coordinate analyst export
 
 The product viewer now offers a CSV export for point-only datasets, in addition to the verified GeoJSON handoff. It includes feature identifiers, X/Y values, the active CRS label and a stable union of feature-property columns. It deliberately disables this export for non-point geometries rather than silently substituting centroids or dropping geometry detail. Text values that could be interpreted as spreadsheet formulas are escaped. This is a convenience export from the already-opened local dataset, not a new server-side artifact or replacement for the original GeoJSON.
+
+
+### Local customer request composer
+
+A static browser composer now provides the first customer entry point for the Nairobi site-coordinate product. It locally inspects a selected GeoJSON FeatureCollection, accepts only Point features, enforces a conservative Nairobi operating envelope, asks for audience/decision context and exports a schema-shaped request JSON. It never uploads or stores the source file. The composer is a request-preparation tool, not a hosted intake endpoint; source ingestion, authoritative area checks, full geometry/quality validation and execution remain server-side follow-on work.
