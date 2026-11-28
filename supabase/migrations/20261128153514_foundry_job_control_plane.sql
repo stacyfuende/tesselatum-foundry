@@ -99,7 +99,7 @@ revoke all on foundry.jobs, foundry.job_events, foundry.artifacts
     from public, anon, authenticated, service_role;
 grant select, insert, update on foundry.jobs to service_role;
 grant select, insert on foundry.job_events, foundry.artifacts to service_role;
-grant usage, select on all sequences in schema foundry to service_role;
+grant usage, select on sequence foundry.job_events_event_id_seq to service_role;
 
 alter table foundry.jobs enable row level security;
 alter table foundry.jobs force row level security;

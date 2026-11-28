@@ -11,17 +11,12 @@ revoke all on schema foundry from anon;
 revoke all on schema foundry from authenticated;
 grant usage on schema foundry to service_role;
 
--- No client role can create objects or resolve objects in this schema.
--- The service role receives schema usage only; object grants are explicit defaults.
+-- No application role receives default table or sequence privileges.
+-- Every migration must grant only the exact operations its objects require.
 alter default privileges for role postgres in schema foundry
   revoke all on tables from public, anon, authenticated, service_role;
 alter default privileges for role postgres in schema foundry
-  grant select, insert, update, delete on tables to service_role;
-
-alter default privileges for role postgres in schema foundry
   revoke all on sequences from public, anon, authenticated, service_role;
-alter default privileges for role postgres in schema foundry
-  grant usage, select on sequences to service_role;
 
 comment on schema foundry is
   'Foundry-owned private metadata schema. Keep outside Supabase API exposed schemas; server-side access only.';

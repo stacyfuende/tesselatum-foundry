@@ -6,90 +6,74 @@
 
 The private `foundry` schema in the existing Panda Roam Supabase project contains three control-plane tables:
 
-- `foundry.jobs`: one accepted customer job and its current lifecycle/lease state.
-- `foundry.job_events`: append-only lifecycle evidence for each job.
+- `foundry.jobs`: one accepted job and its current lifecycle/lease state.
+- `foundry.job_events`: append-only lifecycle evidence.
 - `foundry.artifacts`: immutable metadata and opaque references to externally stored objects.
 
-Postgres stores bounded request metadata, hashes, state, and object references. It does **not** store GeoJSON uploads, raster sources, generated rasters, ZIP bundles, or other artifact bytes. The existing Panda Roam `public` schema is not part of this contract.
+Postgres stores bounded request metadata, hashes, state, and object references. It does **not** store source rasters, generated rasters, ZIP bundles, or other artifact bytes. The existing Panda Roam `public` schema is outside this contract.
 
 ## Tenant and identity rules
 
-- `tenant_id` and `actor_id` are opaque identifiers resolved by the trusted authentication layer. They are never accepted from request JSON as authority.
-- Every job, event and artifact carries `tenant_id`. Composite foreign keys prevent an artifact/event from being attached to a job belonging to another tenant.
-- Every repository operation must include the authenticated tenant in its predicate, including lookup by job ID, idempotency key, artifact ID, or object key. UUID unpredictability is not authorization.
-- `service_role` bypasses Postgres RLS. It is server-only and must never appear in browser code. The application must enforce tenant ownership before every read/write even though RLS is enabled and forced on all three tables.
-- Client roles have no schema usage or table privileges. There are no client-facing RLS policies.
+- `tenant_id` and `actor_id` are opaque identifiers resolved by trusted authentication. They are never accepted from request JSON as authority.
+- Every job, event and artifact carries `tenant_id`. Composite foreign keys prevent an event/artifact from being attached to a job belonging to another tenant.
+- Every repository operation must include the authenticated tenant in its predicate. UUID unpredictability is not authorization.
+- `service_role` bypasses Postgres RLS. It is server-only; application code must enforce tenant ownership before every read/write.
+- Client roles have no schema usage or table privileges. No client-facing RLS policies exist.
 
 ## Idempotent submission
 
-The idempotency scope is `(tenant_id, idempotency_key)`.
+1. Normalize and validate the request envelope.
+2. Compute SHA-256 over a canonical representation of the complete semantic request, including source checksum and product/version selection.
+3. Insert the job with trusted tenant/actor, idempotency key, request version, digest, and bounded metadata in one transaction.
+4. On duplicate `(tenant_id, idempotency_key)`, compare digests: same digest returns the existing job; different digest is an idempotency conflict.
+5. Insert the initial event in the same transaction as job creation.
 
-1. Normalize and validate the request envelope before persistence.
-2. Compute SHA-256 over a canonical representation of the complete semantic request, including source-object checksum and product/version selection. Do not hash an unstable JSON serialization.
-3. Insert the job with the trusted tenant/actor, key, request version, digest, and bounded request metadata in one transaction.
-4. If the unique key already exists, compare the stored digest:
-   - same digest: return the existing job representation; do not enqueue a second execution;
-   - different digest: return an idempotency conflict; never silently reuse the old job for a different request.
-5. Insert the initial `job_events` record in the same transaction as job creation.
-
-Do not put raw bearer credentials, secrets, or source contents in `request_payload`, `last_error`, `result_manifest`, or event details.
+Never store bearer credentials, secrets, or source contents in request payloads, errors, manifests, or event details.
 
 ## Lifecycle and worker leases
 
-Allowed states are:
+Allowed states are `queued → running → succeeded | failed | cancelled | timed_out`. A retryable failure may be explicitly requeued by trusted orchestration, with a new event and cleared terminal timestamp/lease. Increment `attempt_count` for each claim and enforce `max_attempts`.
 
-`queued → running → succeeded | failed | cancelled | timed_out`
+A worker claim must be atomic and concurrency-safe: select eligible queued rows with `FOR UPDATE SKIP LOCKED`; transition to running with a fresh random lease token and expiry; increment attempts; append the event in the same short transaction; commit before spatial execution.
 
-A retryable failure may be explicitly requeued by trusted orchestration, with a new event and a cleared terminal timestamp/lease. Increment `attempt_count` for each claim; enforce `max_attempts`. Never infer retryability from a free-form error message.
-
-A worker claim must be atomic and concurrency-safe:
-
-- select eligible queued rows with `available_at <= now()`;
-- use `FOR UPDATE SKIP LOCKED` in a short transaction;
-- transition the selected job to `running`, set a fresh random `lease_token`, `lease_expires_at`, `started_at` if first start, increment `attempt_count`, and update `updated_at`;
-- append the corresponding event in the same transaction;
-- commit before executing spatial work.
-
-All worker heartbeats/completions/failures must compare both `job_id` and the current `lease_token`. A stale worker whose lease has expired or been replaced must not publish outputs or change state. A reaper may requeue or time out expired leases according to the job's attempt policy. Never hold a database transaction open during raster/vector execution.
-
-State updates and their event insertions must be atomic. Enforce legal transitions in the repository/service layer using conditional updates on the expected current state and lease token; a zero-row update is a conflict, not success.
+Every heartbeat/completion/failure must compare job ID and current lease token. Stale workers must not publish outputs or change state. State updates and event insertions are atomic. Never hold a database transaction open during raster/vector execution.
 
 ## Artifact publication
 
-- Upload bytes to an approved object store before inserting artifact metadata.
-- Store only opaque `object_key`, tenant/job association, media type, format, byte count, SHA-256, timestamps and non-sensitive metadata.
-- Object keys are not public URLs. Resolve them through a server-side tenant-authorized storage adapter; never return a raw bucket URL or service credential.
-- Verify object checksum and byte count before marking a product delivered.
-- Treat artifact records as immutable. The application role can select/insert artifact rows but cannot update/delete them.
-- Expiration and deletion require a separately controlled retention process that removes object bytes and metadata consistently and records an auditable outcome. No automatic deletion is implied by `expires_at`.
+- Upload bytes to an approved object store before inserting metadata.
+- Store opaque object key, tenant/job association, media type, format, byte count, SHA-256, timestamps and non-sensitive metadata only.
+- Resolve object keys through a server-side tenant-authorized adapter; never return raw bucket URLs or service credentials.
+- Verify checksum and byte count before marking a product delivered.
+- Artifact rows are immutable to the application role (select/insert only).
+- Expiration/deletion requires a separately controlled retention process. `expires_at` alone does not delete anything.
 
 ## Database privilege boundary
 
-The migration enables and forces RLS on all three tables, revokes client-role privileges, and grants the server role only the operations needed by the contract:
+RLS is enabled and forced on all three tables. Client-role access is revoked. Explicit application-role grants are:
 - jobs: select/insert/update;
-- job events: select/insert (append-only for the application role);
-- artifacts: select/insert (immutable for the application role).
+- job events: select/insert;
+- artifacts: select/insert;
+- identity sequence: usage/select only.
 
-The service role receives no table delete privilege and no ability to create schema objects. Database owners/migration operators remain privileged and must be tightly controlled.
+No default table or sequence privileges are granted to the application role. Each future migration must explicitly grant only what its objects require. The service role cannot create schema objects and has no table delete privilege.
 
 ## Implemented versus outstanding
 
-Implemented in the database and migration:
-- tenant-scoped job, event and artifact metadata tables;
-- idempotency uniqueness constraint;
-- tenant-composite foreign keys;
+Implemented:
+- tenant-scoped jobs, events and artifact metadata tables;
+- idempotency uniqueness and tenant-composite foreign keys;
 - worker lease fields and queue indexes;
 - RLS enabled and forced;
 - client-role access revoked;
-- application-role grants limited to the operations above.
+- least-privilege explicit grants and hardened default privileges.
 
 Still required before a customer pilot:
-- a Python/Postgres repository with tenant-qualified queries and transaction tests;
+- Python/Postgres repository with tenant-qualified queries and transaction tests;
 - API submission/status/download endpoints and canonical request hashing;
-- atomic job claim, lease heartbeat, stale-worker fencing, retry/reaper behavior;
-- a durable external object-store adapter with per-tenant authorization and lifecycle controls;
-- an actual worker process and deployment/observability controls;
-- negative tests for cross-tenant job, event, artifact and object access;
-- verification of the Supabase Data API exposed-schema configuration. The database role grants already deny `anon` and `authenticated` access to `foundry`; do not add this schema to the exposed schema list.
+- atomic claim, heartbeat, stale-worker fencing, retry/reaper behavior;
+- durable external object-store adapter and lifecycle controls;
+- worker process, deployment and observability controls;
+- negative cross-tenant tests;
+- verification of Supabase Data API exposed-schema configuration. Do not add `foundry` to the exposed schema list.
 
 This is a durable metadata foundation, not yet a functioning hosted asynchronous service.
