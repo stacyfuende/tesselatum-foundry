@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 """Run Foundry's repeatable pre-production certification gates.
 
 Local profile: no cloud account or Docker daemon required. Docker-backed tests
@@ -7,6 +5,8 @@ are skipped unless their worker image environment variables are supplied.
 CI profile: builds the worker images and runs the same checks with the full
 Docker/PostGIS integration suite enabled.
 """
+
+from __future__ import annotations
 
 import argparse
 import json
@@ -16,7 +16,7 @@ import subprocess
 import sys
 import tempfile
 import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -53,13 +53,21 @@ def _installed_distribution_check(env: dict[str, str]) -> dict[str, Any]:
         venv_path = temporary_path / "venv"
         result = _run_step(
             "Create isolated installed-package environment",
-            [sys.executable, "-m", "venv", "--system-site-packages", str(venv_path)],
+            [
+                sys.executable,
+                "-m",
+                "venv",
+                "--system-site-packages",
+                str(venv_path),
+            ],
             env=env,
         )
         if result["exit_code"] != 0:
             return result
 
-        python = venv_path / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
+        python = venv_path / (
+            "Scripts/python.exe" if os.name == "nt" else "bin/python"
+        )
         install = _run_step(
             "Install Foundry distribution",
             [str(python), "-m", "pip", "install", "--no-deps", "."],
@@ -82,7 +90,10 @@ def main() -> int:
         "--profile",
         choices=("local", "ci"),
         default="local",
-        help="local skips Docker image builds; ci requires Docker and enables worker integration tests",
+        help=(
+            "local skips Docker image builds; ci requires Docker and enables "
+            "worker integration tests"
+        ),
     )
     parser.add_argument(
         "--report",
@@ -102,37 +113,73 @@ def main() -> int:
 
     if args.profile == "ci":
         if shutil.which("docker") is None:
-            print("CI profile requires Docker, but the docker executable was not found.", file=sys.stderr)
+            print(
+                "CI profile requires Docker, but the docker executable "
+                "was not found.",
+                file=sys.stderr,
+            )
             return 2
         env.setdefault("FOUNDRY_VECTOR_BUFFER_IMAGE", DEFAULT_VECTOR_IMAGE)
         env.setdefault("FOUNDRY_VECTOR_BUFFER_REMOTE_IMAGE", DEFAULT_REMOTE_IMAGE)
         if not env.get("FOUNDRY_POSTGIS_DSN"):
-            print("CI profile requires FOUNDRY_POSTGIS_DSN for PostGIS integration tests.", file=sys.stderr)
+            print(
+                "CI profile requires FOUNDRY_POSTGIS_DSN for PostGIS "
+                "integration tests.",
+                file=sys.stderr,
+            )
             return 2
-    else:
-        if not env.get("FOUNDRY_VECTOR_BUFFER_IMAGE"):
-            skipped.append({
+    elif not env.get("FOUNDRY_VECTOR_BUFFER_IMAGE"):
+        skipped.append(
+            {
                 "name": "Docker-backed worker integration tests",
-                "reason": "local profile: set FOUNDRY_VECTOR_BUFFER_IMAGE to enable these tests",
-            })
+                "reason": (
+                    "local profile: set FOUNDRY_VECTOR_BUFFER_IMAGE "
+                    "to enable these tests"
+                ),
+            }
+        )
 
     commands: list[tuple[str, list[str]]] = [
         ("Python lint", [sys.executable, "-m", "ruff", "check", "."]),
-        ("Schema, fixture, Capability and implementation validation",
-         [sys.executable, "scripts/validate_schemas.py"]),
+        (
+            "Schema, fixture, Capability and implementation validation",
+            [sys.executable, "scripts/validate_schemas.py"],
+        ),
     ]
 
     if args.profile == "ci":
-        commands.extend([
-            ("Build isolated Shapely worker image",
-             ["docker", "build", "--file", "workers/vector_buffer/Dockerfile",
-              "--tag", env["FOUNDRY_VECTOR_BUFFER_IMAGE"], "."]),
-            ("Build authenticated remote worker image",
-             ["docker", "build", "--file", "workers/vector_buffer/Dockerfile.remote",
-              "--tag", env["FOUNDRY_VECTOR_BUFFER_REMOTE_IMAGE"], "."]),
-        ])
+        commands.extend(
+            [
+                (
+                    "Build isolated Shapely worker image",
+                    [
+                        "docker",
+                        "build",
+                        "--file",
+                        "workers/vector_buffer/Dockerfile",
+                        "--tag",
+                        env["FOUNDRY_VECTOR_BUFFER_IMAGE"],
+                        ".",
+                    ],
+                ),
+                (
+                    "Build authenticated remote worker image",
+                    [
+                        "docker",
+                        "build",
+                        "--file",
+                        "workers/vector_buffer/Dockerfile.remote",
+                        "--tag",
+                        env["FOUNDRY_VECTOR_BUFFER_REMOTE_IMAGE"],
+                        ".",
+                    ],
+                ),
+            ]
+        )
 
-    commands.append(("Full automated test suite", [sys.executable, "-m", "pytest", "-q"]))
+    commands.append(
+        ("Full automated test suite", [sys.executable, "-m", "pytest", "-q"])
+    )
 
     for name, command in commands:
         if not record(_run_step(name, command, env=env)):
@@ -145,15 +192,27 @@ def main() -> int:
         "certification": "Tessellatum Foundry pre-production",
         "profile": args.profile,
         "status": "failed" if failed else "passed",
-        "created_at": datetime.now(timezone.utc).isoformat(),
+        "created_at": datetime.now(UTC).isoformat(),
         "git_commit": None,
         "steps": steps,
         "skipped": skipped,
         "limitations": [
-            "A local pass is not proof of production identity, cloud IAM, TLS, network policy or managed-storage behaviour.",
-            "The CI profile uses ephemeral CI services; it does not certify backups, restore or real customer tenancy in a hosted environment.",
-            "The live external Nairobi raster smoke test remains a separate network-dependent check.",
-            "A real browser-driven customer journey remains a separate release gate until browser automation is added.",
+            (
+                "A local pass is not proof of production identity, cloud IAM, "
+                "TLS, network policy or managed-storage behaviour."
+            ),
+            (
+                "The CI profile uses ephemeral CI services; it does not certify "
+                "backups, restore or real customer tenancy in a hosted environment."
+            ),
+            (
+                "The live external Nairobi raster smoke test remains a separate "
+                "network-dependent check."
+            ),
+            (
+                "A real browser-driven customer journey remains a separate "
+                "release gate until browser automation is added."
+            ),
         ],
     }
     try:
@@ -169,12 +228,14 @@ def main() -> int:
         pass
 
     args.report.parent.mkdir(parents=True, exist_ok=True)
-    args.report.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+    args.report.write_text(
+        json.dumps(report, indent=2) + "\n",
+        encoding="utf-8",
+    )
     print(f"\nCertification status: {report['status'].upper()}")
     print(f"Report: {args.report}")
-    if skipped:
-        for item in skipped:
-            print(f"SKIPPED: {item['name']} — {item['reason']}")
+    for item in skipped:
+        print(f"SKIPPED: {item['name']} — {item['reason']}")
     return 1 if failed else 0
 
 
