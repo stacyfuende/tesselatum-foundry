@@ -145,3 +145,26 @@ The product viewer now offers a CSV export for point-only datasets, in addition 
 ### Local customer request composer
 
 A static browser composer now provides the first customer entry point for the Nairobi site-coordinate product. It locally inspects a selected GeoJSON FeatureCollection, accepts only Point features, enforces a conservative Nairobi operating envelope, asks for audience/decision context and exports a schema-shaped request JSON. It never uploads or stores the source file. The composer is a request-preparation tool, not a hosted intake endpoint; source ingestion, authoritative area checks, full geometry/quality validation and execution remain server-side follow-on work.
+
+
+## Authenticated customer API and local tenant runtime
+
+The authenticated `POST /v1/products` adapter now has a concrete local runtime
+resolver: `LocalTenantRuntimeResolver`. It creates one `LocalFoundry` composition
+per trusted tenant identity, stores each runtime beneath a SHA-256-derived
+tenant directory, and gives each tenant separate Artifact, Run, definition,
+Capability and Recipe-service instances. It installs only the reviewed
+site-coordinate-standardization Cell template and output mapping; customer
+requests cannot supply execution code or runtime configuration.
+
+**Verification:** CI run [#46128830033](https://github.com/stacyfuende/tesselatum-foundry/actions/runs/46128830033)
+passed on the preceding API commit (full contracts/conformance suite and live
+external raster job). The new resolver has focused tests for tenant separation,
+stable same-tenant reuse, path isolation and invalid identities; its CI result
+must be checked on the new commit before claiming validation.
+
+**Boundary:** this is a single-host local runtime adapter, not production
+multi-tenant hosting. Process-local caching and local filesystem stores do not
+provide distributed coordination, object-store IAM isolation, encryption,
+backup/retention, TLS, session management, rate limiting or operational
+monitoring. See [ADR-066](decisions/066-local-tenant-runtime-isolation.md).
