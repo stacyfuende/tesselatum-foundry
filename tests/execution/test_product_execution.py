@@ -473,7 +473,7 @@ def test_blueprint_execution_handoff_acceptance_and_manifest_assembly():
         plan,
         {"compilation_fingerprint": service.definitions.recipes[
             execution.recipe["recipe_id"]
-        ]["metadata"]["product_compilation_fingerprint"]},
+        ]["metadata"]["compilation_fingerprint"]},
         execution,
         acceptance,
     )
