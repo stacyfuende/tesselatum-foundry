@@ -2,6 +2,10 @@
 
 from .autonomy import AutonomyPolicyError, evaluate_autonomy
 from .product_blueprints import ProductBlueprintPlanError, plan_product_blueprint
+from .product_acceptance import (
+    assemble_product_manifest,
+    evaluate_product_acceptance,
+)
 from .product_execution import (
     ProductExecutionPreconditionError,
     compile_product_blueprint_recipe,
@@ -53,6 +57,8 @@ from .recipes import (
 __all__ = [
     "AutonomyPolicyError",
     "ProductBlueprintPlanError",
+    "assemble_product_manifest",
+    "evaluate_product_acceptance",
     "ProductExecutionPreconditionError",
     "compile_product_blueprint_recipe",
     "execute_product_blueprint_plan",
