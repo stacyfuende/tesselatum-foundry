@@ -22,7 +22,7 @@ The existing synchronous `POST /v1/products` endpoint is unchanged. This adapter
 ## Idempotency and recovery
 
 - Source object keys include both the idempotency-key digest and source-content digest. Re-submitting the same request is an immutable replay; changing source bytes produces a different staged key and is then rejected by the repository's semantic idempotency check.
-- Artifact metadata insertion is idempotent for an existing tenant/object-key pair only when all material metadata matches. A conflicting reuse is rejected.
+- Output objects are content-addressed by SHA-256 of the ZIP bytes. Identical retry output reuses the same immutable key; a different ZIP from a retry gets a different key and cannot overwrite prior bytes.\n- Artifact metadata insertion is idempotent for an existing tenant/object-key pair only when all material metadata matches. A conflicting reuse is rejected.
 - A crash after output upload but before job completion can safely retry the same immutable output key and artifact metadata.
 - A stale worker cannot complete/fail a job after its lease expires or changes. If lease renewal fails, final repository fencing remains authoritative.
 - Retry scheduling and exhausted-attempt behavior remain owned by `PostgresJobRepository`.
