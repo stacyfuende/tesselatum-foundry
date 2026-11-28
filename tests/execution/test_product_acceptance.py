@@ -39,7 +39,11 @@ def artifact():
         "media_type": "application/json",
         "size_bytes": 1,
         "storage": {"uri": "file:///objects/a"},
-        "spatial": {"kind": "vector", "crs": {"authority": "EPSG", "code": 4326}, "geometry_types": ["Point"]},
+        "spatial": {
+            "kind": "vector",
+            "crs": {"authority": "EPSG", "code": 4326},
+            "geometry_types": ["Point"],
+        },
     }
 
 
@@ -49,9 +53,18 @@ def blueprint(checks=None):
         "version": "1.0.0",
         "outputs": [{"id": "out", "product_type": "dataset", "experience": "Demo"}],
         "acceptance": {"checks": checks or [
-            {"id": "run", "kind": "computation", "description": "Runs succeed", "required": True, "validator": "runs.succeeded"},
-            {"id": "present", "kind": "product", "description": "Output present", "required": True, "validator": "outputs.present"},
-            {"id": "metadata", "kind": "product", "description": "Metadata", "required": True, "validator": "artifacts.metadata_valid"},
+            {
+            "id": "run", "kind": "computation", "description": "Runs succeed",
+            "required": True, "validator": "runs.succeeded",
+        },
+            {
+            "id": "present", "kind": "product", "description": "Output present",
+            "required": True, "validator": "outputs.present",
+        },
+            {
+            "id": "metadata", "kind": "product", "description": "Metadata",
+            "required": True, "validator": "artifacts.metadata_valid",
+        },
         ]},
     }
 
