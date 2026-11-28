@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import base64
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from http.client import HTTPConnection
 import json
 import threading
@@ -18,19 +18,31 @@ class FakeRepository:
     def __init__(self):
         self.job_id = uuid.uuid4()
         self.artifact_id = uuid.uuid4()
-        self.created = datetime.now(timezone.utc)
+        self.created = datetime.now(UTC)
         self.job = {
-            "job_id": self.job_id, "tenant_id": "tenant-a", "actor_id": "actor-a",
-            "status": "queued", "request_version": "1.0.0",
-            "created_at": self.created, "updated_at": self.created,
-            "started_at": None, "finished_at": None, "attempt_count": 0,
-            "max_attempts": 3, "result_manifest": None, "last_error": None,
+            "job_id": self.job_id,
+            "tenant_id": "tenant-a",
+            "actor_id": "actor-a",
+            "status": "queued",
+            "request_version": "1.0.0",
+            "created_at": self.created,
+            "updated_at": self.created,
+            "started_at": None,
+            "finished_at": None,
+            "attempt_count": 0,
+            "max_attempts": 3,
+            "result_manifest": None,
+            "last_error": None,
         }
         self.artifact = {
-            "artifact_id": self.artifact_id, "tenant_id": "tenant-a",
-            "job_id": self.job_id, "object_key": "tenants/a/products/result",
-            "logical_name": "customer-product.zip", "media_type": "application/zip",
-            "checksum_sha256": "", "size_bytes": 0,
+            "artifact_id": self.artifact_id,
+            "tenant_id": "tenant-a",
+            "job_id": self.job_id,
+            "object_key": "tenants/a/products/result",
+            "logical_name": "customer-product.zip",
+            "media_type": "application/zip",
+            "checksum_sha256": "",
+            "size_bytes": 0,
         }
 
     def submit(self, **kwargs):
@@ -60,7 +72,8 @@ def api():
     content = b"PK-test-product"
     receipt = store.put(
         object_key=repository.artifact["object_key"],
-        content=content, media_type="application/zip",
+        content=content,
+        media_type="application/zip",
     )
     repository.artifact["checksum_sha256"] = receipt.checksum_sha256
     repository.artifact["size_bytes"] = receipt.size_bytes
@@ -73,7 +86,8 @@ def api():
             if header == "Bearer other-tenant"
             else None
         ),
-        repository=repository, object_store=store,
+        repository=repository,
+        object_store=store,
     )
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
@@ -111,11 +125,22 @@ def test_submit_job_stages_source_and_returns_accepted(api):
         "decision_context": "Standardize site coordinates",
         "geographic_scope": "Nairobi metropolitan region",
     }
-    response = request(server, "POST", "/v1/jobs", body={
-        "request_version": "1.0.0",
-        "request": customer_request,
-        "source_file_base64": base64.b64encode(b'{"type":"FeatureCollection","features":[]}').decode(),
-    }, headers={**auth_headers(), "Content-Type": "application/json", "Idempotency-Key": "submission-001"})
+    source = b'{"type":"FeatureCollection","features":[]}'
+    response = request(
+        server,
+        "POST",
+        "/v1/jobs",
+        body={
+            "request_version": "1.0.0",
+            "request": customer_request,
+            "source_file_base64": base64.b64encode(source).decode(),
+        },
+        headers={
+            **auth_headers(),
+            "Content-Type": "application/json",
+            "Idempotency-Key": "submission-001",
+        },
+    )
     status, body, _ = response
     assert status == 202
     payload = json.loads(body)
@@ -129,16 +154,24 @@ def test_submit_job_stages_source_and_returns_accepted(api):
 def test_job_status_events_and_artifact_are_tenant_scoped(api):
     server, repository, _, content = api
     headers = auth_headers()
-    status, body, _ = request(server, "GET", f"/v1/jobs/{repository.job_id}", headers=headers)
+    status, body, _ = request(
+        server, "GET", f"/v1/jobs/{repository.job_id}", headers=headers
+    )
     assert status == 200
     assert json.loads(body)["job"]["status"] == "queued"
 
-    status, body, _ = request(server, "GET", f"/v1/jobs/{repository.job_id}/events", headers=headers)
+    status, body, _ = request(
+        server,
+        "GET",
+        f"/v1/jobs/{repository.job_id}/events",
+        headers=headers,
+    )
     assert status == 200
     assert json.loads(body)["events"] == []
 
     status, body, content_type = request(
-        server, "GET",
+        server,
+        "GET",
         f"/v1/jobs/{repository.job_id}/artifacts/{repository.artifact_id}",
         headers=headers,
     )
@@ -149,10 +182,14 @@ def test_job_status_events_and_artifact_are_tenant_scoped(api):
 
 def test_unauthenticated_and_cross_tenant_reads_are_not_disclosed(api):
     server, repository, _, _ = api
-    status, body, _ = request(server, "GET", f"/v1/jobs/{repository.job_id}")
+    status, body, _ = request(
+        server, "GET", f"/v1/jobs/{repository.job_id}"
+    )
     assert status == 401
     status, body, _ = request(
-        server, "GET", f"/v1/jobs/{repository.job_id}",
+        server,
+        "GET",
+        f"/v1/jobs/{repository.job_id}",
         headers={"Authorization": "Bearer other-tenant"},
     )
     assert status == 404
