@@ -1,6 +1,6 @@
 # Project status and collaboration guide
 
-**Last updated:** 2026-11-24  
+**Last updated:** 2026-11-28  
 **Status:** Living engineering tracker.
 
 This page distinguishes implemented behavior from proposed work and unverified assumptions. A checked item does not imply production readiness. Read [Foundry architecture](FOUNDRY_REORIENTATION.md) and [Project vision](PROJECT_VISION.md) for current direction.
@@ -22,6 +22,20 @@ Foundry is Tessellatum's spatial computation infrastructure. It makes spatial da
 | Raster band statistics | Initial kernel, contract, Rasterio/NumPy packaging, independent critic and generated GeoTIFF tests proposed in PR #21 | Integrate into Run/Artifact/Recipe lifecycle and verify CI |
 | Remote worker | Authenticated HTTPS transport and service exist for vector capabilities | Concurrency, process-isolated hard timeouts, ingress, resource policy, monitoring, secret rotation and deployment verification |
 | Provenance and methodology | Rights declarations and lineage; buffer approximation and reprojection operation evidence | Declarations are not legal authorization; suitability and accuracy need domain evidence |
+
+## Outcome-first Product Factory — implemented foundation, not a shipped product
+
+| Component | Implemented / evidenced | Remaining / qualification |
+|---|---|---|
+| Product Blueprint contract | Outcome, audience, evidence requirements, reasoning nodes, outputs, acceptance, autonomy and resource limits are declarative and schema-bound | Source discovery/resolution UX, rights/freshness/quality assessment |
+| Blueprint planner | Deterministic dependency ordering, exact registered Capability resolution, evidence and output-port checks, policy-sensitive plan fingerprint | Planning interface and interactive assumption resolution |
+| Guarded compilation | Blueprint plan compiles to schema-valid immutable Geo-Cells and Recipe; exact upstream port bindings; resolved inputs must be typed Artifact/external references; complete output contracts required | Data binding and template selection are still explicit runtime inputs |
+| Execution handoff | Re-plans against current registry/policy, rejects stale plan and non-automatic decisions, persists definitions, reuses registered Recipe Run service | Real customer-input product factory run not yet demonstrated |
+| Product acceptance | Registered Run, output, Artifact metadata and checksum validators; unknown validators remain unassessed and block release | Geometry validity, methodological suitability, source rights, freshness, cartographic/UX quality and monitoring validators |
+| Product manifest | Deterministic assembled manifest with product output inventory, Artifact metadata, execution and Run provenance, acceptance and fingerprint | No public/customer delivery, product renderer, release, deployment or operations service |
+| Example Blueprint | Road-access buffer example for a 500m access zone | Requires a real input Artifact and actual registered worker execution to prove end-to-end |
+
+**Honest proof boundary:** the Blueprint-to-acceptance-manifest test exercises the orchestration using test doubles. It is not a live worker run. The external Sentinel-2 raster-window proof remains separate evidence for the real-source raster path.
 
 ## External data boundary — initial source-backed execution implemented
 
