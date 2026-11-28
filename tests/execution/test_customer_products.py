@@ -7,6 +7,7 @@ def test_customer_product_service_composes_registered_lifecycle(monkeypatch):
     plan = {"status": "planned", "blueprint": blueprint}
     prepared = {
         "status": "awaiting_source_ingestion",
+        "blueprint": blueprint,
         "execution_plan": plan,
         "customer_summary": {"product_name": "Approved product"},
     }
@@ -112,6 +113,7 @@ def test_customer_product_service_never_exports_unaccepted_products(monkeypatch)
         "tessellatum_foundry.execution.customer_products.prepare_customer_product_request",
         lambda *args, **kwargs: {
             "status": "awaiting_source_ingestion",
+            "blueprint": {},
             "execution_plan": {"status": "planned", "blueprint": {}},
             "customer_summary": {},
         },
