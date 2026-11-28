@@ -52,7 +52,9 @@ def evaluate_product_acceptance(
     declared_output_ids = {item["id"] for item in blueprint.get("outputs", [])}
     missing_outputs = sorted(declared_output_ids - set(outputs))
     required_failed = any(item["required"] and item["status"] == "failed" for item in results)
-    required_unassessed = any(item["required"] and item["status"] == "unassessed" for item in results)
+    required_unassessed = any(
+        item["required"] and item["status"] == "unassessed" for item in results
+    )
     optional_failed = any(not item["required"] and item["status"] == "failed" for item in results)
     if execution.status != "succeeded" or required_failed or missing_outputs:
         status = "rejected"
