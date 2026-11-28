@@ -192,11 +192,13 @@ def test_postgres_atomic_artifact_completion_rolls_back_on_stale_lease(postgres_
             lease_token=uuid.uuid4(), result_manifest={"request_id": "atomic"},
             artifact=artifact,
         )
-    with pytest.raises(JobNotFound):
-        repo.get_artifact(
-            tenant_id="tenant-atomic", job_id=job["job_id"],
-            artifact_id="00000000-0000-0000-0000-000000000000",
-        )
+    import psycopg
+    with psycopg.connect(repo._dsn) as conn:
+        orphan_metadata_count = conn.execute(
+            "select count(*) from foundry.artifacts where tenant_id = %s and object_key = %s",
+            ("tenant-atomic", artifact["object_key"]),
+        ).fetchone()[0]
+    assert orphan_metadata_count == 0
     completed, registered = repo.complete_with_artifact(
         tenant_id="tenant-atomic", job_id=job["job_id"],
         lease_token=claimed["lease_token"], result_manifest={"request_id": "atomic"},
