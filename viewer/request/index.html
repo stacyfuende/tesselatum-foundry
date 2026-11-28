@@ -16,7 +16,7 @@
 <p class="intro">Give us your site points and tell us what you need to do with them. Foundry will prepare a standardized dataset in a metric coordinate system, so the locations are ready for distance, buffering and overlay analysis.</p>
 <section class="panel">
 <h2>01 / Your source data</h2>
-<p>Choose a GeoJSON file containing point locations. The file is inspected locally in your browser; it is not uploaded.</p>
+<p>Choose a GeoJSON file containing point locations. It is inspected locally first; it is only transmitted when you explicitly submit the request.</p>
 <div class="field filebox"><label for="source-file">Site locations · GeoJSON</label><input id="source-file" type="file" accept=".geojson,.json,application/geo+json,application/json"><div class="hint">Maximum 25 MB and 100,000 point features. One point per site.</div></div>
 <div id="file-status" class="status hidden" role="status"></div>
 <div id="metrics" class="summary hidden"><div class="metric"><strong id="feature-count">—</strong><span>Site points</span></div><div class="metric"><strong id="west-east">—</strong><span>Longitude span</span></div><div class="metric"><strong id="south-north">—</strong><span>Latitude span</span></div></div>
@@ -34,7 +34,7 @@
 </div>
 <div class="actions"><button id="prepare" class="button" disabled>Prepare product request →</button><button id="reset" class="button secondary" type="button">Start over</button></div>
 <div id="result" class="status hidden" role="status"></div>
-<div id="download-area" class="hidden"><div class="actions"><button id="download" class="button">Download request JSON</button></div><p class="hint">Keep your original GeoJSON file. The request JSON describes the job; it does not contain the source data. Both files must be submitted together through an approved intake channel.</p></div>
+<div id="download-area" class="hidden"><div class="actions"><button id="download" class="button secondary">Download request JSON</button></div><p class="hint">The JSON export is an optional record of the request; it does not contain your source data.</p></div>
 </section>
 <section class="panel">
 <h2>What happens next</h2>
@@ -46,7 +46,7 @@
 "use strict";
 const $=id=>document.getElementById(id);
 const supported={west:36.0,south:-2.5,east:37.5,north:0.5};
-let selectedFile=null,parsedCollection=null,requestPayload=null;
+let selectedFile=null,parsedCollection=null,requestPayload=null,submitting=false;
 function setStatus(message,kind=""){const node=$("file-status");node.textContent=message;node.className="status "+kind}
 function allPoints(collection){
  if(!collection||collection.type!=="FeatureCollection"||!Array.isArray(collection.features)||collection.features.length===0)throw Error("The file must be a non-empty GeoJSON FeatureCollection.");
@@ -63,7 +63,10 @@ function allPoints(collection){
  }
  return {count:collection.features.length,west,south,east,north};
 }
-function updateReady(){ $("prepare").disabled=!(selectedFile&&parsedCollection&&$("confirm-crs").checked&&$("audience").value.trim()&&$("context").value.trim())}
+function updateReady(){
+ $("prepare").disabled=!(selectedFile&&parsedCollection&&$("confirm-crs").checked&&$("audience").value.trim()&&$("context").value.trim());
+ $("submit-product").disabled=!(requestPayload&&$("api-endpoint").value.trim()&&$("api-token").value.trim()&&$("confirm-submit").checked)||submitting;
+}
 $("source-file").addEventListener("change",async event=>{
  selectedFile=null;parsedCollection=null;requestPayload=null;$("download-area").classList.add("hidden");$("metrics").classList.add("hidden");updateReady();
  const file=event.target.files&&event.target.files[0];if(!file)return;
@@ -107,6 +110,6 @@ $("reset").addEventListener("click",()=>{
  selectedFile=null;parsedCollection=null;requestPayload=null;
  $("source-file").value="";$("confirm-crs").checked=false;$("audience").value="";$("context").value="";
  $("product-name").value="Nairobi site coordinate standardization";
- $("file-status").className="status hidden";$("metrics").classList.add("hidden");$("result").classList.add("hidden");$("download-area").classList.add("hidden");updateReady();
+ $("file-status").className="status hidden";$("submit-status").className="status hidden";$("metrics").classList.add("hidden");$("result").classList.add("hidden");$("download-area").classList.add("hidden");updateReady();
 });
 </script></body></html>
