@@ -274,8 +274,17 @@ class FileSystemArtifactStore:
                 "failed checksum verification."
             )
 
-    def read_bytes(self, artifact: dict[str, Any]) -> bytes:
-        """Read an Artifact only through a validated store-relative object key."""
+    def read_bytes(
+        self, artifact: dict[str, Any], *, max_bytes: int | None = None
+    ) -> bytes:
+        """Read and verify an Artifact with an optional hard in-memory byte bound."""
+        if max_bytes is not None and (
+            isinstance(max_bytes, bool) or not isinstance(max_bytes, int) or max_bytes < 0
+        ):
+            raise ValueError("max_bytes must be a non-negative integer or None.")
+        declared_size = artifact.get("size_bytes")
+        if max_bytes is not None and declared_size > max_bytes:
+            raise ArtifactIntegrityError("Artifact exceeds the configured read byte limit.")
         object_key = artifact["storage"].get("object_key")
         if not isinstance(object_key, str):
             raise ArtifactIntegrityError("Artifact storage record has no object key.")
@@ -285,15 +294,26 @@ class FileSystemArtifactStore:
         path = (self.root / Path(*relative.parts)).resolve()
         if not path.is_relative_to(self.root):
             raise ArtifactIntegrityError("Artifact object path escapes the store root.")
-        content = path.read_bytes()
-        actual = hashlib.sha256(content).hexdigest()
+        chunks: list[bytes] = []
+        digest = hashlib.sha256()
+        size_bytes = 0
+        try:
+            with path.open("rb") as stream:
+                for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+                    size_bytes += len(chunk)
+                    if max_bytes is not None and size_bytes > max_bytes:
+                        raise ArtifactIntegrityError("Artifact exceeds the configured read byte limit.")
+                    digest.update(chunk)
+                    chunks.append(chunk)
+        except OSError as error:
+            raise ArtifactIntegrityError("Artifact object is unavailable.") from error
         expected = artifact["checksum"]["value"]
-        if actual != expected or len(content) != artifact.get("size_bytes"):
+        if digest.hexdigest() != expected or size_bytes != declared_size:
             raise ArtifactIntegrityError(
                 f"Artifact {artifact['artifact_id']}@{artifact['version']} "
                 "failed checksum verification."
             )
-        return content
+        return b"".join(chunks)
 
     def _metadata_path(self, artifact_id: str, version: str) -> Path:
         key = _identity_key(artifact_id, version)
