@@ -41,11 +41,12 @@ Foundry is Tessellatum's spatial computation infrastructure. It makes spatial da
 
 | Component | Implemented / evidenced | Remaining / qualification |
 |---|---|---|
-| Customer request contract | Separate schema that asks for the job, source filename/type/CRS, audience, decision context and supported geography; no capability or Recipe vocabulary | Browser form and authenticated request submission |
-| Deterministic resolver | Loads its approved Nairobi template from packaged, version-controlled runtime data and resolves only that template; preserves customer context; plans against the current capability registry; rejects unsupported job, CRS, geography, file path and media-type mismatch | No free-form method generation; more approved job templates require their own tests and scope constraints |
-| Source boundary | Returns explicit GeoJSON/CRS/coordinate-order requirements and `awaiting_source_ingestion` state | File bytes are not yet ingested; Artifact registration and geometry/area validation are still required before execution |
+| Customer request contract | Versioned customer-language request schema covering the job, source file, CRS, audience, decision context and supported geography; no capability or Recipe vocabulary | Expand only when another validated customer job is added |
+| Customer interface | Browser composer inspects a GeoJSON Point FeatureCollection locally, checks bounded Nairobi scope, gathers context and supports an explicit authenticated submission | Real deployed browser-to-hosted-API journey still needs verification |
+| Deterministic resolver and ingestion | Approved packaged Nairobi template; bounded source ingestion; immutable Artifact registration; exact registered capability planning; rejects unsupported job, CRS, geography, path and media-type mismatch | No free-form method generation; more approved jobs need their own templates, constraints and tests |
+| Execution and delivery | Docker-backed end-to-end HTTP integration runs the authenticated request through tenant runtime, `vector.reproject@1.0.0`, acceptance, manifest and verified ZIP delivery | Hosted identity provider, durable tenant storage and production operations remain deployment work |
 
-The customer request is deliberately not executable. It is the first boundary between a customer's job description and Foundry's internal Blueprint machinery. See [ADR-062](decisions/062-customer-language-product-request-intake.md).
+The customer request is deliberately not executable code. It is the boundary between a customer's job description and Foundry's internal Blueprint machinery. See [ADR-062](decisions/062-customer-language-product-request-intake.md) and [ADR-067](decisions/067-authenticated-customer-product-http-integration.md).
 
 ## External data boundary — initial source-backed execution implemented
 
@@ -110,7 +111,7 @@ A dependency-free browser viewer now opens GeoJSON Features and FeatureCollectio
 
 A GeoJSON export adapter now turns an accepted Product Manifest into a deterministic ZIP bundle. It resolves each exact Artifact ID/version through the configured Artifact Store, compares immutable Artifact metadata with the assembled manifest, reads bytes through the store's SHA-256-verifying API, validates GeoJSON payload type, enforces a configurable aggregate byte limit, and packages the source manifest, export index and GeoJSON outputs. Only `accepted` products with `release_allowed=true` can be exported. The bundle includes the accepted source manifest, the exact canonical manifest bytes used for its fingerprint, an export index and GeoJSON outputs. The browser viewer can open the extracted bundle files selected together, verify the canonical manifest fingerprint with Web Crypto, cross-check each output against its immutable Artifact reference, verify file sizes and SHA-256 checksums, and inspect each GeoJSON output. It does not upload data or fetch arbitrary URLs. ADR-061 documents the contract.
 
-**Proof boundary:** unit tests cover bundle contents, determinism, rejected/unaccepted products, manifest tampering, Artifact metadata mismatch, invalid GeoJSON and export size limits; storage tests cover bounded reads. The browser script has passed a JavaScript syntax check, but browser interaction and the latest CI run remain unverified. This is a portable local export adapter, not hosted publication, a signed distribution mechanism, customer access control, or a live Artifact API. It currently supports GeoJSON only; raster and other product formats need their own delivery adapters/viewers.
+**Proof boundary:** unit tests cover bundle contents, determinism, rejected/unaccepted products, manifest tampering, Artifact metadata mismatch, invalid GeoJSON and export size limits; storage tests cover bounded reads. The viewer has static and script-syntax checks, but a real browser interaction test on the current deployed commit remains outstanding. This is a portable export adapter, not hosted publication, a signed distribution mechanism, customer access control, or a live Artifact API. It currently supports GeoJSON only; raster and other product formats need their own delivery adapters/viewers.
 
 ## Outcome-first product examples
 
@@ -142,29 +143,14 @@ Product manifests now carry the customer-facing intent from the Blueprint: title
 The product viewer now offers a CSV export for point-only datasets, in addition to the verified GeoJSON handoff. It includes feature identifiers, X/Y values, the active CRS label and a stable union of feature-property columns. It deliberately disables this export for non-point geometries rather than silently substituting centroids or dropping geometry detail. Text values that could be interpreted as spreadsheet formulas are escaped. This is a convenience export from the already-opened local dataset, not a new server-side artifact or replacement for the original GeoJSON.
 
 
-### Local customer request composer
+### Customer request composer and authenticated submission
 
-A static browser composer now provides the first customer entry point for the Nairobi site-coordinate product. It locally inspects a selected GeoJSON FeatureCollection, accepts only Point features, enforces a conservative Nairobi operating envelope, asks for audience/decision context and exports a schema-shaped request JSON. It never uploads or stores the source file. The composer is a request-preparation tool, not a hosted intake endpoint; source ingestion, authoritative area checks, full geometry/quality validation and execution remain server-side follow-on work.
-
+The customer page now inspects a selected GeoJSON Point FeatureCollection locally, enforces the bounded Nairobi intake envelope, collects audience and decision context, and prepares the supported product request. It also provides an explicit authenticated submit flow: the operator-approved HTTPS API endpoint and bearer token are entered at submission time; the token remains in page memory and is cleared on page hide/reset; the source file is transmitted only after the user confirms authorization. A verified ZIP is downloaded only when the API returns an accepted, releasable product. A request-JSON download remains available as a fallback. This is still a pilot intake page; a current-commit browser interaction test and deployed customer journey are outstanding.
 
 ## Authenticated customer API and local tenant runtime
 
-The authenticated `POST /v1/products` adapter now has a concrete local runtime
-resolver: `LocalTenantRuntimeResolver`. It creates one `LocalFoundry` composition
-per trusted tenant identity, stores each runtime beneath a SHA-256-derived
-tenant directory, and gives each tenant separate Artifact, Run, definition,
-Capability and Recipe-service instances. It installs only the reviewed
-site-coordinate-standardization Cell template and output mapping; customer
-requests cannot supply execution code or runtime configuration.
+The authenticated `POST /v1/products` adapter accepts a versioned JSON envelope, authenticates before resolving tenant runtime, enforces request/source size bounds, uses exact-origin CORS, and returns a ZIP only after product acceptance and release checks. `LocalTenantRuntimeResolver` creates one `LocalFoundry` composition per trusted tenant identity, with separate local Artifact, Run, definition, Capability and Recipe-service instances. It installs only the reviewed site-coordinate-standardization template; customers cannot supply execution code or runtime configuration.
 
-**Verification:** CI run [#46128830033](https://github.com/stacyfuende/tesselatum-foundry/actions/runs/46128830033)
-passed on the preceding API commit (full contracts/conformance suite and live
-external raster job). The new resolver has focused tests for tenant separation,
-stable same-tenant reuse, path isolation and invalid identities; its CI result
-must be checked on the new commit before claiming validation.
+**Verification:** [CI run #46133161084](https://github.com/stacyfuende/tesselatum-foundry/actions/runs/46133161084) passed on commit `053e69737b58096351cd01209aae72f50099e297`: 562 passed, 2 skipped (optional live-STAC environment not configured), 1 warning. Both worker images built, Docker/PostGIS tests passed, the customer-page control and JavaScript checks passed, and the independent live Nairobi Sentinel-2 raster execution passed.
 
-**Boundary:** this is a single-host local runtime adapter, not production
-multi-tenant hosting. Process-local caching and local filesystem stores do not
-provide distributed coordination, object-store IAM isolation, encryption,
-backup/retention, TLS, session management, rate limiting or operational
-monitoring. See [ADR-066](decisions/066-local-tenant-runtime-isolation.md).
+**Boundary:** the tenant runtime remains a single-host local adapter, not production multi-tenant hosting. Process-local caching and local filesystem stores do not provide distributed coordination, object-store IAM isolation, encryption, backup/retention, TLS, identity-provider integration, rate limiting or operational monitoring. No production API hostname or credentials are configured. See [ADR-066](decisions/066-local-tenant-runtime-isolation.md) and the [Customer Product API deployment guide](customer-product-api-deployment.md).
