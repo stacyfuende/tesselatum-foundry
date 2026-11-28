@@ -79,7 +79,7 @@ def test_bundle_contains_manifest_index_and_verified_geojson():
     bundle = build_geojson_product_bundle(sealed_manifest(), artifact_store=Store())
     with zipfile.ZipFile(BytesIO(bundle)) as archive:
         assert set(archive.namelist()) == {
-            "product-manifest.json", "export-index.json", "outputs/zones.geojson"
+            "product-manifest.json", "manifest-fingerprint-input.json", "export-index.json", "outputs/zones.geojson"
         }
         index = json.loads(archive.read("export-index.json"))
         payload = archive.read("outputs/zones.geojson")
