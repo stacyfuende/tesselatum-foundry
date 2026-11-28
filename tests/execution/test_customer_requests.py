@@ -34,7 +34,10 @@ def test_customer_request_resolves_to_approved_plan_and_customer_summary():
     assert result["source_requirement"]["coordinate_order"] == "longitude, latitude"
     assert result["execution_plan"]["status"] == "planned"
     assert result["execution_plan"]["node_order"] == ["standardize"]
-    assert result["execution_plan"]["blueprint"]["blueprint_id"] == "nairobi-site-coordinate-standardization"
+    assert (
+        result["execution_plan"]["blueprint"]["blueprint_id"]
+        == "nairobi-site-coordinate-standardization"
+    )
 
 
 def test_customer_request_rejects_unregistered_job_type():
