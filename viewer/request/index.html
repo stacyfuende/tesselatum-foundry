@@ -106,10 +106,53 @@ $("download").addEventListener("click",()=>{
  const url=URL.createObjectURL(blob),link=document.createElement("a");
  link.href=url;link.download=requestPayload.request_id+".json";link.click();URL.revokeObjectURL(url);
 });
+function validateEndpoint(value){
+ let endpoint;
+ try{endpoint=new URL(value)}catch(_){throw Error("Enter a valid Foundry API endpoint URL.")}
+ const local=endpoint.protocol==="http:"&&["localhost","127.0.0.1","[::1]"].includes(endpoint.hostname);
+ if(endpoint.protocol!=="https:"&&!local)throw Error("Remote API endpoints must use HTTPS.");
+ if(endpoint.username||endpoint.password||endpoint.search||endpoint.hash||!endpoint.pathname.endsWith("/v1/products"))throw Error("Use the exact /v1/products endpoint without credentials, query parameters or fragments.");
+ return endpoint.toString();
+}
+async function encodeFileBase64(file){
+ const bytes=new Uint8Array(await file.arrayBuffer());
+ let binary="";
+ const chunkSize=0x8000;
+ for(let offset=0;offset<bytes.length;offset+=chunkSize)binary+=String.fromCharCode(...bytes.subarray(offset,offset+chunkSize));
+ return btoa(binary);
+}
+["api-endpoint","api-token","confirm-submit"].forEach(id=>$(id).addEventListener("input",updateReady));
+$("submit-product").addEventListener("click",async()=>{
+ if(!requestPayload||submitting)return;
+ const status=$("submit-status");
+ try{
+  const endpoint=validateEndpoint($("api-endpoint").value.trim());
+  const token=$("api-token").value.trim();
+  if(!token.startsWith("Bearer "))throw Error("Enter the complete token in the format: Bearer your-token");
+  if(!$("confirm-submit").checked)throw Error("Confirm that you are authorized to submit this dataset.");
+  submitting=true;updateReady();status.className="status";status.textContent="Submitting source data to Foundry. Keep this page open while the product runs.";
+  const envelope={request_version:"1.0.0",request:requestPayload,source_file_base64:await encodeFileBase64(selectedFile)};
+  const response=await fetch(endpoint,{method:"POST",headers:{"Authorization":token,"Content-Type":"application/json"},body:JSON.stringify(envelope),cache:"no-store",credentials:"omit",redirect:"error"});
+  const type=(response.headers.get("content-type")||"").split(";")[0].trim().toLowerCase();
+  if(!response.ok){
+   let detail="Foundry could not release this product (HTTP "+response.status+").";
+   if(type==="application/json"){const body=await response.json();if(body&&body.error)detail+=" "+body.error.replace(/_/g," ");}
+   throw Error(detail);
+  }
+  if(type!=="application/zip")throw Error("The endpoint returned an unexpected response type. No product was downloaded.");
+  const blob=await response.blob(),url=URL.createObjectURL(blob),link=document.createElement("a");
+  link.href=url;link.download="spatial-product.zip";link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+  const requestId=response.headers.get("X-Foundry-Request-ID");
+  status.textContent="Product delivered successfully."+(requestId?" Request ID: "+requestId:"")+" The ZIP bundle has been downloaded.";
+  status.className="status success";
+ }catch(error){status.textContent=error.message||"Submission failed. Check the endpoint and try again.";status.className="status error"}
+ finally{submitting=false;updateReady()}
+});
+window.addEventListener("pagehide",()=>{$("api-token").value=""});
 $("reset").addEventListener("click",()=>{
  selectedFile=null;parsedCollection=null;requestPayload=null;
  $("source-file").value="";$("confirm-crs").checked=false;$("audience").value="";$("context").value="";
  $("product-name").value="Nairobi site coordinate standardization";
- $("file-status").className="status hidden";$("submit-status").className="status hidden";$("metrics").classList.add("hidden");$("result").classList.add("hidden");$("download-area").classList.add("hidden");updateReady();
+ $("file-status").className="status hidden";$("submit-status").className="status hidden";$("metrics").classList.add("hidden");$("result").classList.add("hidden");$("download-area").classList.add("hidden");$("api-token").value="";$("confirm-submit").checked=false;$("submit-status").className="status hidden";updateReady();
 });
 </script></body></html>
