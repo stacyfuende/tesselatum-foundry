@@ -362,3 +362,126 @@ def test_compilation_identity_changes_when_resolved_artifact_changes():
     assert first["plan_fingerprint"] == second["plan_fingerprint"]
     assert first["compilation_fingerprint"] != second["compilation_fingerprint"]
     assert first["recipe"]["recipe_id"] != second["recipe"]["recipe_id"]
+
+
+def test_blueprint_execution_handoff_acceptance_and_manifest_assembly():
+    from tessellatum_foundry.execution.product_acceptance import (
+        assemble_product_manifest,
+        evaluate_product_acceptance,
+    )
+    from tessellatum_foundry.execution.recipes import RecipeExecutionResult
+
+    registry = CapabilityRegistry()
+    blueprint = simple_blueprint()
+    blueprint["acceptance"]["checks"] = [
+        {
+            "id": "runs",
+            "kind": "computation",
+            "description": "Runs succeeded",
+            "validator": "runs.succeeded",
+        },
+        {
+            "id": "outputs",
+            "kind": "product",
+            "description": "Output is present",
+            "validator": "outputs.present",
+        },
+        {
+            "id": "metadata",
+            "kind": "product",
+            "description": "Artifact metadata",
+            "validator": "artifacts.metadata_valid",
+        },
+        {
+            "id": "checksum",
+            "kind": "product",
+            "description": "Artifact integrity",
+            "validator": "artifacts.checksum_verified",
+        },
+    ]
+    plan = plan_product_blueprint(blueprint, capabilities=registry)
+
+    class MemoryDefinitions:
+        def __init__(self):
+            self.cells = {}
+            self.recipes = {}
+
+        def put_cell(self, cell, *, created_by):
+            self.cells[cell["cell_id"]] = cell
+
+        def put_recipe(self, recipe, *, created_by):
+            self.recipes[recipe["recipe_id"]] = recipe
+
+    class ArtifactStore:
+        def verify_artifact(self, record):
+            assert record["checksum"]["algorithm"] == "sha256"
+
+    class SuccessfulNode:
+        def __init__(self):
+            self.run = {
+                "run_id": "run-buffer-001",
+                "status": "succeeded",
+                "capability": {"capability_id": "vector.buffer", "version": "1.0.0"},
+                "outputs": [{"port_id": "result", "artifact_id": "buffer-artifact"}],
+                "provenance": {"implementation": "test-double"},
+            }
+
+    class RegisteredRunService:
+        def __init__(self):
+            self.definitions = MemoryDefinitions()
+
+        def execute_registered(self, *, recipe_id, version, actor_id):
+            recipe = self.definitions.recipes[recipe_id]
+            output = {
+                "artifact_id": "buffer-artifact",
+                "version": "1.0.0",
+                "checksum": {"algorithm": "sha256", "value": "a" * 64},
+                "media_type": "application/vnd.tessellatum.spatial-feature-collection+json",
+                "size_bytes": 128,
+                "spatial": {
+                    "kind": "vector",
+                    "crs": {"authority": "EPSG", "code": 32737},
+                    "geometry_types": ["Polygon"],
+                },
+                "rights": {"license": "input-derived"},
+                "storage": {"uri": "file:///test-artifacts/buffer.bin"},
+            }
+            return RecipeExecutionResult(
+                execution_id="execution-buffer-001",
+                recipe=recipe,
+                status="succeeded",
+                node_results={"buffer": SuccessfulNode()},
+                outputs={"access-layer": output},
+            )
+
+    service = RegisteredRunService()
+    execution = execute_product_blueprint_plan(
+        blueprint,
+        plan,
+        capabilities=registry,
+        recipe_service=service,
+        actor_id="test-actor",
+        **execution_inputs(),
+    )
+    acceptance = evaluate_product_acceptance(
+        blueprint,
+        execution,
+        artifact_store=ArtifactStore(),
+    )
+    manifest = assemble_product_manifest(
+        blueprint,
+        plan,
+        {"compilation_fingerprint": service.definitions.recipes[
+            execution.recipe["recipe_id"]
+        ]["metadata"]["product_compilation_fingerprint"]},
+        execution,
+        acceptance,
+    )
+
+    assert execution.status == "succeeded"
+    assert acceptance["status"] == "accepted"
+    assert acceptance["release_allowed"] is True
+    assert manifest["outputs"][0]["status"] == "assembled"
+    assert manifest["outputs"][0]["artifact"]["artifact_id"] == "buffer-artifact"
+    assert manifest["provenance"]["runs"]["buffer"]["run_id"] == "run-buffer-001"
+    assert manifest["manifest_fingerprint"]
