@@ -76,7 +76,12 @@ def build_geojson_product_bundle(
                 or artifact.get("media_type") != artifact_ref.get("media_type")
             ):
                 raise ProductExportError(f"Output {output_id!r} Artifact metadata differs from the manifest.")
-            content = artifact_store.read_bytes(artifact)
+            declared_size = artifact.get("size_bytes")
+            if isinstance(declared_size, bool) or not isinstance(declared_size, int) or declared_size < 0:
+                raise ProductExportError(f"Output {output_id!r} has an invalid Artifact size.")
+            if total + declared_size > max_output_bytes:
+                raise ProductExportError("Product exceeds the configured export byte limit.")
+            content = artifact_store.read_bytes(artifact, max_bytes=max_output_bytes - total)
         except (OSError, KeyError, RuntimeError, ValueError) as error:
             if isinstance(error, ProductExportError):
                 raise
