@@ -13,7 +13,10 @@ This guide defines the boundary between the tested customer submission flow and 
 - Exact-origin CORS configuration, HTTPS-only remote origins, bounded request/source sizes, and sanitized caller-facing errors.
 - A local tenant runtime reference implementation with separate per-tenant local stores.
 - A tested end-to-end loopback HTTP integration path through the registered reproject worker, product acceptance, and ZIP delivery.
-- CI evidence: commit `053e69737b58096351cd01209aae72f50099e297` passed 562 tests; two optional live-STAC tests were skipped because their separate environment was not configured. The independent live Nairobi Sentinel-2 raster workflow also passed.
+- Current CI evidence: branch-head commit `00714543da22f1bd0b1b418aa0495f2ed5883a17` passed GitHub Actions run [#1225](https://github.com/stacyfuende/tesselatum-foundry/actions/runs/46136000607). Both the pre-production certification job and the independent live external Nairobi Sentinel-2 raster job passed.
+- The certification job includes lint, installed-package/schema/fixture checks, Docker/PostGIS-backed conformance and Chromium customer browser submission tests. The browser path verifies successful ZIP delivery and asynchronous HTTP 422 rejection handling.
+- API tests verify that the tenant runtime is selected from trusted authentication claims even if the submitted request body contains forged tenant/actor identifiers.
+- The live raster proof discovered a Sentinel-2 L2A red-band COG through Earth Search STAC and executed a bounded window read through the real HTTPS range adapter. The observed run read 1,483,357 bytes (0.6345%) from a 233,794,870-byte source in 47 range requests and published an independently validated 64×64 output window in EPSG:32737.
 
 These results establish the local product path. They do not establish a public production service.
 
