@@ -8,12 +8,28 @@ from tessellatum_foundry.execution.product_acceptance import (
 )
 
 
+class FakeNodeRun:
+    def __init__(self, status="succeeded"):
+        self.run = {"status": status}
+
+
 class FakeResult:
-    def __init__(self, status="succeeded", outputs=None, node_results=None, recipe=None, execution_id="exec-1"):
+    def __init__(
+        self,
+        status="succeeded",
+        outputs=None,
+        node_results=None,
+        recipe=None,
+        execution_id="exec-1",
+    ):
         self.status = status
         self.outputs = outputs or {}
-        self.node_results = node_results or {}
-        self.recipe = recipe or {"recipe_id": "r", "version": "1.0.0", "declared_outputs": [{"name": "out"}]}
+        self.node_results = node_results or {"node": FakeNodeRun(status)}
+        self.recipe = recipe or {
+            "recipe_id": "r",
+            "version": "1.0.0",
+            "declared_outputs": [{"name": "out"}],
+        }
         self.execution_id = execution_id
 
 
