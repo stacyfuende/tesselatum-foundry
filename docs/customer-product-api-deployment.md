@@ -95,3 +95,12 @@ A production launch is blocked until every item below is evidenced:
 No production hostname, identity-provider integration, tenant storage backend, or deployment credentials have been supplied or configured. The Vercel team currently hosts the static viewer projects on the Hobby plan; its recent preview builds reported a build-rate limit. Vercel preview availability is not a substitute for an API runtime or production readiness.
 
 The next deployment decision is therefore a hosting/identity/storage choice, followed by a real authorized browser-to-API test. Until those dependencies exist, keep the API private and the customer page in pilot mode.
+
+
+## Pre-production certification before cloud provisioning
+
+Do not provision the production host merely to discover software defects or incomplete customer workflows. Use the repository's [Pre-Production Certification](preproduction-certification.md) process first.
+
+Run `python scripts/preproduction_certify.py --profile local` for the no-cloud local gates. CI runs the same suite with Docker worker images and PostGIS through `--profile ci`. The generated JSON report records the profile, commit, individual gate results and known limitations.
+
+A green local/CI report is not a substitute for hosted acceptance. Browser automation, production identity integration, cloud IAM, durable object-storage isolation, restore testing, ingress controls and cost measurements remain explicit release gates. Provision Google Cloud only after those customer and operational gates have evidence.
