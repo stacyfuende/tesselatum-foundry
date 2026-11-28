@@ -163,24 +163,21 @@ def execute_claimed_customer_job(
         expected_checksum_sha256=receipt.checksum_sha256,
         expected_size_bytes=receipt.size_bytes,
     )
-    artifact = repository.record_artifact(
-        tenant_id=tenant_id,
-        job_id=job_id,
-        artifact_kind="customer_product_bundle",
-        logical_name=f"{request['request_id']}-product.zip",
-        object_key=receipt.object_key,
-        media_type=receipt.media_type,
-        format="zip",
-        checksum_sha256=receipt.checksum_sha256,
-        size_bytes=receipt.size_bytes,
-        metadata={
+    artifact_metadata = {
+        "artifact_kind": "customer_product_bundle",
+        "logical_name": f"{request['request_id']}-product.zip",
+        "object_key": receipt.object_key,
+        "media_type": receipt.media_type,
+        "format": "zip",
+        "checksum_sha256": receipt.checksum_sha256,
+        "size_bytes": receipt.size_bytes,
+        "metadata": {
             "request_id": request["request_id"],
             "product_status": result["status"],
         },
-    )
+    }
     manifest = {
         "request_id": request["request_id"],
-        "artifact_id": str(artifact["artifact_id"]),
         "object_key": receipt.object_key,
         "media_type": receipt.media_type,
         "format": "zip",
@@ -188,12 +185,14 @@ def execute_claimed_customer_job(
         "size_bytes": receipt.size_bytes,
         "acceptance_status": result.get("acceptance", {}).get("status"),
     }
-    completed = repository.complete(
+    completed, artifact = repository.complete_with_artifact(
         tenant_id=tenant_id,
         job_id=job_id,
         lease_token=lease_token,
         result_manifest=manifest,
+        artifact=artifact_metadata,
     )
+    manifest = completed.get("result_manifest", manifest)
     return {"job": completed, "artifact": artifact, "manifest": manifest}
 
 
