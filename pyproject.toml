@@ -17,6 +17,7 @@ dependencies = [
 dev = [
   "pytest>=8.3,<9",
   "ruff>=0.9,<1",
+  "playwright>=1.50,<2",
 ]
 shapely = [
   "shapely>=2.0,<3",
