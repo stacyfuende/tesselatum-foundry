@@ -777,7 +777,7 @@ def test_real_nairobi_site_coordinate_product_runs_to_verified_geojson_bundle(tm
         }
         assert feature["geometry"]["type"] == "Point"
         east, north = feature["geometry"]["coordinates"][:2]
-        assert 600_000 < east < 800_000
+        assert 200_000 < east < 400_000
         assert 9_800_000 < north < 9_900_000
         exported_manifest = json.loads(archive.read("product-manifest.json"))
         assert exported_manifest["status"] == "accepted"
