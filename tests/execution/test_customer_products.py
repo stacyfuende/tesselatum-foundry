@@ -1,5 +1,3 @@
-import json
-
 from tessellatum_foundry.execution.customer_products import run_customer_spatial_product
 
 
