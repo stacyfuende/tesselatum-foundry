@@ -154,3 +154,16 @@ The authenticated `POST /v1/products` adapter accepts a versioned JSON envelope,
 **Verification:** [CI run #46133161084](https://github.com/stacyfuende/tesselatum-foundry/actions/runs/46133161084) passed on commit `053e69737b58096351cd01209aae72f50099e297`: 562 passed, 2 skipped (optional live-STAC environment not configured), 1 warning. Both worker images built, Docker/PostGIS tests passed, the customer-page control and JavaScript checks passed, and the independent live Nairobi Sentinel-2 raster execution passed.
 
 **Boundary:** the tenant runtime remains a single-host local adapter, not production multi-tenant hosting. Process-local caching and local filesystem stores do not provide distributed coordination, object-store IAM isolation, encryption, backup/retention, TLS, identity-provider integration, rate limiting or operational monitoring. No production API hostname or credentials are configured. See [ADR-066](decisions/066-local-tenant-runtime-isolation.md) and the [Customer Product API deployment guide](customer-product-api-deployment.md).
+
+
+## Pre-production certification
+
+A repeatable certification runner now exists at `scripts/preproduction_certify.py`.
+
+- Local command: `python scripts/preproduction_certify.py --profile local`.
+- CI command: `python scripts/preproduction_certify.py --profile ci`, with Docker and PostGIS available.
+- The CI workflow now invokes the same certification runner used locally.
+- The runner records a machine-readable JSON report under the ignored `build/` directory, including the tested commit, individual gate outcomes and known limitations.
+- The runner checks lint, schemas/fixtures/contracts/manifests, the full pytest suite, installed-package contents, and (in CI) both worker-image builds plus Docker/PostGIS-backed integration tests.
+
+**Evidence boundary:** the runner and workflow have been committed, but the new runner has not yet completed a CI run on this commit. The local profile does not certify browser interaction or hosted infrastructure. See [Pre-Production Certification](preproduction-certification.md) for the command, gate definitions and remaining customer acceptance requirements.
