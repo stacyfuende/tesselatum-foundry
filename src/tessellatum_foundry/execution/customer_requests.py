@@ -1,0 +1,107 @@
+"""Customer-language intake for supported Foundry spatial products.
+
+This boundary translates a constrained request into a registered Blueprint plan.
+It never generates capabilities, execution code, or unreviewed methods.
+"""
+from __future__ import annotations
+
+from copy import deepcopy
+from typing import Any
+
+from tessellatum_foundry.execution.capabilities import CapabilityRegistry
+from tessellatum_foundry.execution.product_blueprints import plan_product_blueprint
+from tessellatum_foundry.validation.contracts import ContractRegistry
+
+
+class CustomerProductRequestError(ValueError):
+    """Raised when a customer request cannot be safely resolved."""
+
+
+_SUPPORTED_JOB_TEMPLATES = {
+    "standardize_site_coordinates": "nairobi-site-coordinate-standardization",
+}
+
+
+def prepare_customer_product_request(
+    request: dict[str, Any],
+    *,
+    blueprint: dict[str, Any],
+    capabilities: CapabilityRegistry,
+    policy: dict[str, Any] | None = None,
+    contracts: ContractRegistry | None = None,
+) -> dict[str, Any]:
+    """Resolve a customer request to a safe, non-executing Blueprint plan.
+
+    The uploaded file is not read or persisted here. The returned intake
+    requirement explicitly describes the source file that must be ingested
+    into an immutable Artifact before the existing execution handoff can run.
+    """
+    contracts = contracts or ContractRegistry()
+    contracts.validate("customer_product_request.schema.json", request)
+
+    expected_template = _SUPPORTED_JOB_TEMPLATES.get(request["job_type"])
+    if expected_template is None or blueprint.get("blueprint_id") != expected_template:
+        raise CustomerProductRequestError(
+            "This request does not match an installed, approved product template."
+        )
+    if blueprint.get("metadata", {}).get("category") != "coordinate-standardization":
+        raise CustomerProductRequestError(
+            "The selected Blueprint is not registered for coordinate standardization."
+        )
+
+    resolved_blueprint = deepcopy(blueprint)
+    source_crs = request["source_file"]["coordinate_reference_system"]
+    expected_crs = {"authority": "EPSG", "code": 4326}
+    if source_crs != expected_crs:
+        raise CustomerProductRequestError(
+            "This product currently accepts GeoJSON coordinates declared as EPSG:4326."
+        )
+
+    resolved_blueprint["title"] = request.get(
+        "product_name", resolved_blueprint["title"]
+    )
+    resolved_blueprint["intent"]["audience"] = request["audience"]
+    resolved_blueprint["intent"]["decision_context"] = request["decision_context"]
+    resolved_blueprint["intent"]["geographic_scope"] = {
+        "description": request["geographic_scope"]
+    }
+
+    plan = plan_product_blueprint(
+        resolved_blueprint,
+        capabilities=capabilities,
+        policy=policy,
+        contracts=contracts,
+    )
+    if plan["status"] != "planned":
+        status = "blocked"
+        next_action = "Resolve the planning findings before accepting the source file."
+    else:
+        status = "awaiting_source_ingestion"
+        next_action = (
+            "Ingest and validate the supplied GeoJSON as an immutable Artifact; "
+            "then bind it to the planned site-coordinate input before execution."
+        )
+
+    return {
+        "request_id": request["request_id"],
+        "status": status,
+        "customer_summary": {
+            "product_name": resolved_blueprint["title"],
+            "outcome": resolved_blueprint["intent"]["outcome"],
+            "audience": resolved_blueprint["intent"]["audience"],
+            "decision_context": resolved_blueprint["intent"]["decision_context"],
+            "geographic_scope": resolved_blueprint["intent"]["geographic_scope"]["description"],
+            "delivery_format": "GeoJSON",
+            "output_coordinate_reference_system": "EPSG:32737",
+        },
+        "source_requirement": {
+            "file_name": request["source_file"]["file_name"],
+            "media_type": request["source_file"]["media_type"],
+            "coordinate_reference_system": "EPSG:4326",
+            "coordinate_order": "longitude, latitude",
+            "required_input": "site locations",
+            "ingestion_required": True,
+        },
+        "next_action": next_action,
+        "execution_plan": plan,
+    }

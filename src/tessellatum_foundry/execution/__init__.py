@@ -2,6 +2,10 @@
 
 from .autonomy import AutonomyPolicyError, evaluate_autonomy
 from .product_blueprints import ProductBlueprintPlanError, plan_product_blueprint
+from .customer_requests import (
+    CustomerProductRequestError,
+    prepare_customer_product_request,
+)
 from .product_delivery import ProductExportError, build_geojson_product_bundle
 from .product_acceptance import (
     assemble_product_manifest,
@@ -60,6 +64,8 @@ __all__ = [
     "ProductExportError",
     "build_geojson_product_bundle",
     "ProductBlueprintPlanError",
+    "CustomerProductRequestError",
+    "prepare_customer_product_request",
     "assemble_product_manifest",
     "evaluate_product_acceptance",
     "ProductExecutionPreconditionError",
