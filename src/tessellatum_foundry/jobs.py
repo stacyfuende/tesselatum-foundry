@@ -264,6 +264,9 @@ class PostgresJobRepository:
         manifest = self._json(result_manifest)
         with self._connection() as conn:
             with conn.cursor() as cur:
+                committed_manifest = dict(result_manifest)
+                committed_manifest["artifact_id"] = str(artifact_row["artifact_id"])
+                manifest_json = self._json(committed_manifest)
                 cur.execute(
                     """update foundry.jobs
                        set status = 'succeeded', result_manifest = %s::jsonb,
@@ -296,7 +299,8 @@ class PostgresJobRepository:
         this transaction rolls back the artifact metadata insert as well.
         """
         tenant_id = _identifier(tenant_id, "tenant_id")
-        manifest_json = self._json(result_manifest)
+        if not isinstance(result_manifest, dict):
+            raise ValueError("result_manifest must be an object.")
         required = {
             "artifact_kind", "logical_name", "object_key", "media_type",
             "checksum_sha256", "size_bytes",
