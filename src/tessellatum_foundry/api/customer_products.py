@@ -48,11 +48,12 @@ def create_customer_product_server(
 
     normalized_origins = frozenset(allowed_origins)
     for origin in normalized_origins:
+        if not isinstance(origin, str):
+            raise ValueError("allowed_origins must contain strings.")
         parsed = urlsplit(origin)
         local_http = parsed.scheme == "http" and parsed.hostname in {"localhost", "127.0.0.1", "::1"}
         if (
-            not isinstance(origin, str)
-            or parsed.scheme not in {"https", "http"}
+            parsed.scheme not in {"https", "http"}
             or (parsed.scheme != "https" and not local_http)
             or not parsed.netloc
             or parsed.username is not None
