@@ -167,3 +167,41 @@ def test_postgres_claim_complete_and_stale_lease_fencing(postgres_repository):
             result_manifest={},
         )
     assert repo.get(tenant_id="tenant-a", job_id=job["job_id"])["status"] == "succeeded"
+
+
+def test_postgres_atomic_artifact_completion_rolls_back_on_stale_lease(postgres_repository):
+    repo = postgres_repository
+    job = repo.submit(
+        tenant_id="tenant-atomic", actor_id="actor", idempotency_key="atomic",
+        request_version="1", request_payload={"product": "zip"},
+    )
+    claimed = repo.claim_next(worker_id="worker")
+    artifact = {
+        "artifact_kind": "customer_product_bundle",
+        "logical_name": "product.zip",
+        "object_key": "tenant/atomic/output/abc",
+        "media_type": "application/zip",
+        "format": "zip",
+        "checksum_sha256": "a" * 64,
+        "size_bytes": 10,
+        "metadata": {"request_id": "atomic"},
+    }
+    with pytest.raises(LeaseLost):
+        repo.complete_with_artifact(
+            tenant_id="tenant-atomic", job_id=job["job_id"],
+            lease_token=uuid.uuid4(), result_manifest={"request_id": "atomic"},
+            artifact=artifact,
+        )
+    with pytest.raises(JobNotFound):
+        repo.get_artifact(
+            tenant_id="tenant-atomic", job_id=job["job_id"],
+            artifact_id="00000000-0000-0000-0000-000000000000",
+        )
+    completed, registered = repo.complete_with_artifact(
+        tenant_id="tenant-atomic", job_id=job["job_id"],
+        lease_token=claimed["lease_token"], result_manifest={"request_id": "atomic"},
+        artifact=artifact,
+    )
+    assert completed["status"] == "succeeded"
+    assert completed["result_manifest"]["artifact_id"] == str(registered["artifact_id"])
+    assert repo.get(tenant_id="tenant-atomic", job_id=job["job_id"])["status"] == "succeeded"
