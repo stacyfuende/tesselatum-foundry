@@ -129,7 +129,9 @@ def test_customer_request_page_completes_browser_submission(response_status, exp
                 assert "browser-request-001" in page.locator("#submit-status").inner_text()
             else:
                 page.locator("#submit-product").click()
-                page.locator("#submit-status").wait_for()
+                page.wait_for_function(
+                    "() => document.querySelector('#submit-status').innerText.includes('HTTP 422')"
+                )
                 assert "HTTP 422" in page.locator("#submit-status").inner_text()
 
             assert expected_status in page.locator("#submit-status").get_attribute("class")
