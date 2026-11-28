@@ -93,7 +93,7 @@ def test_blueprint_compiles_to_existing_recipe_contract_and_cell_runs():
         **execution_inputs(),
     )
 
-    assert compiled["recipe"]["recipe_id"] == "product-buffer-product"
+    assert compiled["recipe"]["recipe_id"].startswith("product-buffer-product-")
     assert compiled["recipe"]["declared_outputs"] == [{
         "name": "access-layer",
         "node_id": "buffer",
@@ -485,3 +485,145 @@ def test_blueprint_execution_handoff_acceptance_and_manifest_assembly():
     assert manifest["outputs"][0]["artifact"]["artifact_id"] == "buffer-artifact"
     assert manifest["provenance"]["runs"]["buffer"]["run_id"] == "run-buffer-001"
     assert manifest["manifest_fingerprint"]
+
+
+
+@pytest.mark.skipif(
+    not __import__("os").getenv("FOUNDRY_VECTOR_BUFFER_IMAGE"),
+    reason="The real product-factory worker is built and configured only in container CI.",
+)
+def test_real_product_blueprint_runs_to_verified_geojson_bundle(tmp_path):
+    import io
+    import json
+    import zipfile
+
+    from tessellatum_foundry.execution.docker_worker import DockerWorker
+    from tessellatum_foundry.execution.product_acceptance import (
+        assemble_product_manifest,
+        evaluate_product_acceptance,
+    )
+    from tessellatum_foundry.execution.product_delivery import build_geojson_product_bundle
+    from tessellatum_foundry.execution.recipes import RecipeExecutionService
+    from tessellatum_foundry.execution.runs import RunRepository
+    from tessellatum_foundry.execution.service import VectorBufferRunService
+    from tessellatum_foundry.storage.artifacts import FileSystemArtifactStore
+    from tessellatum_foundry.storage.definitions import VersionedDefinitionStore
+
+    media_type = "application/vnd.tessellatum.spatial-feature-collection+json"
+    projected_crs = {"authority": "EPSG", "code": 32737}
+    artifact_store = FileSystemArtifactStore(tmp_path / "artifacts")
+    source = {
+        "type": "FeatureCollection",
+        "features": [{
+            "type": "Feature",
+            "id": "road-segment-001",
+            "geometry": {
+                "type": "LineString",
+                "coordinates": [[320000, 9820000], [321000, 9820000]],
+            },
+            "properties": {"road_class": "primary"},
+        }],
+    }
+    input_artifact = artifact_store.put_bytes(
+        artifact_id="roads-source",
+        version="1.0.0",
+        content=json.dumps(source, allow_nan=False).encode("utf-8"),
+        created_by="product-factory-integration",
+        media_type=media_type,
+        format_name="Foundry Spatial Feature Collection JSON",
+        spatial={
+            "kind": "vector",
+            "crs": projected_crs,
+            "geometry_types": ["LineString"],
+        },
+    )
+    assert input_artifact["artifact_id"] == "roads-source"
+
+    blueprint = simple_blueprint()
+    blueprint["acceptance"]["checks"] = [
+        {
+            "id": "runs",
+            "kind": "computation",
+            "description": "Every registered Run succeeds.",
+            "validator": "runs.succeeded",
+            "required": True,
+        },
+        {
+            "id": "outputs",
+            "kind": "product",
+            "description": "The declared output exists.",
+            "validator": "outputs.present",
+            "required": True,
+        },
+        {
+            "id": "metadata",
+            "kind": "product",
+            "description": "Output Artifact metadata is complete.",
+            "validator": "artifacts.metadata_valid",
+            "required": True,
+        },
+        {
+            "id": "checksum",
+            "kind": "product",
+            "description": "Output bytes match the registered checksum.",
+            "validator": "artifacts.checksum_verified",
+            "required": True,
+        },
+    ]
+    registry = CapabilityRegistry()
+    plan = plan_product_blueprint(blueprint, capabilities=registry)
+    assert plan["status"] == "planned", plan
+
+    inputs = execution_inputs()
+    compiled = compile_product_blueprint_recipe(
+        plan, capabilities=registry, **inputs
+    )
+    runner = VectorBufferRunService(
+        artifact_store=artifact_store,
+        run_repository=RunRepository(tmp_path / "runs"),
+        worker=DockerWorker(timeout_seconds=90),
+    )
+    recipe_service = RecipeExecutionService(
+        cell_runner=runner,
+        artifact_store=artifact_store,
+        definitions=VersionedDefinitionStore(tmp_path / "definitions"),
+    )
+    execution = execute_product_blueprint_plan(
+        blueprint,
+        plan,
+        capabilities=registry,
+        recipe_service=recipe_service,
+        actor_id="product-factory-integration",
+        **inputs,
+    )
+    assert execution.status == "succeeded", execution.error
+    assert len(execution.node_results) == 1
+    run = next(iter(execution.node_results.values())).run
+    assert run["status"] == "succeeded"
+    assert run["worker"]["worker_type"] == "local_docker"
+
+    acceptance = evaluate_product_acceptance(
+        blueprint, execution, artifact_store=artifact_store
+    )
+    assert acceptance["status"] == "accepted", acceptance
+    assert acceptance["release_allowed"] is True
+    manifest = assemble_product_manifest(
+        blueprint, plan, compiled, execution, acceptance
+    )
+    bundle = build_geojson_product_bundle(
+        manifest, artifact_store=artifact_store
+    )
+
+    with zipfile.ZipFile(io.BytesIO(bundle)) as archive:
+        assert set(archive.namelist()) == {
+            "product-manifest.json",
+            "manifest-fingerprint-input.json",
+            "export-index.json",
+            "outputs/access-layer.geojson",
+        }
+        output = json.loads(archive.read("outputs/access-layer.geojson"))
+        assert output["type"] == "FeatureCollection"
+        assert len(output["features"]) == 1
+        assert output["features"][0]["geometry"]["type"] == "Polygon"
+        exported_manifest = json.loads(archive.read("product-manifest.json"))
+        assert exported_manifest["status"] == "accepted"
