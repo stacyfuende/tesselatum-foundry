@@ -132,7 +132,8 @@ async function encodeFileBase64(file){
  for(let offset=0;offset<bytes.length;offset+=chunkSize)binary+=String.fromCharCode(...bytes.subarray(offset,offset+chunkSize));
  return btoa(binary);
 }
-["api-endpoint","api-token"].forEach(id=>$(id).addEventListener("input",updateReady));\n$("confirm-submit").addEventListener("change",updateReady);
+["api-endpoint","api-token"].forEach(id=>$(id).addEventListener("input",updateReady));
+$("confirm-submit").addEventListener("change",updateReady);
 $("submit-product").addEventListener("click",async()=>{
  if(!requestPayload||submitting)return;
  const status=$("submit-status");
