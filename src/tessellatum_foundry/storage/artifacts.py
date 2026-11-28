@@ -283,7 +283,11 @@ class FileSystemArtifactStore:
         ):
             raise ValueError("max_bytes must be a non-negative integer or None.")
         declared_size = artifact.get("size_bytes")
-        if isinstance(declared_size, bool) or not isinstance(declared_size, int) or declared_size < 0:
+        if (
+            isinstance(declared_size, bool)
+            or not isinstance(declared_size, int)
+            or declared_size < 0
+        ):
             raise ArtifactIntegrityError("Artifact has an invalid declared size.")
         if max_bytes is not None and declared_size > max_bytes:
             raise ArtifactIntegrityError("Artifact exceeds the configured read byte limit.")
@@ -304,7 +308,9 @@ class FileSystemArtifactStore:
                 for chunk in iter(lambda: stream.read(1024 * 1024), b""):
                     size_bytes += len(chunk)
                     if max_bytes is not None and size_bytes > max_bytes:
-                        raise ArtifactIntegrityError("Artifact exceeds the configured read byte limit.")
+                        raise ArtifactIntegrityError(
+                            "Artifact exceeds the configured read byte limit."
+                        )
                     digest.update(chunk)
                     chunks.append(chunk)
         except OSError as error:
