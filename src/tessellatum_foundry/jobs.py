@@ -9,8 +9,9 @@ import hashlib
 import json
 import re
 import uuid
+from collections.abc import Callable
 from datetime import datetime
-from typing import Any, Callable
+from typing import Any
 
 _SECRET_KEY = re.compile(
     r"(?:^|_)(?:authorization|access_token|refresh_token|password|passwd|secret|"
