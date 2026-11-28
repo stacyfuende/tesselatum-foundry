@@ -82,9 +82,13 @@ def _evaluate_validator(
     artifact_store: Any | None,
 ) -> tuple[bool, str]:
     if validator == "runs.succeeded":
-        passed = execution.status == "succeeded" and all(
-            result.run.get("status") == "succeeded"
-            for result in execution.node_results.values()
+        passed = (
+            execution.status == "succeeded"
+            and bool(execution.node_results)
+            and all(
+                result.run.get("status") == "succeeded"
+                for result in execution.node_results.values()
+            )
         )
         return passed, "Every Recipe node Run succeeded." if passed else "Recipe or one or more Runs did not succeed."
     if validator == "outputs.present":
