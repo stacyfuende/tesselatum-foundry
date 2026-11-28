@@ -6,6 +6,8 @@ It never generates capabilities, execution code, or unreviewed methods.
 from __future__ import annotations
 
 from copy import deepcopy
+import json
+from importlib.resources import files
 from typing import Any
 
 from tessellatum_foundry.execution.capabilities import CapabilityRegistry
@@ -18,14 +20,13 @@ class CustomerProductRequestError(ValueError):
 
 
 _SUPPORTED_JOB_TEMPLATES = {
-    "standardize_site_coordinates": "nairobi-site-coordinate-standardization",
+    "standardize_site_coordinates": "nairobi-site-coordinate-standardization.json",
 }
 
 
 def prepare_customer_product_request(
     request: dict[str, Any],
     *,
-    blueprint: dict[str, Any],
     capabilities: CapabilityRegistry,
     policy: dict[str, Any] | None = None,
     contracts: ContractRegistry | None = None,
@@ -39,14 +40,23 @@ def prepare_customer_product_request(
     contracts = contracts or ContractRegistry()
     contracts.validate("customer_product_request.schema.json", request)
 
-    expected_template = _SUPPORTED_JOB_TEMPLATES.get(request["job_type"])
-    if expected_template is None or blueprint.get("blueprint_id") != expected_template:
+    template_name = _SUPPORTED_JOB_TEMPLATES.get(request["job_type"])
+    if template_name is None:
         raise CustomerProductRequestError(
             "This request does not match an installed, approved product template."
         )
+    template_resource = files("tessellatum_foundry").joinpath(
+        "product_templates", template_name
+    )
+    try:
+        blueprint = json.loads(template_resource.read_text(encoding="utf-8"))
+    except (FileNotFoundError, json.JSONDecodeError) as error:
+        raise CustomerProductRequestError(
+            "The approved product template is unavailable or invalid."
+        ) from error
     if blueprint.get("metadata", {}).get("category") != "coordinate-standardization":
         raise CustomerProductRequestError(
-            "The selected Blueprint is not registered for coordinate standardization."
+            "The installed template is not registered for coordinate standardization."
         )
 
     resolved_blueprint = deepcopy(blueprint)

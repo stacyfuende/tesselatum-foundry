@@ -1,0 +1,108 @@
+{
+  "blueprint_id": "nairobi-site-coordinate-standardization",
+  "version": "1.0.0",
+  "title": "Nairobi site coordinate standardization",
+  "description": "Convert supplied WGS 84 site locations into a metric projected coordinate system for local spatial analysis.",
+  "intent": {
+    "outcome": "Produce a projected site-location dataset in UTM zone 37S (EPSG:32737), ready for metric distance, buffering and overlay workflows.",
+    "audience": "Property, infrastructure and site-selection analysts",
+    "decision_context": "Prepare site coordinates for consistent local measurement and spatial analysis.",
+    "geographic_scope": {
+      "description": "Nairobi region and surrounding coverage appropriate to UTM zone 37S."
+    },
+    "constraints": [
+      {
+        "id": "source-crs-explicit",
+        "description": "The source coordinates must be explicitly declared as EPSG:4326; coordinate order is longitude, latitude.",
+        "kind": "hard"
+      },
+      {
+        "id": "target-crs",
+        "description": "Output coordinates must be EPSG:32737 and must remain within the operation's valid area of use.",
+        "kind": "hard"
+      }
+    ],
+    "success_criteria": [
+      "The registered reprojection Run succeeds.",
+      "Every feature retains its identifier and properties.",
+      "The output Artifact declares EPSG:32737 and has a verified checksum."
+    ]
+  },
+  "evidence": {
+    "requirements": []
+  },
+  "reasoning": {
+    "nodes": [
+      {
+        "id": "standardize",
+        "capability": "vector.reproject",
+        "capability_version": "1.0.0",
+        "inputs": {
+          "features": "input:sites"
+        },
+        "parameters": {
+          "target_crs": {
+            "authority": "EPSG",
+            "code": 32737
+          }
+        },
+        "purpose": "Transform WGS 84 site locations into a projected metric CRS while preserving feature identity and attributes."
+      }
+    ]
+  },
+  "outputs": [
+    {
+      "id": "standardized-sites",
+      "product_type": "dataset",
+      "experience": "A validated GeoJSON site-location dataset with EPSG:32737 coordinates, ready for downstream metric analysis.",
+      "delivery_targets": [],
+      "presentation_parameters": {
+        "format": "GeoJSON",
+        "coordinate_reference_system": "EPSG:32737"
+      }
+    }
+  ],
+  "acceptance": {
+    "checks": [
+      {
+        "id": "run-succeeded",
+        "kind": "computation",
+        "description": "The registered reprojection Run succeeds.",
+        "validator": "runs.succeeded",
+        "required": true
+      },
+      {
+        "id": "output-present",
+        "kind": "product",
+        "description": "The standardized site dataset exists.",
+        "validator": "outputs.present",
+        "required": true
+      },
+      {
+        "id": "metadata-valid",
+        "kind": "product",
+        "description": "Output Artifact metadata is complete.",
+        "validator": "artifacts.metadata_valid",
+        "required": true
+      },
+      {
+        "id": "checksum-verified",
+        "kind": "product",
+        "description": "Output bytes match the immutable Artifact checksum.",
+        "validator": "artifacts.checksum_verified",
+        "required": true
+      }
+    ]
+  },
+  "resource_limits": {
+    "max_runtime_seconds": 180,
+    "max_bytes_read": 100000000,
+    "max_artifact_bytes": 100000000,
+    "max_parallel_tasks": 1
+  },
+  "metadata": {
+    "category": "coordinate-standardization",
+    "example": true,
+    "customer_job": "Prepare site locations for metric spatial analysis."
+  }
+}

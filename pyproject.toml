@@ -28,6 +28,9 @@ postgis = [
 [tool.setuptools.packages.find]
 where = ["src"]
 
+[tool.setuptools.package-data]
+tessellatum_foundry = ["product_templates/*.json"]
+
 [tool.setuptools.data-files]
 "share/tessellatum-foundry/schema" = ["schema/*.schema.json"]
 "share/tessellatum-foundry/capabilities/vector.buffer" = ["capabilities/vector.buffer/1.0.0.json"]

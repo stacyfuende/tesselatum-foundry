@@ -80,7 +80,7 @@ $("source-file").addEventListener("change",async event=>{
  }catch(error){setStatus(error.message||"Could not read this GeoJSON file.","error")}
  updateReady();
 });
-["confirm-crs","audience","context"].forEach(id=>$ (id).addEventListener("input",updateReady));
+["confirm-crs","audience","context"].forEach(id=>$(id).addEventListener("input",()=>{requestPayload=null;$("download-area").classList.add("hidden");$("result").classList.add("hidden");updateReady()}));$("product-name").addEventListener("input",()=>{requestPayload=null;$("download-area").classList.add("hidden");$("result").classList.add("hidden")});
 $("prepare").addEventListener("click",()=>{
  if(!selectedFile||!parsedCollection)return;
  const isGeojson=selectedFile.name.toLowerCase().endsWith(".geojson");
