@@ -40,3 +40,10 @@ This implementation is an orchestration adapter, not a hosted service:
 ## Local verification
 
 The new tests use the in-memory store and fakes to verify source staging, checksum metadata, reuse of the existing pipeline contract, verified ZIP publication, artifact registration and refusal to publish rejected products. Postgres lifecycle and idempotency tests remain covered by the existing ephemeral-Postgres CI job.
+
+
+## Runtime composition adapter
+
+`worker.runtime_adapter.adapt_local_foundry_runtime` maps the existing `LocalFoundry` artifact store, capability registry, recipe service, and contracts into the async worker's expected runtime shape. It does not instantiate a second engine or silently choose templates. Reviewed `cell_templates` and `output_bindings` must be supplied explicitly by the caller; the adapter validates that both are non-empty and preserves the original service instances.
+
+This bridges the Python interface contract only. A tenant resolver backed by local filesystem roots is still process-local and is not suitable as durable multi-worker hosting without a separate storage/isolation design.
