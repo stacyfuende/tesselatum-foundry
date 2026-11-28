@@ -24,6 +24,7 @@ The bundle is a portable local handoff. Its manifest carries the product title, 
 - Local-only processing; no upload or external map service.
 - Product outcome, intended audience, decision context, geographic scope, success criteria and individual acceptance-check status from the verified manifest.
 - Feature count, coordinate count, geometry composition, bounding extent, per-feature properties and GeoJSON download.
+- CSV export for point-only products, with feature IDs, X/Y coordinates, CRS labels and property columns; spreadsheet formula-like text values are escaped.
 - Browser preview limit: 50,000 features and 100 MB.
 
 ## Important limitations

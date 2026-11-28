@@ -125,3 +125,8 @@ The browser viewer now takes CRS metadata from the verified export manifest's ou
 ### Customer-facing product handoff
 
 Product manifests now carry the customer-facing intent from the Blueprint: title, description, intended outcome, audience, decision context, geographic scope and success criteria. The local viewer renders this alongside the verified acceptance-check results and spatial output, so a customer can understand what the deliverable is for before inspecting its geometry. The handoff is populated only from the fingerprint-verified bundle manifest; it does not infer or invent product claims. Direct GeoJSON remains a generic preview. A mocked verified-bundle smoke test exercised the product brief, success criteria, acceptance statuses and EPSG:32737 label. Hosted publication, customer authentication and a signed distribution channel remain separate work.
+
+
+### Point-coordinate analyst export
+
+The product viewer now offers a CSV export for point-only datasets, in addition to the verified GeoJSON handoff. It includes feature identifiers, X/Y values, the active CRS label and a stable union of feature-property columns. It deliberately disables this export for non-point geometries rather than silently substituting centroids or dropping geometry detail. Text values that could be interpreted as spreadsheet formulas are escaped. This is a convenience export from the already-opened local dataset, not a new server-side artifact or replacement for the original GeoJSON.
