@@ -6,6 +6,7 @@ from .customer_requests import (
     CustomerProductRequestError,
     prepare_customer_product_request,
 )
+from .customer_products import run_customer_spatial_product
 from .customer_ingestion import (
     CustomerSourceIngestionError,
     ingest_customer_geojson,
@@ -70,6 +71,7 @@ __all__ = [
     "ProductBlueprintPlanError",
     "CustomerProductRequestError",
     "prepare_customer_product_request",
+    "run_customer_spatial_product",
     "CustomerSourceIngestionError",
     "ingest_customer_geojson",
     "assemble_product_manifest",
