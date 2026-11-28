@@ -283,6 +283,8 @@ class FileSystemArtifactStore:
         ):
             raise ValueError("max_bytes must be a non-negative integer or None.")
         declared_size = artifact.get("size_bytes")
+        if isinstance(declared_size, bool) or not isinstance(declared_size, int) or declared_size < 0:
+            raise ArtifactIntegrityError("Artifact has an invalid declared size.")
         if max_bytes is not None and declared_size > max_bytes:
             raise ArtifactIntegrityError("Artifact exceeds the configured read byte limit.")
         object_key = artifact["storage"].get("object_key")
