@@ -89,3 +89,8 @@ For each subsequent commit, record the exact head SHA and final checks. Do not c
 4. Add tests for bounded memory, partial failures, unavailable sources, credential redaction and provenance.
 5. Update this tracker when implementation status or assumptions change.
 6. Keep unverified behavior explicitly unverified.
+
+
+## Spatial product viewer (first customer-facing output surface)
+
+A dependency-free browser viewer now opens GeoJSON Features and FeatureCollections locally. It provides a geometry preview, feature/coordinate counts, extent, geometry composition, per-feature properties and GeoJSON download. This is a first usable output surface, not yet a Foundry-connected product delivery path. It assumes WGS 84 longitude/latitude, has 50,000-feature / 100 MB preview limits, has no basemap or raster support, and does not certify geometry or analytical quality. The included sample is illustrative only. See `viewer/product/index.html` and `viewer/product/README.md`.
