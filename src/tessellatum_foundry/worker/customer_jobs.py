@@ -9,7 +9,8 @@ from __future__ import annotations
 
 import hashlib
 import threading
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 from tessellatum_foundry.execution.customer_products import run_customer_spatial_product
 from tessellatum_foundry.jobs import LeaseLost
@@ -59,7 +60,7 @@ def submit_customer_product_job(
         raise ValueError("Unsupported source media type.")
     source_digest = hashlib.sha256(source_bytes).hexdigest()
     object_identity = hashlib.sha256(
-        f"{idempotency_key}:{source_digest}".encode("utf-8")
+        f"{idempotency_key}:{source_digest}".encode()
     ).hexdigest()
     object_key = tenant_object_key(tenant_id, "source", object_identity)
     receipt = object_store.put(
