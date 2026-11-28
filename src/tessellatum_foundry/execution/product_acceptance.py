@@ -97,7 +97,7 @@ def _evaluate_validator(
         )
         return passed, "Every Recipe node Run succeeded." if passed else "Recipe or one or more Runs did not succeed."
     if validator == "outputs.present":
-        expected = {item["id"] for item in execution.recipe.get("declared_outputs", [])}
+        expected = {item["name"] for item in execution.recipe.get("declared_outputs", [])}
         # Recipe result's output map uses the declared output names.
         passed = bool(expected) and expected.issubset(outputs)
         return passed, "All declared outputs are present." if passed else "One or more declared outputs are missing."
