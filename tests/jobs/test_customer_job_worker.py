@@ -166,3 +166,53 @@ def test_worker_rejects_unaccepted_product_without_publishing_artifact():
         )
     assert repository.artifact is None
     assert repository.completed is None
+
+
+def test_output_objects_are_content_addressed_across_retry_variants():
+    store = InMemoryObjectStore()
+    repository = FakeRepository()
+    source = b"{}"
+    request = {
+        "request_id": "site-retry",
+        "source_file": {"file_name": "sites.json", "media_type": "application/json"},
+    }
+    submit_customer_product_job(
+        repository=repository,
+        object_store=store,
+        tenant_id="tenant-a",
+        actor_id="actor-a",
+        idempotency_key="retry-intake",
+        request=request,
+        source_bytes=source,
+    )
+    job = {
+        "job_id": uuid4(),
+        "tenant_id": "tenant-a",
+        "actor_id": "actor-a",
+        "lease_token": uuid4(),
+        "request_payload": repository.submission["request_payload"],
+    }
+    runtime = {
+        "artifact_store": object(),
+        "capabilities": object(),
+        "recipe_service": object(),
+        "cell_templates": {},
+        "output_bindings": {},
+    }
+    def runner_with(bundle):
+        return lambda *args, **kwargs: {
+            "status": "delivered",
+            "delivery": {"content": bundle},
+            "acceptance": {"status": "accepted"},
+        }
+    first = execute_claimed_customer_job(
+        repository=repository, object_store=store, job=job,
+        runtime_resolver=lambda tenant: runtime, product_runner=runner_with(b"zip-A"),
+    )
+    second = execute_claimed_customer_job(
+        repository=repository, object_store=store, job=job,
+        runtime_resolver=lambda tenant: runtime, product_runner=runner_with(b"zip-B"),
+    )
+    assert first["manifest"]["object_key"] != second["manifest"]["object_key"]
+    assert store.get(object_key=first["manifest"]["object_key"]) == b"zip-A"
+    assert store.get(object_key=second["manifest"]["object_key"]) == b"zip-B"
