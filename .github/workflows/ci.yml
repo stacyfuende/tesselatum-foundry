@@ -37,6 +37,7 @@ jobs:
           --health-retries 10
     env:
       FOUNDRY_POSTGIS_DSN: postgresql://postgres:postgres@localhost:5432/foundry
+      FOUNDRY_TEST_POSTGRES_DSN: postgresql://postgres:postgres@localhost:5432/foundry
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
