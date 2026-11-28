@@ -29,7 +29,7 @@ class Store:
         return {
             "artifact_id": artifact_id,
             "version": version,
-            "media_type": "application/geo+json",
+            "media_type": "application/vnd.tessellatum.spatial-feature-collection+json",
             "size_bytes": len(self.payload),
             "checksum": {"algorithm": "sha256", "value": hashlib.sha256(self.payload).hexdigest()},
         }
