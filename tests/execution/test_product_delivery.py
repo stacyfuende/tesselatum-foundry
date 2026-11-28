@@ -119,7 +119,8 @@ def test_artifact_metadata_mismatch_is_rejected():
 
 def test_invalid_geojson_payload_is_rejected():
     class InvalidStore(Store):
-        payload = b'{"type":"NotGeoJSON"}'
+        def __init__(self):
+            super().__init__(payload=b'{"type":"NotGeoJSON"}')
 
     value = sealed_manifest()
     artifact = InvalidStore().get_artifact("zones", "1.0.0")
