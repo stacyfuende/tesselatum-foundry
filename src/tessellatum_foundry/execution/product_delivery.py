@@ -141,9 +141,15 @@ def build_geojson_product_bundle(
         "outputs": [record for _, _, record in payloads],
     }
     entries = [
-        ("product-manifest.json", json.dumps(manifest, sort_keys=True, indent=2, allow_nan=False).encode("utf-8")),
+        (
+            "product-manifest.json",
+            json.dumps(manifest, sort_keys=True, indent=2, allow_nan=False).encode("utf-8"),
+        ),
         ("manifest-fingerprint-input.json", canonical.encode("utf-8")),
-        ("export-index.json", json.dumps(export_index, sort_keys=True, indent=2, allow_nan=False).encode("utf-8")),
+        (
+            "export-index.json",
+            json.dumps(export_index, sort_keys=True, indent=2, allow_nan=False).encode("utf-8"),
+        ),
         *[(path, content) for path, content, _ in payloads],
     ]
     if len(entries[0][1]) > _MAX_MANIFEST_BYTES:
