@@ -23,7 +23,9 @@ def test_canonical_request_hash_ignores_object_key_order():
 def test_canonical_request_hash_changes_with_semantic_version_or_payload():
     payload = {"product": "site-screen"}
     assert canonical_request_sha256("1", payload) != canonical_request_sha256("2", payload)
-    assert canonical_request_sha256("1", payload) != canonical_request_sha256("1", {"product": "route"})
+    assert canonical_request_sha256("1", payload) != canonical_request_sha256(
+        "1", {"product": "route"}
+    )
 
 
 @pytest.mark.parametrize(
