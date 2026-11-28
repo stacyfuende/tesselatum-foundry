@@ -14,7 +14,7 @@ Serve this directory as a static site, or open `index.html` in a modern browser.
 4. Choose **Verify & open bundle**. The viewer checks the exact canonical manifest fingerprint, matches each output to its immutable Artifact identity and metadata, checks file sizes and SHA-256 checksums, then lets you open each output.
 5. The browser does not upload files or fetch arbitrary URLs. Use HTTPS or localhost so Web Crypto is available for checksum verification.
 
-The bundle is a portable local handoff. This is not hosted publishing, a signed distribution channel, or customer access control.
+The bundle is a portable local handoff. Its manifest carries the product title, intended outcome, audience, decision context, geographic scope, success criteria, acceptance checks, Artifact metadata and execution provenance. After verification, the viewer presents that context as a product handoff above the spatial preview. This is not hosted publishing, a signed distribution channel, or customer access control.
 
 ## Current contract
 
@@ -22,6 +22,7 @@ The bundle is a portable local handoff. This is not hosted publishing, a signed 
 - Point, MultiPoint, LineString, MultiLineString, Polygon, MultiPolygon and nested GeometryCollection rendering and coordinate inspection.
 - CRS display from the verified Product Manifest Artifact spatial metadata for export bundles; direct RFC 7946 GeoJSON uses its WGS 84 longitude/latitude default. No coordinate transformation is performed.
 - Local-only processing; no upload or external map service.
+- Product outcome, intended audience, decision context, geographic scope, success criteria and individual acceptance-check status from the verified manifest.
 - Feature count, coordinate count, geometry composition, bounding extent, per-feature properties and GeoJSON download.
 - Browser preview limit: 50,000 features and 100 MB.
 

@@ -120,3 +120,8 @@ The second outcome-first product now has a Docker-backed integration test that e
 ### Spatial Product Viewer CRS and geometry support
 
 The browser viewer now takes CRS metadata from the verified export manifest's output Artifact, rather than labelling every bundled output as EPSG:4326. Direct RFC 7946 GeoJSON retains its WGS 84 default; bundles with missing CRS metadata are explicitly labelled undeclared. Projected coordinates are displayed in their native plane without reprojection or a basemap. GeometryCollections, including nested collections, are now drawn alongside the existing simple and multi-geometry types. This is display support, not a CRS transformation or GIS certification.
+
+
+### Customer-facing product handoff
+
+Product manifests now carry the customer-facing intent from the Blueprint: title, description, intended outcome, audience, decision context, geographic scope and success criteria. The local viewer renders this alongside the verified acceptance-check results and spatial output, so a customer can understand what the deliverable is for before inspecting its geometry. The handoff is populated only from the fingerprint-verified bundle manifest; it does not infer or invent product claims. Direct GeoJSON remains a generic preview. A mocked verified-bundle smoke test exercised the product brief, success criteria, acceptance statuses and EPSG:32737 label. Hosted publication, customer authentication and a signed distribution channel remain separate work.
