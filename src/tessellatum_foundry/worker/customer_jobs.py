@@ -151,7 +151,10 @@ def execute_claimed_customer_job(
     if not bundle or len(bundle) > max_output_bytes:
         raise CustomerJobError("The generated product exceeds the delivery limit.")
 
-    output_key = tenant_object_key(tenant_id, "products", job_id)
+    # Content-address outputs so retries with non-deterministic ZIP bytes never
+    # overwrite or collide with a prior immutable publication.
+    output_digest = hashlib.sha256(bundle).hexdigest()
+    output_key = tenant_object_key(tenant_id, "products", output_digest)
     receipt = object_store.put(
         object_key=output_key, content=bundle, media_type="application/zip"
     )
