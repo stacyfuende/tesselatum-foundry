@@ -285,6 +285,89 @@ class PostgresJobRepository:
                 )
                 return job
 
+    def complete_with_artifact(
+        self, *, tenant_id: str, job_id: uuid.UUID | str,
+        lease_token: uuid.UUID | str, result_manifest: dict[str, Any],
+        artifact: dict[str, Any],
+    ) -> tuple[dict[str, Any], dict[str, Any]]:
+        """Atomically register an artifact and complete the lease-fenced job.
+
+        Object bytes must already be uploaded and verified. If the lease is stale,
+        this transaction rolls back the artifact metadata insert as well.
+        """
+        tenant_id = _identifier(tenant_id, "tenant_id")
+        manifest_json = self._json(result_manifest)
+        required = {
+            "artifact_kind", "logical_name", "object_key", "media_type",
+            "checksum_sha256", "size_bytes",
+        }
+        if not isinstance(artifact, dict) or not required.issubset(artifact):
+            raise ValueError("artifact metadata is incomplete.")
+        if not re.fullmatch(r"[0-9a-f]{64}", artifact["checksum_sha256"]):
+            raise ValueError("checksum_sha256 must be a lowercase SHA-256 hex digest.")
+        size_bytes = artifact["size_bytes"]
+        if not isinstance(size_bytes, int) or isinstance(size_bytes, bool) or size_bytes < 0:
+            raise ValueError("size_bytes must be a non-negative integer.")
+        metadata_json = self._json(artifact.get("metadata") or {})
+        with self._connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """insert into foundry.artifacts
+                       (tenant_id, job_id, artifact_kind, logical_name, object_key,
+                        media_type, format, checksum_sha256, size_bytes, metadata)
+                       values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s::jsonb)
+                       on conflict (tenant_id, object_key) do nothing
+                       returning *""",
+                    (tenant_id, job_id, artifact["artifact_kind"], artifact["logical_name"],
+                     artifact["object_key"], artifact["media_type"], artifact.get("format"),
+                     artifact["checksum_sha256"], size_bytes, metadata_json),
+                )
+                artifact_row = cur.fetchone()
+                if artifact_row is None:
+                    cur.execute(
+                        """select * from foundry.artifacts
+                           where tenant_id = %s and object_key = %s for update""",
+                        (tenant_id, artifact["object_key"]),
+                    )
+                    artifact_row = cur.fetchone()
+                    expected = (
+                        job_id, artifact["artifact_kind"], artifact["logical_name"],
+                        artifact["media_type"], artifact.get("format"),
+                        artifact["checksum_sha256"], size_bytes, artifact.get("metadata") or {},
+                    )
+                    actual = (
+                        artifact_row["job_id"], artifact_row["artifact_kind"],
+                        artifact_row["logical_name"], artifact_row["media_type"],
+                        artifact_row["format"], artifact_row["checksum_sha256"],
+                        artifact_row["size_bytes"], artifact_row["metadata"],
+                    ) if artifact_row is not None else None
+                    if actual != expected:
+                        raise JobRepositoryError(
+                            "An object key is already registered with different artifact metadata."
+                        )
+                if artifact_row is None:
+                    raise JobRepositoryError("Artifact insert returned no row.")
+                cur.execute(
+                    """update foundry.jobs
+                       set status = 'succeeded', result_manifest = %s::jsonb,
+                           lease_token = null, lease_expires_at = null,
+                           finished_at = now(), updated_at = now()
+                       where tenant_id = %s and job_id = %s and status = 'running'
+                         and lease_token = %s and lease_expires_at > now()
+                       returning *""",
+                    (manifest_json, tenant_id, job_id, lease_token),
+                )
+                job_row = cur.fetchone()
+                if job_row is None:
+                    raise LeaseLost("Cannot complete a job without its active lease.")
+                cur.execute(
+                    """insert into foundry.job_events
+                       (tenant_id, job_id, event_type, from_status, to_status, detail)
+                       values (%s, %s, 'completed', 'running', 'succeeded', '{}'::jsonb)""",
+                    (tenant_id, job_id),
+                )
+                return job_row, artifact_row
+
     def fail(
         self, *, tenant_id: str, job_id: uuid.UUID | str,
         lease_token: uuid.UUID | str, error: dict[str, Any],
