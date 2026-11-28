@@ -218,3 +218,46 @@ def test_output_objects_are_content_addressed_across_retry_variants():
     assert first["manifest"]["object_key"] != second["manifest"]["object_key"]
     assert store.get(object_key=first["manifest"]["object_key"]) == b"zip-A"
     assert store.get(object_key=second["manifest"]["object_key"]) == b"zip-B"
+
+
+def test_worker_does_not_return_published_artifact_when_atomic_commit_loses_lease():
+    from tessellatum_foundry.jobs import LeaseLost
+
+    store = InMemoryObjectStore()
+    repository = FakeRepository()
+    request = {
+        "request_id": "site-stale",
+        "source_file": {"file_name": "sites.json", "media_type": "application/json"},
+    }
+    submit_customer_product_job(
+        repository=repository, object_store=store, tenant_id="tenant-a",
+        actor_id="actor-a", idempotency_key="stale-intake",
+        request=request, source_bytes=b"{}",
+    )
+    job = {
+        "job_id": uuid4(), "tenant_id": "tenant-a", "actor_id": "actor-a",
+        "lease_token": uuid4(), "request_payload": repository.submission["request_payload"],
+    }
+    runtime = {
+        "artifact_store": object(), "capabilities": object(),
+        "recipe_service": object(), "cell_templates": {}, "output_bindings": {},
+    }
+    def stale_completion(**kwargs):
+        repository.atomic_completion = kwargs
+        raise LeaseLost("lease expired before commit")
+    repository.complete_with_artifact = stale_completion
+
+    def runner(*args, **kwargs):
+        return {
+            "status": "delivered", "delivery": {"content": b"bundle"},
+            "acceptance": {"status": "accepted"},
+        }
+    with pytest.raises(LeaseLost):
+        execute_claimed_customer_job(
+            repository=repository, object_store=store, job=job,
+            runtime_resolver=lambda tenant: runtime, product_runner=runner,
+        )
+    assert repository.artifact is None
+    assert repository.completed is None
+    # The object may exist as an orphan, but it is not registered as an artifact.
+    assert store.get(object_key=repository.atomic_completion["artifact"]["object_key"]) == b"bundle"
