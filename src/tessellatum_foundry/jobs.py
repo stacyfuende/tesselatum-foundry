@@ -359,6 +359,24 @@ class PostgresJobRepository:
                 )
                 return list(cur.fetchall())
 
+    def get_artifact(
+        self, *, tenant_id: str, job_id: uuid.UUID | str,
+        artifact_id: uuid.UUID | str,
+    ) -> dict[str, Any]:
+        """Fetch an artifact only when tenant and owning job both match."""
+        tenant_id = _identifier(tenant_id, "tenant_id")
+        with self._connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """select * from foundry.artifacts
+                       where tenant_id = %s and job_id = %s and artifact_id = %s""",
+                    (tenant_id, job_id, artifact_id),
+                )
+                row = cur.fetchone()
+        if row is None:
+            raise JobNotFound("Artifact not found for this tenant and job.")
+        return row
+
     def record_artifact(
         self, *, tenant_id: str, job_id: uuid.UUID | str, artifact_kind: str,
         logical_name: str, object_key: str, media_type: str, checksum_sha256: str,
