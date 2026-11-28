@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="Prepare a spatial product request for Tessellatum Foundry.">
+<title>Foundry / Start a spatial product</title>
+<style>
+:root{color-scheme:dark;--bg:#111313;--panel:#191d1c;--line:#343b38;--ink:#edf0eb;--muted:#9ba59e;--accent:#d66a45;--soft:#242a27;font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);min-width:320px}header{height:68px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 28px}.brand{font-size:12px;font-weight:800;letter-spacing:.15em}.mark{display:inline-block;width:12px;height:12px;border:2px solid var(--accent);transform:rotate(45deg);margin-right:12px}.eyebrow{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}main{max-width:980px;margin:auto;padding:42px 28px 70px}h1{font-size:clamp(32px,5vw,54px);letter-spacing:-.055em;line-height:1.02;margin:10px 0 16px}.intro{max-width:690px;margin:0 0 30px;color:var(--muted);line-height:1.6}.panel{background:var(--panel);border:1px solid var(--line);padding:22px;margin:18px 0}.panel h2{font-size:15px;margin:0 0 6px}.panel>p{color:var(--muted);font-size:12px;line-height:1.5;margin:0 0 18px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}.field{display:grid;gap:7px;margin:13px 0}.field label{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}input,textarea{width:100%;background:#0d100f;border:1px solid var(--line);color:var(--ink);padding:12px;font:13px/1.5 inherit;border-radius:0}textarea{min-height:94px;resize:vertical}.filebox{border:1px dashed #68736c;padding:18px}.filebox input{border:0;padding:8px 0;background:transparent}.hint{font-size:11px;color:var(--muted);line-height:1.5}.fixed{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:12px;background:var(--soft);font-size:12px}.fixed strong{color:var(--ink)}.check{display:flex;align-items:flex-start;gap:10px;font-size:12px;line-height:1.5;color:var(--muted);margin:14px 0}.check input{width:17px;height:17px;flex:0 0 auto;margin:0;accent-color:var(--accent)}.button{background:var(--accent);color:#171311;border:1px solid var(--accent);padding:12px 16px;font-weight:800;cursor:pointer}.button:disabled{opacity:.35;cursor:not-allowed}.button.secondary{background:transparent;color:var(--ink);border-color:var(--line)}.actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:18px}.status{padding:12px;border-left:3px solid var(--accent);background:var(--soft);font-size:12px;line-height:1.55;margin:14px 0}.status.error{border-color:#e58b70}.status.success{border-color:#9ac7a7}.summary{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:14px 0}.metric{padding:12px;background:var(--soft)}.metric strong{display:block;font-size:22px}.metric span{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em}.hidden{display:none!important}footer{border-top:1px solid var(--line);padding:20px 28px;color:#77817a;font-size:11px;line-height:1.6}@media(max-width:680px){header{padding:0 16px}main{padding:30px 16px 50px}.grid{grid-template-columns:1fr}.panel{padding:16px}.summary{grid-template-columns:repeat(3,1fr)}}
+</style></head>
+<body>
+<header><div class="brand"><span class="mark"></span>TESSELLATUM / FOUNDRY</div><div class="eyebrow">Product intake · pilot</div></header>
+<main>
+<div class="eyebrow">Start with the job, not the software</div>
+<h1>Prepare your site locations for spatial analysis.</h1>
+<p class="intro">Give us your site points and tell us what you need to do with them. Foundry will prepare a standardized dataset in a metric coordinate system, so the locations are ready for distance, buffering and overlay analysis.</p>
+<section class="panel">
+<h2>01 / Your source data</h2>
+<p>Choose a GeoJSON file containing point locations. It is inspected locally first; it is only transmitted when you explicitly submit the request.</p>
+<div class="field filebox"><label for="source-file">Site locations · GeoJSON</label><input id="source-file" type="file" accept=".geojson,.json,application/geo+json,application/json"><div class="hint">Maximum 25 MB and 100,000 point features. One point per site.</div></div>
+<div id="file-status" class="status hidden" role="status"></div>
+<div id="metrics" class="summary hidden"><div class="metric"><strong id="feature-count">—</strong><span>Site points</span></div><div class="metric"><strong id="west-east">—</strong><span>Longitude span</span></div><div class="metric"><strong id="south-north">—</strong><span>Latitude span</span></div></div>
+<div class="fixed"><span>Supported area</span><strong>Nairobi metropolitan region</strong></div>
+<div class="fixed"><span>Required source coordinates</span><strong>EPSG:4326 · longitude / latitude</strong></div>
+<label class="check"><input id="confirm-crs" type="checkbox"><span>I confirm that the coordinates in this file are WGS 84 (EPSG:4326), ordered longitude then latitude.</span></label>
+</section>
+<section class="panel">
+<h2>02 / What is this for?</h2>
+<p>This helps Foundry describe the result properly. You do not need to choose an algorithm or configure a spatial workflow.</p>
+<div class="field"><label for="product-name">Name this deliverable</label><input id="product-name" maxlength="200" value="Nairobi site coordinate standardization"></div>
+<div class="grid">
+<div class="field"><label for="audience">Who will use the result?</label><input id="audience" maxlength="500" placeholder="e.g. Property investment team"></div>
+<div class="field"><label for="context">What decision or work will it support?</label><textarea id="context" maxlength="2000" placeholder="e.g. Prepare acquisition candidates for distance and access analysis."></textarea></div>
+</div>
+<div class="actions"><button id="prepare" class="button" disabled>Prepare product request →</button><button id="reset" class="button secondary" type="button">Start over</button></div>
+<div id="result" class="status hidden" role="status"></div>
+<div id="download-area" class="hidden"><div class="actions"><button id="download" class="button secondary">Download request JSON</button></div><p class="hint">The JSON export is an optional record of the request; it does not contain your source data.</p></div>
+</section>
+<section class="panel">
+<h2>03 / Submit securely to Foundry</h2>
+<p>Use the API endpoint and bearer token supplied by your Foundry operator. Your token remains in this page's memory; it is not saved in browser storage. Your source file is transmitted only when you explicitly submit.</p>
+<div class="field"><label for="api-endpoint">Foundry API endpoint</label><input id="api-endpoint" type="url" autocomplete="url" placeholder="https://your-approved-host/v1/products"></div>
+<div class="field"><label for="api-token">Access token</label><input id="api-token" type="password" autocomplete="off" spellcheck="false" placeholder="Bearer token supplied by your operator"></div>
+<label class="check"><input id="confirm-submit" type="checkbox"><span>I am authorized to submit this dataset to the endpoint above and have permission to share its contents.</span></label>
+<div class="actions"><button id="submit-product" class="button" disabled>Submit to Foundry →</button></div>
+<div id="submit-status" class="status hidden" role="status" aria-live="polite"></div>
+<p class="hint">Remote endpoints must use HTTPS. HTTP is permitted only for localhost development. The API host must allow this page's exact origin. Only an accepted, releasable product is returned as a ZIP bundle.</p>
+</section>
+<section class="panel">
+<h2>What happens next</h2>
+<p>Foundry authenticates the request, resolves the tenant runtime, validates the source and executes the approved product workflow. Only products that pass acceptance and release checks are delivered. This pilot form standardizes Nairobi site coordinates; it does not certify survey accuracy, legal boundaries or ownership.</p>
+</section>
+</main>
+<footer>TESSELLATUM / FOUNDRY · Customer request composer · Local file inspection · Explicit authenticated submission · Nairobi pilot scope<br>Basic file checks do not certify survey accuracy, legal boundaries, positional quality, ownership or permission to use the data.</footer>
+<script>
+"use strict";
+const $=id=>document.getElementById(id);
+const supported={west:36.0,south:-2.5,east:37.5,north:0.5};
+let selectedFile=null,parsedCollection=null,requestPayload=null,submitting=false;
+function setStatus(message,kind=""){const node=$("file-status");node.textContent=message;node.className="status "+kind}
+function allPoints(collection){
+ if(!collection||collection.type!=="FeatureCollection"||!Array.isArray(collection.features)||collection.features.length===0)throw Error("The file must be a non-empty GeoJSON FeatureCollection.");
+ if(collection.features.length>100000)throw Error("This request supports at most 100,000 site points.");
+ let west=Infinity,south=Infinity,east=-Infinity,north=-Infinity;
+ for(let i=0;i<collection.features.length;i++){
+  const feature=collection.features[i];
+  if(!feature||feature.type!=="Feature"||!feature.geometry||feature.geometry.type!=="Point")throw Error("Feature "+(i+1)+" is not a Point. This product accepts one point per site.");
+  const c=feature.geometry.coordinates;
+  if(!Array.isArray(c)||c.length<2||!Number.isFinite(c[0])||!Number.isFinite(c[1]))throw Error("Feature "+(i+1)+" has invalid longitude/latitude coordinates.");
+  const [lon,lat]=c;
+  if(lon<supported.west||lon>supported.east||lat<supported.south||lat>supported.north)throw Error("A site falls outside the supported Nairobi intake envelope (36.0–37.5° E, 2.5° S–0.5° N).");
+  west=Math.min(west,lon);east=Math.max(east,lon);south=Math.min(south,lat);north=Math.max(north,lat);
+ }
+ return {count:collection.features.length,west,south,east,north};
+}
+function updateReady(){
+ $("prepare").disabled=!(selectedFile&&parsedCollection&&$("confirm-crs").checked&&$("audience").value.trim()&&$("context").value.trim());
+ $("submit-product").disabled=!(requestPayload&&$("api-endpoint").value.trim()&&$("api-token").value.trim()&&$("confirm-submit").checked)||submitting;
+}
+$("source-file").addEventListener("change",async event=>{
+ selectedFile=null;parsedCollection=null;requestPayload=null;$("download-area").classList.add("hidden");$("metrics").classList.add("hidden");updateReady();
+ const file=event.target.files&&event.target.files[0];if(!file)return;
+ if(file.size>25*1024*1024){setStatus("File exceeds the 25 MB local intake limit.","error");return}
+ if(!/\.(geojson|json)$/i.test(file.name)){setStatus("Choose a .geojson or .json file.","error");return}
+ try{
+  const data=JSON.parse(await file.text()),bounds=allPoints(data);
+  selectedFile=file;parsedCollection=data;
+  $("feature-count").textContent=bounds.count.toLocaleString();
+  $("west-east").textContent=bounds.west.toFixed(4)+"–"+bounds.east.toFixed(4);
+  $("south-north").textContent=bounds.south.toFixed(4)+"–"+bounds.north.toFixed(4);
+  $("metrics").classList.remove("hidden");
+  setStatus("File structure and point coordinates passed the local intake checks. Confirm the source CRS to continue.","success");
+ }catch(error){setStatus(error.message||"Could not read this GeoJSON file.","error")}
+ updateReady();
+});
+["confirm-crs","audience","context"].forEach(id=>$(id).addEventListener("input",()=>{requestPayload=null;$("download-area").classList.add("hidden");$("result").classList.add("hidden");updateReady()}));$("product-name").addEventListener("input",()=>{requestPayload=null;$("download-area").classList.add("hidden");$("result").classList.add("hidden");updateReady()});
+$("prepare").addEventListener("click",()=>{
+ if(!selectedFile||!parsedCollection)return;
+ const isGeojson=selectedFile.name.toLowerCase().endsWith(".geojson");
+ requestPayload={
+  request_id:"nairobi-sites-"+Date.now(),
+  job_type:"standardize_site_coordinates",
+  product_name:$("product-name").value.trim()||"Nairobi site coordinate standardization",
+  source_file:{file_name:selectedFile.name,media_type:isGeojson?"application/geo+json":"application/json",coordinate_reference_system:{authority:"EPSG",code:4326}},
+  audience:$("audience").value.trim(),
+  decision_context:$("context").value.trim(),
+  geographic_scope:"Nairobi metropolitan region"
+ };
+ $("result").textContent="Request prepared. The source file passed basic local checks; Foundry still needs to ingest and validate it before execution.";
+ $("result").className="status success";
+ $("download-area").classList.remove("hidden");
+ updateReady();
+});
+$("download").addEventListener("click",()=>{
+ if(!requestPayload)return;
+ const blob=new Blob([JSON.stringify(requestPayload,null,2)+"\n"],{type:"application/json"});
+ const url=URL.createObjectURL(blob),link=document.createElement("a");
+ link.href=url;link.download=requestPayload.request_id+".json";link.click();URL.revokeObjectURL(url);
+});
+function validateEndpoint(value){
+ let endpoint;
+ try{endpoint=new URL(value)}catch(_){throw Error("Enter a valid Foundry API endpoint URL.")}
+ const local=endpoint.protocol==="http:"&&["localhost","127.0.0.1","[::1]"].includes(endpoint.hostname);
+ if(endpoint.protocol!=="https:"&&!local)throw Error("Remote API endpoints must use HTTPS.");
+ if(endpoint.username||endpoint.password||endpoint.search||endpoint.hash||!endpoint.pathname.endsWith("/v1/products"))throw Error("Use the exact /v1/products endpoint without credentials, query parameters or fragments.");
+ return endpoint.toString();
+}
+async function encodeFileBase64(file){
+ const bytes=new Uint8Array(await file.arrayBuffer());
+ let binary="";
+ const chunkSize=0x8000;
+ for(let offset=0;offset<bytes.length;offset+=chunkSize)binary+=String.fromCharCode(...bytes.subarray(offset,offset+chunkSize));
+ return btoa(binary);
+}
+["api-endpoint","api-token"].forEach(id=>$(id).addEventListener("input",updateReady));
+$("confirm-submit").addEventListener("change",updateReady);
+$("submit-product").addEventListener("click",async()=>{
+ if(!requestPayload||submitting)return;
+ const status=$("submit-status");
+ try{
+  const endpoint=validateEndpoint($("api-endpoint").value.trim());
+  const token=$("api-token").value.trim();
+  if(!token.startsWith("Bearer "))throw Error("Enter the complete token in the format: Bearer your-token");
+  if(!$("confirm-submit").checked)throw Error("Confirm that you are authorized to submit this dataset.");
+  submitting=true;updateReady();status.className="status";status.textContent="Submitting source data to Foundry. Keep this page open while the product runs.";
+  const envelope={request_version:"1.0.0",request:requestPayload,source_file_base64:await encodeFileBase64(selectedFile)};
+  const response=await fetch(endpoint,{method:"POST",headers:{"Authorization":token,"Content-Type":"application/json"},body:JSON.stringify(envelope),cache:"no-store",credentials:"omit",redirect:"error"});
+  const type=(response.headers.get("content-type")||"").split(";")[0].trim().toLowerCase();
+  if(!response.ok){
+   let detail="Foundry could not release this product (HTTP "+response.status+").";
+   if(type==="application/json"){const body=await response.json();if(body&&body.error)detail+=" "+body.error.replace(/_/g," ");}
+   throw Error(detail);
+  }
+  if(type!=="application/zip")throw Error("The endpoint returned an unexpected response type. No product was downloaded.");
+  const blob=await response.blob(),url=URL.createObjectURL(blob),link=document.createElement("a");
+  link.href=url;link.download="spatial-product.zip";link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+  const requestId=response.headers.get("X-Foundry-Request-ID");
+  status.textContent="Product delivered successfully."+(requestId?" Request ID: "+requestId:"")+" The ZIP bundle has been downloaded.";
+  status.className="status success";
+ }catch(error){status.textContent=error.message||"Submission failed. Check the endpoint and try again.";status.className="status error"}
+ finally{submitting=false;updateReady()}
+});
+window.addEventListener("pagehide",()=>{$("api-token").value=""});
+$("reset").addEventListener("click",()=>{
+ selectedFile=null;parsedCollection=null;requestPayload=null;
+ $("source-file").value="";$("confirm-crs").checked=false;$("audience").value="";$("context").value="";
+ $("product-name").value="Nairobi site coordinate standardization";
+ $("file-status").className="status hidden";$("submit-status").className="status hidden";$("metrics").classList.add("hidden");$("result").classList.add("hidden");$("download-area").classList.add("hidden");$("api-token").value="";$("api-endpoint").value="";$("confirm-submit").checked=false;$("submit-status").className="status hidden";updateReady();
+});
+</script></body></html>

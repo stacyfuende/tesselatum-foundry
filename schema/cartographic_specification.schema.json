@@ -1,0 +1,383 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:tessellatum-foundry:schema:cartographic-specification:1.0.0",
+  "title": "Foundry Cartographic Specification",
+  "description": "Declarative specification for a map's communicative purpose, geographic constraints, composition, visual system, and delivery medium.",
+  "type": "object",
+  "required": [
+    "specification_id",
+    "version",
+    "purpose",
+    "audience",
+    "medium",
+    "geography",
+    "content",
+    "quality"
+  ],
+  "properties": {
+    "specification_id": {
+      "type": "string",
+      "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._-]{1,127}$"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+    },
+    "purpose": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2000
+    },
+    "audience": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500
+    },
+    "message_priority": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 30
+    },
+    "medium": {
+      "type": "object",
+      "required": [
+        "kind"
+      ],
+      "properties": {
+        "kind": {
+          "enum": [
+            "print",
+            "presentation",
+            "web",
+            "mobile",
+            "embedded",
+            "image",
+            "vector_document"
+          ]
+        },
+        "page_size": {
+          "type": "string"
+        },
+        "width": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "height": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "unit": {
+          "enum": [
+            "mm",
+            "cm",
+            "in",
+            "px"
+          ]
+        },
+        "orientation": {
+          "enum": [
+            "portrait",
+            "landscape",
+            "square",
+            "responsive"
+          ]
+        },
+        "resolution_dpi": {
+          "type": "integer",
+          "minimum": 36,
+          "maximum": 2400
+        },
+        "formats": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "pdf",
+              "svg",
+              "png",
+              "jpeg",
+              "webp",
+              "html",
+              "web_map"
+            ]
+          },
+          "uniqueItems": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "geography": {
+      "type": "object",
+      "required": [
+        "extent_policy"
+      ],
+      "properties": {
+        "extent_policy": {
+          "enum": [
+            "derive_from_data",
+            "user_defined",
+            "fit_features",
+            "fixed"
+          ]
+        },
+        "extent_ref": {
+          "type": "string"
+        },
+        "crs_policy": {
+          "enum": [
+            "resolve_for_purpose",
+            "preserve_source",
+            "specified"
+          ]
+        },
+        "crs": {
+          "type": "string"
+        },
+        "scale": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "scale_policy": {
+          "enum": [
+            "derive",
+            "fixed",
+            "responsive",
+            "multi_scale"
+          ]
+        },
+        "generalisation": {
+          "enum": [
+            "automatic",
+            "preserve_detail",
+            "specified"
+          ]
+        },
+        "minimum_feature_size_mm": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        }
+      },
+      "additionalProperties": false
+    },
+    "content": {
+      "type": "object",
+      "required": [
+        "layers"
+      ],
+      "properties": {
+        "layers": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "id",
+              "source_ref"
+            ],
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "source_ref": {
+                "type": "string"
+              },
+              "role": {
+                "enum": [
+                  "thematic",
+                  "reference",
+                  "context",
+                  "annotation",
+                  "mask"
+                ]
+              },
+              "visibility": {
+                "type": "string"
+              },
+              "style_ref": {
+                "type": "string"
+              },
+              "label_policy": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "legend": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "position": {
+              "type": "string"
+            },
+            "title": {
+              "type": "string"
+            },
+            "include_methodology": {
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": false
+        },
+        "annotations": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "text"
+            ],
+            "properties": {
+              "text": {
+                "type": "string"
+              },
+              "anchor_ref": {
+                "type": "string"
+              },
+              "priority": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "map_elements": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "title",
+              "subtitle",
+              "scale_bar",
+              "north_arrow",
+              "inset",
+              "source_note",
+              "method_note",
+              "graticule",
+              "neatline",
+              "credits"
+            ]
+          },
+          "uniqueItems": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "visual": {
+      "type": "object",
+      "properties": {
+        "style": {
+          "type": "string"
+        },
+        "palette_ref": {
+          "type": "string"
+        },
+        "typography_ref": {
+          "type": "string"
+        },
+        "symbolisation_policy": {
+          "enum": [
+            "derive_from_data",
+            "specified",
+            "editorial"
+          ]
+        },
+        "label_density": {
+          "enum": [
+            "sparse",
+            "balanced",
+            "dense",
+            "automatic"
+          ]
+        },
+        "contrast_target": {
+          "enum": [
+            "standard",
+            "high"
+          ]
+        },
+        "colour_vision_safe": {
+          "type": "boolean",
+          "default": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "quality": {
+      "type": "object",
+      "required": [
+        "checks"
+      ],
+      "properties": {
+        "checks": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "label_legibility",
+              "label_collisions",
+              "legend_fit",
+              "extent_coverage",
+              "scale_consistency",
+              "symbol_distinguishability",
+              "contrast",
+              "source_attribution",
+              "projection_suitability",
+              "layout_overflow"
+            ]
+          },
+          "uniqueItems": true
+        },
+        "minimum_text_size_pt": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "allow_overflow": {
+          "type": "boolean",
+          "default": false
+        },
+        "require_source_attribution": {
+          "type": "boolean",
+          "default": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "interaction": {
+      "type": "object",
+      "properties": {
+        "zoom": {
+          "type": "boolean"
+        },
+        "pan": {
+          "type": "boolean"
+        },
+        "search": {
+          "type": "boolean"
+        },
+        "filters": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "feature_inspection": {
+          "type": "boolean"
+        },
+        "responsive_breakpoints": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 1
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "metadata": {
+      "type": "object"
+    }
+  },
+  "additionalProperties": false
+}

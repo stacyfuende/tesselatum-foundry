@@ -1,135 +1,79 @@
 # Project vision
 
-**Status:** Foundational product vision; intentionally broader than the current implementation.  
-**Role of this document:** Preserve the original ambition and explain how the Foundry repository is intended to contribute to it. This is a living product-level document, not an implementation checklist or an architecture specification.
+**Status:** Current strategic direction  
+**Date:** 2026-11-22
 
 ## The ambition
 
-Tessellatum is conceived as an AI-native environment for creating, composing, executing, understanding, and sharing geospatial work.
+Tessellatum's north star is **unified infrastructure for spatial data**.
 
-The long-term idea is larger than a collection of GIS algorithms or a wrapper around existing spatial engines. It is a platform in which spatial data, computational capabilities, dependencies, context, and results can be expressed in a common model. People should be able to describe a spatial goal, have the system help turn that intent into an explicit workflow, inspect and refine the workflow, execute it using appropriate tools, and understand why its outputs should be trusted.
+Tessellatum Foundry is the computational foundation for that ambition. It makes spatial data usable across providers, formats, engines, workflows, applications and teams. It supplies the contracts and runtime through which spatial operations can be declared, composed, executed, validated and reproduced.
 
-The platform should make geospatial computation more composable and accessible without hiding the semantics, provenance, limitations, or methodological choices that make spatial results meaningful.
+The ambition is not to centralize every spatial dataset. The world's spatial data is too large, distributed, dynamic, licensed and operationally diverse for a single platform to own sensibly. Foundry should connect to data where it already lives and make it computable.
 
-## Founding ideas
+## What Foundry owns
 
-The original concept notes describe several connected ideas. They are aspirations and design directions, not claims that all of these capabilities exist today.
+- Versioned, engine-independent spatial Capability contracts.
+- Conformant implementations across suitable computational engines.
+- Declarative Geo-Cells and composable Recipe graphs.
+- Execution planning, worker dispatch and resource controls.
+- Run lifecycle, immutable provenance and retry history.
+- Independent validation and methodological evidence.
+- Definitions, execution records, cache metadata and derived Artifacts.
+- Stable APIs and SDKs for products, analysts and other software.
 
-### 1. A common spatial abstraction
+Foundry does not own source datasets by default. Source providers, customers or their chosen storage systems retain custody, access control and retention responsibility.
 
-The early Geo-Cell idea aimed to provide a common way to describe spatial data and computation: what goes in, what operation is performed, what comes out, and what dependencies and context matter.
+## What Foundry does with external data
 
-The purpose is to let different engines and services participate in a larger computation without requiring every user to understand each engine's internal API.
+Foundry connects to local, customer-controlled or provider-hosted sources. It resolves the requested data, checks access and metadata, reads bounded windows or streams into workers, and records source references and reproducibility evidence. It should use provider-side filtering and query pushdown where possible.
 
-### 2. A universal capability interface
+If a source cannot provide an immutable version or checksum, Foundry records that limitation rather than pretending that a URL is a reproducible snapshot. Customers may choose to retain snapshots under their own storage policy. Foundry does not silently mirror entire datasets.
 
-Spatial operations may be implemented by different technologies, services, and execution environments. A common capability description should make those implementations discoverable and comparable against shared semantics.
+## The computational model
 
-The contract is the stable interface; an implementation is a replaceable realization of that contract. Compatibility must be demonstrated through conformance, not assumed because two tools have similar names.
-
-### 3. Intent-driven orchestration
-
-A user should ultimately be able to express a spatial objective in natural language or through a visual workflow. The system can help translate that intent into an explicit, inspectable sequence of spatial operations, data dependencies, and outputs.
-
-The orchestration layer should not make the computation opaque. Plans should be reviewable, editable, reproducible, and executable independently of any particular conversational interface.
-
-### 4. Independent spatial critique
-
-The original Spatial Critic idea is to assess whether a computation and its outputs satisfy declared requirements and to surface limitations that matter to interpretation.
-
-This is more than checking whether code ran or whether an output matches a schema. Validation should be explicit about what was checked, what evidence supports a finding, what remains unknown, and which questions require domain context or external authority.
-
-### 5. Reusable spatial recipes
-
-Spatial workflows should be expressible as reusable, versioned compositions. A recipe should make its operations, dependencies, inputs, outputs, and provenance understandable so that work can be repeated, reviewed, shared, and evolved.
-
-### 6. A visual and conversational creation experience
-
-The intended product experience includes both conversation and visual interaction. Users should be able to create and refine maps, analyses, dashboards, and applications while retaining visibility into the underlying workflow.
-
-The interface is a way into the platform, not a substitute for explicit computational definitions and evidence.
-
-### 7. An extensible ecosystem
-
-The longer-term direction includes contributions from developers, data providers, specialized engines, and domain-specific services. A shared capability model and reliable execution boundaries can provide the basis for such an ecosystem.
-
-A marketplace, broad federation, and open ecosystem are future possibilities—not current repository features.
-
-### 8. Applied spatial products
-
-The original notes also considered concrete applications, including SiteSelector, spatial audits, and synthetic-data services. These are examples of how platform capabilities might be assembled into useful products.
-
-SiteSelector is an application direction, not the definition or limit of Tessellatum itself.
-
-## What Tessellatum Foundry is building now
-
-Tessellatum Foundry is the foundational engineering layer of this broader direction. Its immediate job is to make spatial computation explicit, composable, independently validated, and reproducible.
-
-The current model is built around:
-
-- **Artifact:** a versioned data object.
-- **Capability:** a versioned, engine-independent description of an operation.
+- **Capability:** a versioned contract defining an operation's semantics and constraints.
+- **Implementation:** a replaceable engine-specific realization that passes conformance.
 - **Geo-Cell:** a declarative, versioned instance of a computation.
-- **Run:** an execution attempt with an immutable record of what was used and what happened.
-- **Recipe:** a versioned graph composing Geo-Cells.
-- **Validation Report:** a separate evidence object describing checks and findings.
-- **Implementation:** a replaceable realization of a Capability, registered separately and admitted through conformance.
+- **Recipe:** a directed graph composing Geo-Cells and their data dependencies.
+- **Run:** an immutable execution attempt with resolved inputs, outputs and lineage.
+- **Artifact:** an immutable computational input or output payload managed under an explicit policy.
+- **Validation Report:** evidence about the exact subject assessed, including limitations and unknowns.
+- **External Data Reference:** a locator and provenance description for source data that remains outside Foundry's custody.
 
-This model is the practical foundation for the common abstraction, capability interface, recipe composition, and independent critique described above.
+These concepts have different identities and lifecycles. A source reference is not a source copy; an Artifact is not a geographic entity; and a successful Run is not proof of authoritative inputs or universal suitability.
 
-## How the vision maps to the work
+## Architecture
 
-| Founding idea | Foundry foundation | Current position |
-|---|---|---|
-| Common spatial abstraction | Artifacts, Geo-Cells, versioned contracts, spatial metadata | Core foundations implemented; abstraction continues to evolve |
-| Universal capability interface | Canonical Capability contracts, implementation registry, conformance suites | Implemented for initial vector capabilities; more capability families remain |
-| Intent-driven orchestration | Recipe graph validation and deterministic execution | Explicit Recipe execution exists; natural-language planning is future work |
-| Independent Spatial Critic | Separate Validation Reports and operation-specific output critics | Initial vector validation and methodological evidence exist; broader domain critique remains |
-| Reusable spatial recipes | Immutable Recipe definitions, dependency graphs, Run and Artifact lineage | Sequential execution and mixed vector recipes exist; parallel scheduling and broader composition remain |
-| Visual/conversational creation | Read-only Recipe DAG viewer and inspectable definitions | A read-only viewer exists; full interactive authoring and conversational creation remain future work |
-| Extensible ecosystem | Replaceable workers, remote worker transport, conformance-gated implementations | Initial local and remote boundaries exist; production federation and ecosystem tooling remain future work |
-| Applied products | Reusable platform capabilities and SDK | SiteSelector and other application layers are not the current Foundry implementation scope |
+1. **Control plane:** contracts, definitions, graph validation, source resolution, authorization, scheduling, Run lifecycle, provenance and cache decisions.
+2. **Compute plane:** isolated workers, capability implementations, bounded data reads, temporary scratch, output staging and resource accounting.
+3. **External data plane:** providers, customer databases, object stores, local files and query services that retain ownership of their data.
+4. **Artifact plane:** optional storage for definitions, execution evidence, cache entries and derived outputs under explicit lifecycle policies.
+5. **Application interfaces:** APIs, SDKs, products, analytical tools and optional agents.
 
-For the authoritative implementation inventory, open [Project status and collaboration guide](PROJECT_STATUS.md). For technical decisions and rationale, consult the [decision register](decisions/README.md) and [architecture](../ARCHITECTURE.md).
+The planes describe responsibilities; they do not require a distributed deployment.
 
-## Product boundaries and principles
+## Relationship to Spatial Methods and products
 
-The ambition is broad, but the platform should grow through verifiable foundations rather than claims.
+**Spatial Methods** is the knowledge and methods repository: theory, algorithms, acquisition methods, implementations, experiments and tested recipes.
 
-1. **Keep computation explicit.** A user-friendly interface must not conceal the actual operations, parameters, dependencies, or data assumptions.
-2. **Separate contracts from implementations.** Implementations can change; declared semantics and conformance expectations must remain reviewable.
-3. **Treat evidence as a first-class output.** A successful process exit is not proof that a spatial result is correct or suitable.
-4. **Preserve provenance.** Inputs, versions, implementation identity, execution context, and output lineage should be traceable.
-5. **Distinguish validity from suitability.** Schema validity, technical correctness, methodological appropriateness, positional accuracy, and legal permission are different questions.
-6. **Make uncertainty visible.** Missing evidence must remain unknown or unassessed rather than being silently treated as success.
-7. **Keep orchestration separable.** Conversational planning may assist users, but the execution core should accept explicit, validated definitions.
-8. **Grow through conformance.** New engines and capabilities should join through shared contracts and tests, not one-off special cases.
-9. **Build the platform before overfitting to one application.** Specific applications should demonstrate and use reusable platform capabilities without narrowing the platform's purpose.
+**Foundry** is the computational substrate that makes those methods executable, composable, testable and reusable against external spatial data.
+
+**Tessellatum products** solve specific customer problems. They should consume Foundry capabilities when doing so creates real value, not be forced to adopt every platform feature.
+
+## Principles
+
+1. External data stays external by default.
+2. Read only what a computation needs; prefer streaming, windows, pagination and pushdown.
+3. Never silently copy, mutate or claim ownership of source data.
+4. Record source identity, version evidence, query parameters and limitations.
+5. Separate data validity, computational correctness, methodological suitability, accuracy, authority and legal permission.
+6. Keep computation explicit, versioned and reproducible.
+7. Validate outputs independently before artifact registration or cache reuse.
+8. Keep AI optional and outside the trusted execution core.
+9. Build one useful vertical workflow before generalizing.
+10. Scale compute and artifact storage based on measured workloads and customer requirements.
 
 ## What this vision does not claim
 
-The following remain future directions unless the status tracker and implementation evidence say otherwise:
-
-- autonomous agents that reliably plan and execute arbitrary spatial projects;
-- a planetary or universal spatial index;
-- a complete universal spatial data model covering every geometry, raster, temporal, network, and 3D use case;
-- automatic discovery and orchestration of every GIS engine or external data service;
-- federated, globally distributed execution and a production marketplace;
-- a full visual map, dashboard, and application builder;
-- production-grade multi-tenant hosted services;
-- finished SiteSelector, spatial-audit, or synthetic-data products.
-
-These ideas may inform design, but they must not be represented as delivered functionality.
-
-## How this document evolves
-
-This document records the product direction and the relationship between that direction and the engineering foundation. Update it when the ambition, target users, product boundaries, or strategic sequencing materially change.
-
-Use the companion documents for different kinds of truth:
-
-- **This document — Project vision:** what the larger platform is for and the principles guiding it.
-- **[Project status](PROJECT_STATUS.md):** what exists, what is in progress, what is blocked, and what remains.
-- **[Architecture](../ARCHITECTURE.md) and ADRs:** how the system is designed and why specific decisions were made.
-- **Capability contracts, tests, PRs, and release evidence:** the precise behavior that has actually been implemented and verified.
-
-When these documents differ, implementation claims must be grounded in code, tests, and verification evidence. The vision describes direction; it does not override the evidence.
+Foundry is not yet a production-grade multi-tenant service, universal connector fabric, federated query engine, general-purpose GIS replacement, global data warehouse or autonomous spatial agent. These are not prerequisites for proving the computational foundation.

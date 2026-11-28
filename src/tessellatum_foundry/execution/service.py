@@ -9,6 +9,7 @@ import uuid
 from copy import deepcopy
 from dataclasses import dataclass
 from typing import Any
+from urllib.parse import urlsplit
 
 from jsonschema import Draft202012Validator, FormatChecker
 
@@ -125,12 +126,18 @@ class VectorBufferRunService:
         recipe_node_id: str | None = None,
         recipe_node_order: int | None = None,
         resolved_inputs: dict[str, dict[str, Any]] | None = None,
+        source_references: list[dict[str, Any]] | None = None,
         pinned_runtime_image_digest: str | None = None,
     ) -> ExecutionResult:
         cell = deepcopy(cell)
         capability = deepcopy(capability)
         recipe_ref = deepcopy(recipe_ref)
         resolved_inputs = deepcopy(resolved_inputs or {})
+        source_references = (
+            deepcopy(source_references) if source_references is not None else []
+        )
+        if not isinstance(source_references, list):
+            raise ExecutionPreconditionError("Source references must be supplied as a list.")
         self.contracts.validate("cell.schema.json", cell)
         self.contracts.validate("capability.schema.json", capability)
         try:
@@ -200,6 +207,47 @@ class VectorBufferRunService:
 
         parameters = self._normalize_parameters(cell, capability)
         input_port = self._required_port(capability["input_ports"], "features")
+        seen_source_references: set[tuple[str, str, str, str | None]] = set()
+        for source_entry in source_references:
+            if not isinstance(source_entry, dict) or set(source_entry) != {
+                "input_port", "reference"
+            }:
+                raise ExecutionPreconditionError(
+                    "Each source reference must contain only input_port and reference."
+                )
+            if source_entry["input_port"] != input_port["port_id"]:
+                raise ExecutionPreconditionError(
+                    "External source evidence must identify a declared input port."
+                )
+            try:
+                self.contracts.validate(
+                    "external-data-reference.schema.json", source_entry["reference"]
+                )
+            except ContractValidationError as error:
+                raise ExecutionPreconditionError(
+                    f"External source reference is invalid: {error}"
+                ) from error
+            reference = source_entry["reference"]
+            parsed_uri = urlsplit(reference["uri"])
+            if (
+                parsed_uri.username is not None
+                or parsed_uri.password is not None
+                or parsed_uri.query
+                or parsed_uri.fragment
+            ):
+                raise ExecutionPreconditionError(
+                    "External source reference is invalid: credentials, query parameters, "
+                    "and fragments must not be embedded in the persisted URI."
+                )
+            identity = (
+                source_entry["input_port"],
+                reference["provider"],
+                reference["dataset_id"],
+                reference.get("resource_id"),
+            )
+            if identity in seen_source_references:
+                raise ExecutionPreconditionError("Duplicate external source reference.")
+            seen_source_references.add(identity)
         output_port = self._required_port(capability["output_ports"], "result")
         output_contract = cell["output_contracts"].get("result")
         if output_contract is None:
@@ -382,6 +430,10 @@ class VectorBufferRunService:
                 )
             if previous.get("input_snapshots") != [input_snapshot]:
                 raise ExecutionPreconditionError("A retry must use the same immutable inputs.")
+            if previous.get("source_references", []) != source_references:
+                raise ExecutionPreconditionError(
+                    "A retry must preserve the original external source evidence."
+                )
             if previous.get("normalized_parameters") != parameters:
                 raise ExecutionPreconditionError("A retry must use the same normalized parameters.")
             attempt = previous["attempt"] + 1
@@ -396,6 +448,7 @@ class VectorBufferRunService:
             },
             input_snapshots=[input_snapshot],
             normalized_parameters=parameters,
+            source_references=source_references,
             attempt=attempt,
             retry_of_run_id=retry_of_run_id,
             recipe=recipe_ref,

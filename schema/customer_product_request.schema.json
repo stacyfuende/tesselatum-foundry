@@ -1,0 +1,87 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:tessellatum-foundry:schema:customer-product-request:1.0.0",
+  "title": "Foundry Customer Product Request",
+  "description": "Customer-language request for a supported spatial product. It deliberately excludes execution graph and capability details.",
+  "type": "object",
+  "required": [
+    "request_id",
+    "job_type",
+    "source_file",
+    "audience",
+    "decision_context",
+    "geographic_scope"
+  ],
+  "properties": {
+    "request_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{1,127}$"
+    },
+    "job_type": {
+      "const": "standardize_site_coordinates"
+    },
+    "product_name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "source_file": {
+      "type": "object",
+      "required": [
+        "file_name",
+        "media_type",
+        "coordinate_reference_system"
+      ],
+      "properties": {
+        "file_name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 255,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._ -]{0,250}\\.(geojson|json)$"
+        },
+        "media_type": {
+          "enum": [
+            "application/geo+json",
+            "application/json"
+          ]
+        },
+        "coordinate_reference_system": {
+          "type": "object",
+          "required": [
+            "authority",
+            "code"
+          ],
+          "properties": {
+            "authority": {
+              "const": "EPSG"
+            },
+            "code": {
+              "const": 4326
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "audience": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500
+    },
+    "decision_context": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2000
+    },
+    "geographic_scope": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500,
+      "enum": [
+        "Nairobi metropolitan region"
+      ]
+    }
+  },
+  "additionalProperties": false
+}

@@ -120,5 +120,15 @@
   "measurement": {
     "unit_parameter": "unit",
     "unit_kind": "linear"
+  },
+  "autonomy": {
+    "impact": "low",
+    "reversibility": "reversible",
+    "uncertainty": "low",
+    "sensitivity": "none",
+    "cost_band": "bounded",
+    "side_effect": "workspace_write",
+    "external_access": false,
+    "approval_required": false
   }
 }

@@ -7,10 +7,12 @@ The JSON files in this directory are the canonical structural contracts. They us
 | File | Describes |
 |---|---|
 | _common.schema.json | Shared identifiers, references, CRS, extents, timestamps and checksum definitions |
-| artifact.schema.json | One immutable version of a logical data Artifact |
+| artifact.schema.json | One immutable version of a computational input or output Artifact |
+| external-data-reference.schema.json | Provider/customer-owned resource locator and source provenance hints |
 | capability.schema.json | One version of an engine-independent Capability contract |
 | capability-implementation.schema.json | One versioned engine/runtime realization of a Capability |
 | cell.schema.json | One immutable Geo-Cell computation declaration |
+| definition-record.schema.json | Immutable registry record for a versioned definition |
 | recipe.schema.json | One immutable DAG of exact Geo-Cell versions |
 | run.schema.json | One execution attempt and its provenance |
 | validation-report.schema.json | Evidence for validating a specific subject and stage |

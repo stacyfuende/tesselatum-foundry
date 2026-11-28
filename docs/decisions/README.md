@@ -47,6 +47,11 @@ This register records decisions that constrain Foundry's architecture. Each deci
 | [041](041-buffer-arc-tolerance.md) | Declare a purpose-specific buffer arc approximation tolerance | Accepted |
 | [042](042-reprojection-operation-evidence.md) | Capture the actual PROJ operation selected by the worker | Accepted |
 | [043](043-reprojection-area-of-use-coverage.md) | Compare geographic input extents with operation area of use | Accepted |
-| [039](039-methodological-evidence.md) | Produce operation-specific methodological evidence without a generic quality score | Accepted |
+| [044](044-raster-band-statistics.md) | Define raster band statistics scope and semantics | Proposed |
+| [045](045-spatial-information-core.md) | Persistent PostGIS spatial information core | Superseded by ADR-047 |
+| [046](046-bulk-geospatial-storage.md) | Bulk geospatial object storage boundary | Superseded by ADR-047 |
+| [047](047-external-data-computation-boundary.md) | External data remains external; Foundry owns computation | Accepted |\n| [048](048-transactional-streamed-artifact-publication.md) | Publish streamed Artifacts only after complete-run verification | Accepted |
 
 A decision may be superseded only by a new decision record that explains the change. Do not silently edit an accepted decision to reverse its meaning.
+
+- [ADR-062](062-customer-language-product-request-intake.md) records the first customer-language request boundary.

@@ -23,7 +23,7 @@
     },
     "inputs": {
       "type": "object",
-      "description": "Port bindings. Bindings may reference immutable artifacts or an upstream cell output.",
+      "description": "Port bindings may reference immutable Artifacts, upstream cell outputs, or externally held data resources.",
       "additionalProperties": {
         "oneOf": [
           {
@@ -62,6 +62,126 @@
               },
               "output_port": {
                 "$ref": "urn:tessellatum-foundry:schema:common:1.0.0#/$defs/identifier"
+              }
+            },
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "required": [
+              "source",
+              "reference",
+              "spatial"
+            ],
+            "properties": {
+              "source": {
+                "const": "external"
+              },
+              "reference": {
+                "$ref": "urn:tessellatum-foundry:schema:external-data-reference:1.0.0"
+              },
+              "spatial": {
+                "type": "object",
+                "required": [
+                  "kind",
+                  "crs"
+                ],
+                "properties": {
+                  "kind": {
+                    "enum": [
+                      "vector",
+                      "raster"
+                    ]
+                  },
+                  "crs": {
+                    "$ref": "urn:tessellatum-foundry:schema:common:1.0.0#/$defs/crs"
+                  },
+                  "geometry_types": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "minItems": 1,
+                    "uniqueItems": true
+                  },
+                  "raster": {
+                    "type": "object",
+                    "required": [
+                      "width",
+                      "height",
+                      "band_count"
+                    ],
+                    "properties": {
+                      "width": {
+                        "type": "integer",
+                        "minimum": 1
+                      },
+                      "height": {
+                        "type": "integer",
+                        "minimum": 1
+                      },
+                      "band_count": {
+                        "type": "integer",
+                        "minimum": 1
+                      },
+                      "dtypes": {
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "minItems": 1
+                      },
+                      "resolution": {
+                        "type": "array",
+                        "items": {
+                          "type": "number"
+                        },
+                        "minItems": 2,
+                        "maxItems": 2
+                      }
+                    },
+                    "additionalProperties": false
+                  }
+                },
+                "additionalProperties": false,
+                "allOf": [
+                  {
+                    "if": {
+                      "properties": {
+                        "kind": {
+                          "const": "vector"
+                        }
+                      },
+                      "required": [
+                        "kind"
+                      ]
+                    },
+                    "then": {
+                      "required": [
+                        "geometry_types"
+                      ]
+                    }
+                  },
+                  {
+                    "if": {
+                      "properties": {
+                        "kind": {
+                          "const": "raster"
+                        }
+                      },
+                      "required": [
+                        "kind"
+                      ]
+                    },
+                    "then": {
+                      "required": [
+                        "raster"
+                      ]
+                    }
+                  }
+                ]
               }
             },
             "additionalProperties": false

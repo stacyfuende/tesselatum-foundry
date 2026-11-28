@@ -1,0 +1,141 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:tessellatum-foundry:schema:autonomy-policy:1.0.0",
+  "title": "Foundry Autonomy Policy",
+  "description": "Contextual policy for deciding which product-building choices Foundry may make automatically, should guide, or must ask permission for.",
+  "type": "object",
+  "required": [
+    "policy_id",
+    "version",
+    "default_mode",
+    "rules"
+  ],
+  "properties": {
+    "policy_id": {
+      "type": "string",
+      "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._-]{1,127}$"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+    },
+    "default_mode": {
+      "enum": [
+        "automatic",
+        "guided",
+        "explicit"
+      ]
+    },
+    "rules": {
+      "type": "array",
+      "maxItems": 200,
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "decision",
+          "mode"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._-]{0,127}$"
+          },
+          "decision": {
+            "type": "string",
+            "minLength": 1
+          },
+          "mode": {
+            "enum": [
+              "automatic",
+              "guided",
+              "explicit"
+            ]
+          },
+          "when": {
+            "type": "object",
+            "properties": {
+              "impact": {
+                "enum": [
+                  "low",
+                  "moderate",
+                  "high",
+                  "critical"
+                ]
+              },
+              "reversibility": {
+                "enum": [
+                  "reversible",
+                  "costly_to_reverse",
+                  "irreversible"
+                ]
+              },
+              "uncertainty": {
+                "enum": [
+                  "low",
+                  "moderate",
+                  "high"
+                ]
+              },
+              "sensitivity": {
+                "enum": [
+                  "none",
+                  "personal",
+                  "commercial",
+                  "regulated"
+                ]
+              },
+              "cost_band": {
+                "enum": [
+                  "negligible",
+                  "bounded",
+                  "material",
+                  "unknown"
+                ]
+              },
+              "user_preference": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          },
+          "rationale": {
+            "type": "string"
+          },
+          "required_evidence": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "approval_scope": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "hard_stops": {
+      "type": "array",
+      "items": {
+        "enum": [
+          "external_publication",
+          "sensitive_data_access",
+          "irreversible_action",
+          "legal_commitment",
+          "material_unbounded_cost",
+          "recurring_billing"
+        ]
+      }
+    },
+    "record_decisions": {
+      "type": "boolean",
+      "default": true
+    },
+    "allow_user_override": {
+      "type": "boolean",
+      "default": true
+    }
+  },
+  "additionalProperties": false
+}

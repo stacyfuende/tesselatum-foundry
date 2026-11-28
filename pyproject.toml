@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "tessellatum-foundry"
 version = "0.1.0"
-description = "Contracts and deterministic spatial computation infrastructure for Tessellatum Foundry."
+description = "Composable, validated and reproducible spatial computation infrastructure."
 requires-python = ">=3.11"
 dependencies = [
   "jsonschema>=4.26,<5",
@@ -17,6 +17,7 @@ dependencies = [
 dev = [
   "pytest>=8.3,<9",
   "ruff>=0.9,<1",
+  "playwright>=1.50,<2",
 ]
 shapely = [
   "shapely>=2.0,<3",
@@ -28,18 +29,24 @@ postgis = [
 [tool.setuptools.packages.find]
 where = ["src"]
 
+[tool.setuptools.package-data]
+tessellatum_foundry = ["product_templates/*.json"]
+
 [tool.setuptools.data-files]
 "share/tessellatum-foundry/schema" = ["schema/*.schema.json"]
 "share/tessellatum-foundry/capabilities/vector.buffer" = ["capabilities/vector.buffer/1.0.0.json"]
 "share/tessellatum-foundry/capabilities/vector.reproject" = ["capabilities/vector.reproject/1.0.0.json"]
+"share/tessellatum-foundry/capabilities/raster.window" = ["capabilities/raster.window/1.0.0.json"]
 "share/tessellatum-foundry/implementations/vector.buffer/shapely" = ["implementations/vector.buffer/shapely/1.0.0.json"]
 "share/tessellatum-foundry/implementations/vector.buffer/postgis" = ["implementations/vector.buffer/postgis/1.0.0.json"]
 "share/tessellatum-foundry/implementations/vector.reproject/pyproj-shapely" = ["implementations/vector.reproject/pyproj-shapely/1.0.0.json"]
+"share/tessellatum-foundry/implementations/raster.window/python" = ["implementations/raster.window/python/1.0.0.json"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src"]
 addopts = "-ra"
+markers = ["integration: opt-in tests that contact external providers"]
 
 [tool.ruff]
 target-version = "py311"

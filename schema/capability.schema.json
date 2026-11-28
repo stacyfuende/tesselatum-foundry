@@ -268,6 +268,65 @@
         }
       },
       "additionalProperties": false
+    },
+    "autonomy": {
+      "type": "object",
+      "description": "Declared operational risk and autonomy requirements for safe orchestration.",
+      "properties": {
+        "impact": {
+          "enum": [
+            "low",
+            "moderate",
+            "high",
+            "critical"
+          ]
+        },
+        "reversibility": {
+          "enum": [
+            "reversible",
+            "costly_to_reverse",
+            "irreversible"
+          ]
+        },
+        "uncertainty": {
+          "enum": [
+            "low",
+            "moderate",
+            "high"
+          ]
+        },
+        "sensitivity": {
+          "enum": [
+            "none",
+            "personal",
+            "commercial",
+            "regulated"
+          ]
+        },
+        "cost_band": {
+          "enum": [
+            "negligible",
+            "bounded",
+            "material",
+            "unknown"
+          ]
+        },
+        "side_effect": {
+          "enum": [
+            "none",
+            "workspace_write",
+            "external_write",
+            "irreversible"
+          ]
+        },
+        "external_access": {
+          "type": "boolean"
+        },
+        "approval_required": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
     }
   },
   "additionalProperties": false,

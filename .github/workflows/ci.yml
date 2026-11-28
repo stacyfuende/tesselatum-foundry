@@ -1,9 +1,6 @@
 name: CI
 
 on:
-  # Validate proposed changes before merge. The full integration suite is not
-  # repeated on the merge commit: that would run the same Docker/PostGIS suite
-  # twice for a normal pull-request merge.
   pull_request:
     branches: [main]
     types: [opened, synchronize, reopened, ready_for_review]
@@ -12,12 +9,8 @@ on:
       - "docs/**"
       - "README*"
       - "LICENSE*"
-  # Keep an explicit escape hatch for maintainers to validate main or rerun
-  # the full suite when a change requires it.
   workflow_dispatch:
 
-# A newer commit on the same PR supersedes the older run. This prevents
-# several expensive Docker/PostGIS suites from running concurrently.
 concurrency:
   group: foundry-ci-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
@@ -44,8 +37,7 @@ jobs:
           --health-retries 10
     env:
       FOUNDRY_POSTGIS_DSN: postgresql://postgres:postgres@localhost:5432/foundry
-      FOUNDRY_VECTOR_BUFFER_IMAGE: tessellatum-foundry/vector-buffer-shapely:ci
-      FOUNDRY_VECTOR_BUFFER_REMOTE_IMAGE: tessellatum-foundry/vector-buffer-remote:ci
+      FOUNDRY_TEST_POSTGRES_DSN: postgresql://postgres:postgres@localhost:5432/foundry
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -55,20 +47,20 @@ jobs:
           cache-dependency-path: requirements-dev.txt
       - name: Install project and development dependencies
         run: python -m pip install -r requirements-dev.txt
-      - name: Verify installed distribution includes schemas and manifests
-        run: |
-          python -m venv --system-site-packages /tmp/foundry-wheel-env
-          /tmp/foundry-wheel-env/bin/pip install --no-deps .
-          (cd /tmp && /tmp/foundry-wheel-env/bin/python "$GITHUB_WORKSPACE/scripts/check_installed_data.py")
-      - name: Lint
-        run: ruff check .
-      - name: Validate schemas and fixtures
-        run: python scripts/validate_schemas.py
-      - name: Enable PostGIS extension
-        run: psql "$FOUNDRY_POSTGIS_DSN" -c "CREATE EXTENSION IF NOT EXISTS postgis;"
-      - name: Build isolated Shapely worker image
-        run: docker build --file workers/vector_buffer/Dockerfile --tag "$FOUNDRY_VECTOR_BUFFER_IMAGE" .
-      - name: Build authenticated remote worker image
-        run: docker build --file workers/vector_buffer/Dockerfile.remote --tag "$FOUNDRY_VECTOR_BUFFER_REMOTE_IMAGE" .
-      - name: Run tests, including Docker and PostGIS execution
-        run: python -m pytest
+      - name: Install Chromium for customer browser tests
+        run: python -m playwright install --with-deps chromium
+      - name: Run Foundry pre-production certification
+        run: python scripts/preproduction_certify.py --profile ci
+
+  live-external-raster:
+    name: Live external Nairobi Sentinel-2 raster execution
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install Foundry runtime
+        run: python -m pip install -e . shapely
+      - name: Execute real external raster smoke test
+        run: python scripts/live_external_raster_smoke.py

@@ -1,121 +1,169 @@
 # Project status and collaboration guide
 
-**Last updated:** 2026-11-09  
-**Status:** Living engineering tracker. Update this document when a capability, validation gate, PR dependency, or operational assumption changes.
+**Last updated:** 2026-11-28  
+**Status:** Living engineering tracker.
 
-This page is the working hand-off for contributors and future sessions. It separates implemented behavior from work that is merely proposed, in review, or not yet verified. A checked implementation item does not imply that its current branch has passed CI or is production-ready. Read [Project vision](PROJECT_VISION.md) for the broader product ambition; this tracker remains the source of truth for implementation status.
+This page distinguishes implemented behavior from proposed work and unverified assumptions. A checked item does not imply production readiness. Read [Foundry architecture](FOUNDRY_REORIENTATION.md) and [Project vision](PROJECT_VISION.md) for current direction.
 
 ## Project intent
 
-Tessellatum Foundry is contracts-first infrastructure for describing, composing, executing, validating, and reproducing spatial computations across engines and execution environments. Its core records are versioned Capabilities, Geo-Cells, Recipes, Runs, Artifacts, and separate Validation Reports.
+Foundry is Tessellatum's spatial computation infrastructure. It makes spatial data computable across providers, formats, engines, workflows and applications. It does not aim to own or permanently host source datasets by default.
 
-Engineering principles:
-- Capability contracts are canonical and engine-independent; implementations are registered separately.
-- Schema validity is not semantic validity or methodological suitability.
-- Runs snapshot exact inputs, versions, implementation identity, and provenance.
-- Outputs are independently inspected before immutable Artifact registration or cache reuse.
-- Fail closed on invalid CRS, geometry, band selection, non-finite data, and unverifiable claims.
-- Keep local execution and remote transport boundaries explicit; do not imply a deployment is production-hardened because code exists.
-
-## Current capability and platform inventory
+## Current computational foundation
 
 | Area | Implemented / evidenced | Remaining / qualification |
 |---|---|---|
-| Contracts and registries | JSON Schema validation, semantic Recipe graph validation, canonical Capability registry, conformance-gated implementation registry | Continue contract evolution and installed-package checks for every new capability |
-| Vector buffer | Shapely and PostGIS realizations; shared conformance; dedicated Run path and isolated local Docker worker | Broader CRS/geometry edge-case coverage; suitability and authoritative rights/security policy remain outside current evidence |
-| Vector reprojection | Shapely/pyproj kernel; dedicated Run path and worker; independent output critic; mixed Recipe use; target-CRS-aware evidence-gated cache | Area-of-use review is proposed in PR #20; not a positional-accuracy guarantee |
-| Recipe execution | Deterministic sequential topological execution; upstream Artifact and Run lineage; mixed buffer/reproject Recipe coverage | Parallel scheduling, retries/resume policy, and broader capability families |
-| Local SDK | LocalFoundry facade over canonical registries/stores and sequential Recipe execution | Authenticated network API, multi-tenant service boundary, generated client SDK |
-| Raster band statistics | Initial kernel, contract, Rasterio/NumPy packaging, independent critic, and generated GeoTIFF tests are proposed in PR #21 | Not yet integrated into Run/Artifact/Recipe lifecycle. The feature branch now processes source blocks incrementally in both the kernel and independent critic, with a multi-tile regression test. This bounds working memory to a source block, but CI verification is still outstanding; very wide striped rasters can still have large blocks. Verify CI and installed distribution before treating the branch as conformant |
-| Remote worker | Authenticated HTTPS transport and service exist for vector capabilities | PR #13 concurrency bound and PR #15 process-isolated hard timeouts are open; production ingress, resource policy, monitoring, secret rotation and deployment verification remain |
-| Provenance / methodology | Rights declarations and lineage are recorded; buffer approximation and reprojection operation evidence are recorded | Declarations are not proof of legal permission; suitability, authoritative rights policy, security policy and accuracy assessment require additional inputs and governance |
+| Contracts and registries | JSON Schema validation, semantic Recipe graph validation, canonical Capability registry, conformance-gated implementation registry | Continue contract evolution and installed-package checks |
+| Spatial validation | CRS, geometry, extent and measurement-unit checks | Expand source metadata validation and method-specific evidence |
+| Vector buffer | Shapely and PostGIS realizations; shared conformance; dedicated Run path and isolated local Docker worker | Broader edge cases; suitability and rights policy remain distinct |
+| Vector reprojection | Shapely/pyproj kernel; dedicated Run path and worker; independent output critic; mixed Recipe use; evidence-gated cache | Area-of-use review and accuracy limits remain explicit |
+| Recipe execution | Deterministic sequential execution, upstream Artifact/Run lineage, mixed buffer/reproject Recipe coverage | Parallel scheduling, robust retries/resume and broader capability families |
+| Local SDK | LocalFoundry composition root over canonical stores and execution services | Authenticated network API, multi-tenant service boundary, generated client SDK |
+| Raster band statistics | Initial kernel, contract, Rasterio/NumPy packaging, independent critic and generated GeoTIFF tests proposed in PR #21 | Integrate into Run/Artifact/Recipe lifecycle and verify CI |
+| Remote worker | Authenticated HTTPS transport and service exist for vector capabilities | Concurrency, process-isolated hard timeouts, ingress, resource policy, monitoring, secret rotation and deployment verification |
+| Provenance and methodology | Rights declarations and lineage; buffer approximation and reprojection operation evidence | Declarations are not legal authorization; suitability and accuracy need domain evidence |
 
-## Active pull requests and dependency notes
+## Outcome-first Product Factory — implemented foundation, not a shipped product
 
-All states below are a snapshot; check GitHub before acting.
+| Component | Implemented / evidenced | Remaining / qualification |
+|---|---|---|
+| Product Blueprint contract | Outcome, audience, evidence requirements, reasoning nodes, outputs, acceptance, autonomy and resource limits are declarative and schema-bound | Source discovery/resolution UX, rights/freshness/quality assessment |
+| Blueprint planner | Deterministic dependency ordering, exact registered Capability resolution, evidence and output-port checks, policy-sensitive plan fingerprint | Planning interface and interactive assumption resolution |
+| Guarded compilation | Blueprint plan compiles to schema-valid immutable Geo-Cells and Recipe; exact upstream port bindings; resolved inputs must be typed Artifact/external references; complete output contracts required | Data binding and template selection are still explicit runtime inputs |
+| Execution handoff | Re-plans against current registry/policy, rejects stale plan and non-automatic decisions, persists definitions, reuses registered Recipe Run service | Real customer-input product factory run not yet demonstrated |
+| Product acceptance | Registered Run, output, Artifact metadata and checksum validators; unknown validators remain unassessed and block release | Geometry validity, methodological suitability, source rights, freshness, cartographic/UX quality and monitoring validators |
+| Product manifest | Deterministic assembled manifest with product output inventory, Artifact metadata, execution and Run provenance, acceptance and fingerprint | No public/customer delivery, product renderer, release, deployment or operations service |
+| Example Blueprint | Road-access buffer example for a 500m access zone | Requires a real input Artifact and actual registered worker execution to prove end-to-end |
 
-- [PR #21 — first raster capability: band statistics](https://github.com/stacyfuende/tesselatum-foundry/pull/21) (feat/raster-band-statistics): contract, Rasterio/NumPy kernel, critic, packaging, tests and ADR-044. The contract JSON serialization defect was corrected in commit 0a15c8e916325398902ee231233fdbda4e463789. Windowed kernel/critic processing and a multi-tile regression test were added through commit 3b1505d4baf2332de428dc51ff609c6869e34aac; subsequent commits added non-finite floating-sample coverage, an independent critic pass across a multi-tile raster, and a tampered-output regression test. A malformed literal-newline import in the test module was found during review and corrected; the critic was also tightened to reject boolean values masquerading as integer dimensions, band counts, or pixel counts. Latest PR head known to this tracker: 6823c6422d43b8f4e204e57ecd25cdb2bc852d5d. Added a striped GeoTIFF window-aggregation regression test. GitHub Actions and combined-status queries returned no runs or statuses for this head; do not mark CI as passed. The PR explicitly says its implementation manifest is not_run and that runtime integration is follow-on work.
-- [PR #20 — reprojection area-of-use coverage](https://github.com/stacyfuende/tesselatum-foundry/pull/20) (feat/reproject-area-of-use-check): extent-level comparison against PROJ operation area-of-use, including antimeridian-wrapping bounds. This is a methodological warning, not a guarantee of positional accuracy.
-- [PR #13 — remote worker concurrency bound](https://github.com/stacyfuende/tesselatum-foundry/pull/13): process-local semaphore and overload response. Verify full CI and container behavior before merge.
-- [PR #15 — remote worker hard timeouts](https://github.com/stacyfuende/tesselatum-foundry/pull/15): child-process isolation and server-side timeout. It is stacked on PR #13; synchronize it with the latest PR #13 head, review/merge #13 first, then retarget #15 to main and rerun CI.
+**Honest proof boundary:** the Blueprint-to-acceptance-manifest test exercises the orchestration using test doubles. It is not a live worker run. The external Sentinel-2 raster-window proof remains separate evidence for the real-source raster path.
 
-PR order: resolve #13 before #15. PR #20 and #21 are independent forward workstreams and need their own CI/review. Do not merge solely because code has been committed.
+## Customer-language product request intake — first supported job
 
-## Raster statistics: implementation contract and next steps
+| Component | Implemented / evidenced | Remaining / qualification |
+|---|---|---|
+| Customer request contract | Versioned customer-language request schema covering the job, source file, CRS, audience, decision context and supported geography; no capability or Recipe vocabulary | Expand only when another validated customer job is added |
+| Customer interface | Browser composer inspects a GeoJSON Point FeatureCollection locally, checks bounded Nairobi scope, gathers context and supports an explicit authenticated submission | Real deployed browser-to-hosted-API journey still needs verification |
+| Deterministic resolver and ingestion | Approved packaged Nairobi template; bounded source ingestion; immutable Artifact registration; exact registered capability planning; rejects unsupported job, CRS, geography, path and media-type mismatch | No free-form method generation; more approved jobs need their own templates, constraints and tests |
+| Execution and delivery | Docker-backed end-to-end HTTP integration runs the authenticated request through tenant runtime, `vector.reproject@1.0.0`, acceptance, manifest and verified ZIP delivery | Hosted identity provider, durable tenant storage and production operations remain deployment work |
 
-The proposed raster.band_statistics@1.0.0 contract describes exact per-band statistics over all valid finite stored samples. Nodata and masked pixels are excluded. Scale, offset and unit metadata are reported, not applied. Standard deviation is population standard deviation (ddof=0). A source CRS is required. The initial output includes dimensions, selected band indexes, valid pixel count, minimum, maximum, mean, standard deviation, dtype, scale, offset and unit.
+The customer request is deliberately not executable code. It is the boundary between a customer's job description and Foundry's internal Blueprint machinery. See [ADR-062](decisions/062-customer-language-product-request-intake.md) and [ADR-067](decisions/067-authenticated-customer-product-http-integration.md).
 
-Important implementation observation: the branch initially read each entire band into memory. That has been replaced by source-block iteration in both the kernel and independent critic, with a mergeable accumulator. Working memory is now bounded by a source block and accumulator state, although unusually wide striped rasters may still expose large blocks. Before enabling large-raster workloads:
-1. [x] Replace whole-band reads with block/window iteration and a numerically stable mergeable accumulator (count, min, max, mean, population variance) in the kernel.
-2. [x] Keep critic validation independently implemented and windowed; it does not call the kernel.
-3. [~] Add tiled and striped GeoTIFF tests, internal/external masks, nodata, non-finite floating samples, multiple bands, empty-valid-band behavior, and very large synthetic dimensions. A multi-tile exactness test is now present; broaden the edge-case matrix.
-4. [~] Confirm finite output behavior for extreme numeric values and avoid integer overflow by converting window samples to float64 before arithmetic. Float64 overflow is explicitly rejected in the kernel; critic-side adversarial tests remain.
-5. If future contract versions add exact quantiles/median, design a bounded-memory exact algorithm (e.g. external selection) or explicitly revise semantics; do not silently substitute approximate quantiles.
-6. Only then connect the capability to canonical dispatch, Run lifecycle, Artifact persistence, Recipe execution, cache evidence, and installed package conformance. Remove the not_run gate only after the entire path is validated.
+## External data boundary — initial source-backed execution implemented
 
-## Remote worker hardening checklist
+| Concern | Implemented | Remaining / qualification |
+|---|---|---|
+| Source access | Provider-neutral `SourceAdapter`, bounded local-file adapter, and exact-host-allowlisted HTTPS adapter with runtime headers, no redirects, timeouts, byte/ETag/SHA-256 checks and redacted transport errors | Provider pagination/query pushdown, cloud-native signed access, OAuth refresh, DNS/IP policy and production credential broker |
+| Bounded reads | Incremental NDJSON reader and lazy source-to-batch pipeline; feature-count and encoded-byte bounds | Additional readers, pagination, windowing and query pushdown |
+| Batch worker | `VectorBufferBatchExecutor` verifies batch input checksum/metadata, pinned worker image, output shape/count, output checksum and worker-reported CRS; exercised by source-backed orchestration | Additional worker implementations and operational resource policy |
+| Source identity | `ExternalDataReference` records provider/dataset/resource URI and optional version/ETag/SHA-256 evidence | Provider-specific stable version evidence and source-aware cache identity |
+| Run provenance | Immutable source references are validated against input ports and preserved across retries; Geo-Cell schema supports explicit external bindings; `ExternalVectorBufferRunFactory` creates source-only queued Runs; `ExternalVectorBufferRunOrchestrator` authorizes, resolves, streams, dispatches, validates and finalizes source-backed Runs | Cursor/checkpoint evidence and durable retry semantics |
+| Output lifecycle | Private provisional staging, atomic journal, EOF gate, bounded file-based Artifact writer, durable object-before-metadata publication, stable publication intent, conservative process-restart reconciliation, bounded Artifact integrity verification, producer Run/attempt binding, verified Run success reconciliation, bounded per-batch independent critic, aggregate report, and `ExternalVectorBufferRunOrchestrator` joining source-only queued Runs to streamed execution | Resumable checkpoints, cross-process writer lease, remote source adapters and production credential brokering remain pending |
+| Credentials | Authorization is invoked before adapter resolution; provider exception text is redacted from caller-visible errors and persisted Run records; URI userinfo, query strings and fragments are rejected | Production scoped credential broker, rotation and provider-specific authorization policy |
+| Source custody | Remains with provider/customer by default | Architectural rule |
+| Snapshots | Optional customer-controlled snapshot, not mandatory Foundry ingestion | Policy only; no snapshot service planned as core |
 
-- [ ] Review/merge PR #13 after full CI and container-level overload test.
-- [ ] Rebase/retarget PR #15 onto the merged #13/main history; resolve conflicts and rerun full CI.
-- [ ] Exercise timeout behavior in the actual worker container and confirm process-group termination.
-- [ ] Confirm Run transitions to timed_out; verify retry creates a new attempt without rewriting prior provenance.
-- [ ] Before production: private ingress, TLS, authentication/secret rotation, request and response limits, CPU/memory/process limits, network egress policy, rate limiting, logs/metrics/alerts, and operational runbooks.
+## Persistence boundary
 
-## Verification and release discipline
+Foundry may persist:
+- immutable Cell and Recipe definitions;
+- Run events, provenance and validation reports;
+- bounded cache metadata and entries under eviction policy;
+- derived output Artifacts when required by the workflow.
 
-For every PR, record:
-- exact head commit SHA;
-- required GitHub Actions checks and their final states;
-- unit, conformance, integration, Docker/PostGIS and packaging coverage as applicable;
-- whether tests were run locally or only in CI;
-- known limitations and any manual deployment checks still outstanding.
+Foundry does not default to persisting:
+- complete upstream datasets;
+- mirrored national/global geospatial catalogues;
+- canonical geographic entity inventories;
+- bulk input archives.
 
-Do not equate an empty status list with success. Do not claim a CI pass without a completed successful check on the current head SHA. Re-run checks after any commit that changes source, tests, schemas, manifests, or packaging.
+The current filesystem Artifact store is a local adapter. A future artifact backend must support explicit ownership, access and retention policy. This is distinct from a source-data warehouse.
 
-## Suggested collaboration workflow
+## Decisions
 
-1. Start with this page, [the architecture](../ARCHITECTURE.md), and the [decision register](decisions/README.md).
-2. Read the relevant ADR and Capability contract before changing behavior.
-3. Keep each PR scoped to one capability or infrastructure concern; state dependencies and non-goals in its description.
-4. Add tests at contract, kernel, independent-critic, lifecycle, and packaging boundaries as relevant.
-5. Update this tracker in the same PR when status, dependencies, semantics, or next steps change.
-6. Preserve explicit not_run / unverified states until conformance and runtime evidence justify promotion.
+- ADR-045 and ADR-046 were proposed during an earlier storage-centric interpretation and are superseded by ADR-047.
+- [ADR-047](decisions/047-external-data-computation-boundary.md) records the current external-data and computation boundary.
+- Existing accepted computation ADRs remain in force unless explicitly superseded.
 
-## Decision and evidence index
+## Verification status
 
-- [ADR-043](decisions/043-reprojection-area-of-use-coverage.md): reprojection area-of-use coverage (PR #20).
-- [ADR-044](decisions/044-raster-band-statistics.md): raster band statistics scope and semantics (PR #21).
-- [ADR-039](decisions/039-methodological-evidence.md), [ADR-040](decisions/040-buffer-arc-approximation.md), [ADR-041](decisions/041-buffer-arc-tolerance.md), [ADR-042](decisions/042-reprojection-operation-evidence.md): methodology and operation evidence.
-- [ADR-032](decisions/032-authenticated-remote-worker-transport.md) and [ADR-036](decisions/036-remote-vector-capability-dispatch.md): remote transport and capability dispatch.
+CI run [#815](https://github.com/stacyfuende/tesselatum-foundry/actions/runs/45338892077) completed successfully on the source-backed orchestration branch, including installed-package/schema checks, lint, both worker-image builds and the full Docker/PostGIS test suite. Its test job includes the opt-in Docker-backed local-source integration test, which exercises authorization, bounded source reading, worker execution, independent validation, transactional Artifact publication and successful Run reconciliation. Commit `409dbefdee5744b8648cbf4d5dd67bc8989bba35` adds a caller-visible error-redaction assertion for provider authorization failures.
 
----
-*This document is intentionally a living tracker, not a substitute for immutable ADRs, PR descriptions, test results, or release records.*
+This verifies the local-file adapter path and one `vector.buffer` implementation in CI. It does not establish production readiness for remote providers, credential brokering, resumable execution, distributed worker ownership or broader Capability support.
 
+For each subsequent commit, record the exact head SHA and final checks. Do not claim a CI pass without a completed successful run on the current head.
 
-## CI usage policy
+## Collaboration workflow
 
-The repository CI workflow is intentionally pull-request-first. The full Docker/PostGIS integration suite runs for relevant pull-request changes and can also be started manually with `workflow_dispatch`. It does not automatically repeat the full suite on the merge-to-`main` push, because a normal merge has already been validated on its pull request.
-
-The workflow ignores documentation-only changes and uses a concurrency group with `cancel-in-progress: true`, so a newer commit on the same pull request supersedes an obsolete in-progress run. This reduces wasted hosted-runner time while retaining a full pre-merge integration gate.
-
-For local verification, contributors can run the same component checks and test suite from the repository environment. A self-hosted Actions runner is a possible later option for a trusted, privately controlled machine; do not expose a self-hosted runner to untrusted pull-request code, especially from forks. GitHub documents self-hosted runner usage as not consuming the included hosted-runner minutes, while standard hosted runner usage is free for public repositories. Billing allowances are account-level and may be shared across private repositories owned by the same account.
-
-The current allowance notice should be checked in **Settings → Billing & licensing → Usage** to confirm whether it refers to included compute, legacy minute quota, or storage. Do not infer remaining minutes from an email percentage alone.
+1. Read the relevant Capability contract and ADR before changing behavior.
+2. Preserve canonical contracts and test at schema, semantic, kernel, independent-critic, lifecycle and packaging boundaries.
+3. Keep source access adapters separate from capability semantics.
+4. Add tests for bounded memory, partial failures, unavailable sources, credential redaction and provenance.
+5. Update this tracker when implementation status or assumptions change.
+6. Keep unverified behavior explicitly unverified.
 
 
-## Temporary GitHub Actions budget constraint
+## Spatial product viewer (first customer-facing output surface)
 
-**Recorded:** 2026-11-10  
-**Source:** User-reported account allowance; fewer than 200 Actions remain before the end of November 2026.
+A dependency-free browser viewer now opens GeoJSON Features and FeatureCollections locally. It provides a geometry preview, feature/coordinate counts, extent, geometry composition, per-feature properties and GeoJSON download. This is a first usable output surface, not yet a Foundry-connected product delivery path. It assumes WGS 84 longitude/latitude, has 50,000-feature / 100 MB preview limits, has no basemap or raster support, and does not certify geometry or analytical quality. The included sample is illustrative only. See `viewer/product/index.html` and `viewer/product/README.md`.
 
-Until the monthly allowance resets:
 
-- Treat the remaining Actions budget as scarce; do not spend it on routine confirmation or convenience reruns.
-- Prefer local lint, schema validation, unit tests, targeted integration tests, Docker checks, and direct inspection where the required dependencies are available.
-- Batch related source and test changes before requesting hosted verification.
-- Do not use `workflow_dispatch` for routine checks. Use it only when a specific release, integration, or safety gate cannot be established locally and the result justifies the cost.
-- Avoid unnecessary PR commits that each supersede an in-progress full integration run. Finish a coherent review batch before pushing.
-- Preserve the pull-request-first CI policy and documentation-only path exclusions. Documentation updates should not consume a hosted run under the current workflow filters.
-- Before any deliberate hosted run, inspect the current PR head and existing checks to avoid duplicating a run already in progress or completed.
+## Verified product export (first Artifact-to-customer handoff)
 
-This is an operational budget constraint, not a change to the quality gate: required verification must still be completed before merge or release. If the remaining allowance becomes insufficient, defer non-critical merges rather than treating missing CI as a pass.
+A GeoJSON export adapter now turns an accepted Product Manifest into a deterministic ZIP bundle. It resolves each exact Artifact ID/version through the configured Artifact Store, compares immutable Artifact metadata with the assembled manifest, reads bytes through the store's SHA-256-verifying API, validates GeoJSON payload type, enforces a configurable aggregate byte limit, and packages the source manifest, export index and GeoJSON outputs. Only `accepted` products with `release_allowed=true` can be exported. The bundle includes the accepted source manifest, the exact canonical manifest bytes used for its fingerprint, an export index and GeoJSON outputs. The browser viewer can open the extracted bundle files selected together, verify the canonical manifest fingerprint with Web Crypto, cross-check each output against its immutable Artifact reference, verify file sizes and SHA-256 checksums, and inspect each GeoJSON output. It does not upload data or fetch arbitrary URLs. ADR-061 documents the contract.
+
+**Proof boundary:** unit tests cover bundle contents, determinism, rejected/unaccepted products, manifest tampering, Artifact metadata mismatch, invalid GeoJSON and export size limits; storage tests cover bounded reads. The viewer has static and script-syntax checks, but a real browser interaction test on the current deployed commit remains outstanding. This is a portable export adapter, not hosted publication, a signed distribution mechanism, customer access control, or a live Artifact API. It currently supports GeoJSON only; raster and other product formats need their own delivery adapters/viewers.
+
+## Outcome-first product examples
+
+Two distinct customer jobs now have explicit, schema-validated Spatial Product Blueprints:
+
+- `examples/product_blueprints/road-access-buffer.json`: create a 500 m road-proximity polygon dataset for planning and site-selection analysis.
+- `examples/product_blueprints/nairobi-site-coordinate-standardization.json`: convert WGS 84 site locations to EPSG:32737 for metric analysis, preserving feature identity and attributes.
+
+The second example is deliberately a different product outcome, not another buffer variant. Its planner test verifies that the exact registered `vector.reproject@1.0.0` capability is selected with the intended source binding and target CRS. This proves planning only; it does not claim that this example has been executed and exported end-to-end. The existing Docker-backed product integration test covers the road-buffer product path.
+
+### Real product execution coverage
+
+The second outcome-first product now has a Docker-backed integration test that exercises the registered `vector.reproject@1.0.0` worker through the same Blueprint → Recipe → Run → Artifact → acceptance → Product Manifest → verified GeoJSON bundle path. It uses an immutable WGS 84 site Artifact, checks preservation of feature ID and properties, and checks that the exported Nairobi point falls in the expected UTM zone 37S coordinate range. This test runs in container CI using the already-built isolated Shapely worker image. The Blueprint's site dataset is a required execution input resolved to an Artifact; the separate evidence-requirement list is empty because no independent evidence reference is being asserted.
+
+
+
+### Spatial Product Viewer CRS and geometry support
+
+The browser viewer now takes CRS metadata from the verified export manifest's output Artifact, rather than labelling every bundled output as EPSG:4326. Direct RFC 7946 GeoJSON retains its WGS 84 default; bundles with missing CRS metadata are explicitly labelled undeclared. Projected coordinates are displayed in their native plane without reprojection or a basemap. GeometryCollections, including nested collections, are now drawn alongside the existing simple and multi-geometry types. This is display support, not a CRS transformation or GIS certification.
+
+
+### Customer-facing product handoff
+
+Product manifests now carry the customer-facing intent from the Blueprint: title, description, intended outcome, audience, decision context, geographic scope and success criteria. The local viewer renders this alongside the verified acceptance-check results and spatial output, so a customer can understand what the deliverable is for before inspecting its geometry. The handoff is populated only from the fingerprint-verified bundle manifest; it does not infer or invent product claims. Direct GeoJSON remains a generic preview. A mocked verified-bundle smoke test exercised the product brief, success criteria, acceptance statuses and EPSG:32737 label. Hosted publication, customer authentication and a signed distribution channel remain separate work.
+
+
+### Point-coordinate analyst export
+
+The product viewer now offers a CSV export for point-only datasets, in addition to the verified GeoJSON handoff. It includes feature identifiers, X/Y values, the active CRS label and a stable union of feature-property columns. It deliberately disables this export for non-point geometries rather than silently substituting centroids or dropping geometry detail. Text values that could be interpreted as spreadsheet formulas are escaped. This is a convenience export from the already-opened local dataset, not a new server-side artifact or replacement for the original GeoJSON.
+
+
+### Customer request composer and authenticated submission
+
+The customer page now inspects a selected GeoJSON Point FeatureCollection locally, enforces the bounded Nairobi intake envelope, collects audience and decision context, and prepares the supported product request. It also provides an explicit authenticated submit flow: the operator-approved HTTPS API endpoint and bearer token are entered at submission time; the token remains in page memory and is cleared on page hide/reset; the source file is transmitted only after the user confirms authorization. A verified ZIP is downloaded only when the API returns an accepted, releasable product. A request-JSON download remains available as a fallback. This is still a pilot intake page; a current-commit browser interaction test and deployed customer journey are outstanding.
+
+## Authenticated customer API and local tenant runtime
+
+The authenticated `POST /v1/products` adapter accepts a versioned JSON envelope, authenticates before resolving tenant runtime, enforces request/source size bounds, uses exact-origin CORS, and returns a ZIP only after product acceptance and release checks. `LocalTenantRuntimeResolver` creates one `LocalFoundry` composition per trusted tenant identity, with separate local Artifact, Run, definition, Capability and Recipe-service instances. It installs only the reviewed site-coordinate-standardization template; customers cannot supply execution code or runtime configuration.
+
+**Verification:** [CI run #46133161084](https://github.com/stacyfuende/tesselatum-foundry/actions/runs/46133161084) passed on commit `053e69737b58096351cd01209aae72f50099e297`: 562 passed, 2 skipped (optional live-STAC environment not configured), 1 warning. Both worker images built, Docker/PostGIS tests passed, the customer-page control and JavaScript checks passed, and the independent live Nairobi Sentinel-2 raster execution passed.
+
+**Boundary:** the tenant runtime remains a single-host local adapter, not production multi-tenant hosting. Process-local caching and local filesystem stores do not provide distributed coordination, object-store IAM isolation, encryption, backup/retention, TLS, identity-provider integration, rate limiting or operational monitoring. No production API hostname or credentials are configured. See [ADR-066](decisions/066-local-tenant-runtime-isolation.md) and the [Customer Product API deployment guide](customer-product-api-deployment.md).
+
+
+## Pre-production certification
+
+A repeatable certification runner now exists at `scripts/preproduction_certify.py`.
+
+- Local command: `python scripts/preproduction_certify.py --profile local`.
+- CI command: `python scripts/preproduction_certify.py --profile ci`, with Docker and PostGIS available.
+- The CI workflow now invokes the same certification runner used locally.
+- The runner records a machine-readable JSON report under the ignored `build/` directory, including the tested commit, individual gate outcomes and known limitations.
+- The runner checks lint, schemas/fixtures/contracts/manifests, the full pytest suite, installed-package contents, and (in CI) both worker-image builds plus Docker/PostGIS-backed integration tests.
+
+**Evidence boundary:** the runner and workflow have been committed, but the new runner has not yet completed a CI run on this commit. The local profile does not certify browser interaction or hosted infrastructure. See [Pre-Production Certification](preproduction-certification.md) for the command, gate definitions and remaining customer acceptance requirements.
